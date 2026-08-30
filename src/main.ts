@@ -11,6 +11,10 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const httpAdapterHost = app.get(HttpAdapterHost);
 
+  app.enableCors({
+    origin: configService.get<string>('CLIENT_ORIGIN'),
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  });
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalFilters(
     new HttpExceptionFilter(configService),
