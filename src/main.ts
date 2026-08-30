@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { AllExceptionsFilter } from '@/global-filters/all-exceptions.filter';
@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
   const configService = app.get(ConfigService);
   const httpAdapterHost = app.get(HttpAdapterHost);
 
@@ -15,6 +16,8 @@ async function bootstrap() {
     new HttpExceptionFilter(configService),
     new AllExceptionsFilter(httpAdapterHost),
   );
+
   await app.listen(process.env.PORT ?? 3000);
+  logger.log(`Application is running at port ${process.env.PORT ?? 3000}`);
 }
 void bootstrap();
