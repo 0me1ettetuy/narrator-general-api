@@ -7,9 +7,6 @@ export class LoggerMiddleware implements NestMiddleware {
 
   use(request: Request, response: Response, next: NextFunction) {
     this.logger.log(`[${new Date().toISOString()}] ${request.method} ${request.url}`);
-    if (request.method === 'POST'){
-      this.logger.log(`Request body: ${JSON.stringify(request.body)}`);
-    }
     next();
   }
 }
