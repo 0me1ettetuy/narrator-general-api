@@ -15,7 +15,11 @@ async function bootstrap() {
     origin: configService.get<string>('CLIENT_ORIGIN'),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   });
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+    }),
+  );
   app.useGlobalFilters(
     new HttpExceptionFilter(configService),
     new AllExceptionsFilter(httpAdapterHost),
