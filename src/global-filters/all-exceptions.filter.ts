@@ -1,4 +1,10 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Logger } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 
 @Catch()
@@ -11,10 +17,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const { httpAdapter } = this.httpAdapterHost;
     const ctx = host.switchToHttp();
     const httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-    const message = exception instanceof Error ? exception.message : 'Unknown exception';
+    const message =
+      exception instanceof Error ? exception.message : 'Unknown exception';
     const stack = exception instanceof Error ? exception.stack : undefined;
 
-    this.logger.error(`Exception: ${message}, status: ${httpStatus}, stack: ${stack}`);
+    this.logger.error(
+      `Exception: ${message}, status: ${httpStatus}, stack: ${stack}`,
+    );
 
     const responseBody = {
       statusCode: httpStatus,

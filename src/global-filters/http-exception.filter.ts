@@ -1,4 +1,10 @@
-import { Catch, HttpException, ExceptionFilter, ArgumentsHost, Logger } from '@nestjs/common';
+import {
+  Catch,
+  HttpException,
+  ExceptionFilter,
+  ArgumentsHost,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 
@@ -13,7 +19,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const status = exception.getStatus();
 
-    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    const isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
 
     this.logger.error(`Exception: ${exception.message}, status: ${status}`);
 

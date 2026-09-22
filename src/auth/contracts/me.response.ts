@@ -1,3 +1,5 @@
-import type { User } from '../types/user.type';
+import type { SafeUser } from '@/users/types/safe-user.type';
 
-export type MeResponse = User;
+export type MeResponse = {
+  user: SafeUser;
+};

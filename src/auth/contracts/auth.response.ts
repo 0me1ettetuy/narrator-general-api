@@ -1,5 +1,6 @@
-import type { User } from '@/auth/types/user.type';
+import type { SafeUser } from '@/users/types/safe-user.type';
 
 export type AuthResponse = {
-  user: User;
+  user: SafeUser;
+  accessToken: string;
 };

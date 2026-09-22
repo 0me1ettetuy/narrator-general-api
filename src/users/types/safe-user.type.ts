@@ -1,7 +1,6 @@
-export type User = {
+export type SafeUser = {
   id: string;
   email: string;
-  passwordHash: string;
   createdAt: Date;
   updatedAt: Date;
 };
