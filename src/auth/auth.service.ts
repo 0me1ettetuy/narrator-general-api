@@ -1,18 +1,22 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import type { Response } from 'express';
 import { randomUUID } from 'node:crypto';
-import { UsersService } from '@/users/users.service';
-import type { SafeUser } from '@/users/types/safe-user.type';
-import { RegisterDto } from './dto/register.dto';
-import { CookieService } from './cookie.service';
-import { PasswordService } from './password.service';
-import { SessionService } from './session.service';
-import { TokenService } from './token.service';
-import type { AuthResponse } from './contracts/auth.response';
-import type { LogoutResponse } from './contracts/logout.response';
-import type { MeResponse } from './contracts/me.response';
-import type { RefreshResponse } from './contracts/refresh.response';
-import type { RefreshPayload } from './types/refresh.type';
+import { UsersService } from '../users/users.service.js';
+import type { SafeUser } from '../users/types/safe-user.type.js';
+import {
+  temporalFromEpochMilliseconds,
+  type Instant,
+} from '../prisma/temporal.js';
+import { RegisterDto } from './dto/register.dto.js';
+import { CookieService } from './cookie.service.js';
+import { PasswordService } from './password.service.js';
+import { SessionService } from './session.service.js';
+import { TokenService } from './token.service.js';
+import type { AuthResponse } from './contracts/auth.response.js';
+import type { LogoutResponse } from './contracts/logout.response.js';
+import type { MeResponse } from './contracts/me.response.js';
+import type { RefreshResponse } from './contracts/refresh.response.js';
+import type { RefreshPayload } from './types/refresh.type.js';
 
 const DEFAULT_REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -187,13 +191,13 @@ export class AuthService {
     }
   }
 
-  private getRefreshTokenExpiresAt(): Date {
+  private getRefreshTokenExpiresAt(): Instant {
     const maxAge = Number(process.env.REFRESH_TOKEN_COOKIE_MAX_AGE_MS);
     const ttlMs =
       Number.isFinite(maxAge) && maxAge > 0
         ? maxAge
         : DEFAULT_REFRESH_TOKEN_TTL_MS;
 
-    return new Date(Date.now() + ttlMs);
+    return temporalFromEpochMilliseconds(Date.now() + ttlMs);
   }
 }

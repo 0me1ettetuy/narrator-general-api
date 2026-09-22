@@ -1,6 +1,6 @@
-import type { JwtPayload } from '@/auth/types/jwt.type';
-import type { RefreshPayload } from '@/auth/types/refresh.type';
-import type { SafeUser } from '@/users/types/safe-user.type';
+import type { JwtPayload } from '../types/jwt.type.js';
+import type { RefreshPayload } from '../types/refresh.type.js';
+import type { SafeUser } from '../../users/types/safe-user.type.js';
 
 export const buildJwtPayload = (user: SafeUser): JwtPayload => ({
   sub: user.id,

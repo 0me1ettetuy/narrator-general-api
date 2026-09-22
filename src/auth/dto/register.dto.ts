@@ -6,7 +6,7 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { normalizeEmail } from '@/users/utils/normalize-email';
+import { normalizeEmail } from '../../users/utils/normalize-email.js';
 
 export class RegisterDto {
   @Transform(({ value }) => normalizeEmail(value))

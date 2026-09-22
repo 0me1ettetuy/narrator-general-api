@@ -1,6 +1,6 @@
 import { IsString, IsEmail, MaxLength, IsNotEmpty } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { normalizeEmail } from '@/users/utils/normalize-email';
+import { normalizeEmail } from '../../users/utils/normalize-email.js';
 
 export class LoginDto {
   @Transform(({ value }) => normalizeEmail(value))

@@ -1,9 +1,9 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { LoggerMiddleware } from './logger.middleware';
-import { PrismaModule } from './prisma/prisma.module';
-import { UsersModule } from './users/users.module';
-import { AuthModule } from './auth/auth.module';
+import { LoggerMiddleware } from './logger.middleware.js';
+import { PrismaModule } from './prisma/prisma.module.js';
+import { UsersModule } from './users/users.module.js';
+import { AuthModule } from './auth/auth.module.js';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 

@@ -1,14 +1,14 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
-import { AllExceptionsFilter } from '@/global-filters/all-exceptions.filter';
-import { HttpExceptionFilter } from '@/global-filters/http-exception.filter';
-import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './global-filters/all-exceptions.filter.js';
+import { HttpExceptionFilter } from './global-filters/http-exception.filter.js';
+import { AppModule } from './app.module.js';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { doubleCsrf } from 'csrf-csrf';
 import type { Request } from 'express';
-import { REFRESH_TOKEN_COOKIE_NAME } from './auth/utils/cookie-options';
+import { REFRESH_TOKEN_COOKIE_NAME } from './auth/utils/cookie-options.js';
 
 type RequestWithCookies = Request & {
   cookies?: Record<string, unknown>;

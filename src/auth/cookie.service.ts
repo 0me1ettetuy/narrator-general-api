@@ -4,7 +4,7 @@ import {
   getClearRefreshCookieOptions,
   getRefreshCookieOptions,
   REFRESH_TOKEN_COOKIE_NAME,
-} from './utils/cookie-options';
+} from './utils/cookie-options.js';
 
 @Injectable()
 export class CookieService {

@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import type { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import type { RefreshPayload } from '../types/refresh.type';
-import { REFRESH_TOKEN_COOKIE_NAME } from '../utils/cookie-options';
+import type { RefreshPayload } from '../types/refresh.type.js';
+import { REFRESH_TOKEN_COOKIE_NAME } from '../utils/cookie-options.js';
 
 export type AuthenticatedRefreshPayload = RefreshPayload & {
   refreshToken: string;

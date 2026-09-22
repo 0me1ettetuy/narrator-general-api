@@ -23,6 +23,7 @@
     "contract:emit": "prisma contract emit"
   },
   "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^12.0.0",
     "@nestjs/core": "^11.0.1",
@@ -83,7 +84,8 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/$1"
+      "^@/(.*)$": "<rootDir>/$1",
+      "^(\\.{1,2}/.*)\\.js$": "$1"
     },
     "transform": {
       "^.+\\.(t|j)s$": [

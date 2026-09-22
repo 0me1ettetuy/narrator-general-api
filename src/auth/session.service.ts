@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { PrismaService } from '@/prisma/prisma.service';
-import { PasswordService } from './password.service';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { temporalInstantIsExpired, temporalNow } from '../prisma/temporal.js';
+import { PasswordService } from './password.service.js';
 import type {
   CreateSessionInput,
   RotateRefreshTokenInput,
   Session,
-} from './types/session.type';
+} from './types/session.type.js';
 
 @Injectable()
 export class SessionService {
@@ -47,7 +48,7 @@ export class SessionService {
 
   async revokeSession(sessionId: string): Promise<Session | null> {
     return this.prisma.db.orm.public.Session.where({ id: sessionId }).update({
-      revokedAt: new Date(),
+      revokedAt: temporalNow(),
     });
   }
 
@@ -67,7 +68,7 @@ export class SessionService {
     session: Session,
     refreshToken: string,
   ): Promise<boolean> {
-    if (session.revokedAt || session.expiresAt <= new Date()) {
+    if (session.revokedAt || temporalInstantIsExpired(session.expiresAt)) {
       return false;
     }
 

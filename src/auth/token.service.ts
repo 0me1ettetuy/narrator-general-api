@@ -2,13 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { JwtSignOptions } from '@nestjs/jwt';
-import type { JwtPayload } from './types/jwt.type';
-import type { RefreshPayload } from './types/refresh.type';
+import type { JwtPayload } from './types/jwt.type.js';
+import type { RefreshPayload } from './types/refresh.type.js';
 import {
   buildJwtPayload,
   buildRefreshPayload,
-} from './utils/build-jwt-payload';
-import type { SafeUser } from '@/users/types/safe-user.type';
+} from './utils/build-jwt-payload.js';
+import type { SafeUser } from '../users/types/safe-user.type.js';
 
 type JwtExpiresIn = NonNullable<JwtSignOptions['expiresIn']>;
 

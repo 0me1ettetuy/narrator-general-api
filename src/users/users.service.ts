@@ -1,10 +1,11 @@
-import { PrismaService } from '@/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service.js';
 import { ConflictException, Injectable } from '@nestjs/common';
-import type { CreateUserInput } from './types/create-user.type';
-import type { SafeUser } from './types/safe-user.type';
-import type { User } from './types/user.type';
-import { normalizeEmail } from './utils/normalize-email';
-import { toSafeUser } from './utils/to-safe-user';
+import type { CreateUserInput } from './types/create-user.type.js';
+import type { SafeUser } from './types/safe-user.type.js';
+import type { User } from './types/user.type.js';
+import { normalizeEmail } from './utils/normalize-email.js';
+import { toSafeUser } from './utils/to-safe-user.js';
+import { temporalNow } from '../prisma/temporal.js';
 
 @Injectable()
 export class UsersService {
@@ -21,7 +22,7 @@ export class UsersService {
     return this.prisma.db.orm.public.User.create({
       email,
       passwordHash: input.passwordHash,
-      updatedAt: new Date(),
+      updatedAt: temporalNow(),
     });
   }
 

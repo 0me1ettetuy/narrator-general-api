@@ -10,21 +10,21 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
-import type { SafeUser } from '@/users/types/safe-user.type';
-import { AuthService } from './auth.service';
-import type { AuthResponse } from './contracts/auth.response';
-import type { CsrfResponse } from './contracts/csrf.response';
-import type { LogoutResponse } from './contracts/logout.response';
-import type { MeResponse } from './contracts/me.response';
-import type { RefreshResponse } from './contracts/refresh.response';
-import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
-import { JwtAccessGuard } from './guards/jwt-access.guard';
-import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
-import { LocalAuthGuard } from './guards/local-auth.guard';
-import type { JwtPayload } from './types/jwt.type';
-import type { AuthenticatedRefreshPayload } from './strategies/jwt-refresh.strategy';
-import { REFRESH_TOKEN_COOKIE_NAME } from './utils/cookie-options';
+import type { SafeUser } from '../users/types/safe-user.type.js';
+import { AuthService } from './auth.service.js';
+import type { AuthResponse } from './contracts/auth.response.js';
+import type { CsrfResponse } from './contracts/csrf.response.js';
+import type { LogoutResponse } from './contracts/logout.response.js';
+import type { MeResponse } from './contracts/me.response.js';
+import type { RefreshResponse } from './contracts/refresh.response.js';
+import { LoginDto } from './dto/login.dto.js';
+import { RegisterDto } from './dto/register.dto.js';
+import { JwtAccessGuard } from './guards/jwt-access.guard.js';
+import { JwtRefreshGuard } from './guards/jwt-refresh.guard.js';
+import { LocalAuthGuard } from './guards/local-auth.guard.js';
+import type { JwtPayload } from './types/jwt.type.js';
+import type { AuthenticatedRefreshPayload } from './strategies/jwt-refresh.strategy.js';
+import { REFRESH_TOKEN_COOKIE_NAME } from './utils/cookie-options.js';
 
 type RequestWithUser<TUser> = Request & {
   user: TUser;
