@@ -9,6 +9,7 @@ import helmet from 'helmet';
 import { doubleCsrf } from 'csrf-csrf';
 import type { Request } from 'express';
 import { REFRESH_TOKEN_COOKIE_NAME } from './auth/utils/cookie-options.js';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 type RequestWithCookies = Request & {
   cookies?: Record<string, unknown>;
@@ -30,6 +31,16 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const configService = app.get(ConfigService);
   const httpAdapterHost = app.get(HttpAdapterHost);
+  const swagger = new DocumentBuilder()
+    .setTitle('Narrator API')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .addCookieAuth(REFRESH_TOKEN_COOKIE_NAME)
+    .build();
+
+  SwaggerModule.setup('openapi', app, () =>
+    SwaggerModule.createDocument(app, swagger),
+  );
 
   app.enableCors({
     origin: configService.get<string>('CLIENT_ORIGIN'),
