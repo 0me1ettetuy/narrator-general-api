@@ -74,8 +74,8 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(
-    new HttpExceptionFilter(configService),
     new AllExceptionsFilter(httpAdapterHost),
+    new HttpExceptionFilter(configService),
   );
 
   await app.listen(process.env.PORT ?? 3000);

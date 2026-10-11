@@ -1,11 +1,23 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpStatus,
-  Logger,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, Logger } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
+
+const CLIENT_ERROR_STATUS_MIN = 400;
+const INTERNAL_SERVER_ERROR_STATUS = 500;
+
+function getHttpStatus(exception: unknown): number {
+  if (
+    exception &&
+    typeof exception === 'object' &&
+    'statusCode' in exception &&
+    typeof exception.statusCode === 'number' &&
+    exception.statusCode >= CLIENT_ERROR_STATUS_MIN &&
+    exception.statusCode < INTERNAL_SERVER_ERROR_STATUS
+  ) {
+    return exception.statusCode;
+  }
+
+  return INTERNAL_SERVER_ERROR_STATUS;
+}
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -16,7 +28,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const { httpAdapter } = this.httpAdapterHost;
     const ctx = host.switchToHttp();
-    const httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+    const httpStatus = getHttpStatus(exception);
     const message =
       exception instanceof Error ? exception.message : 'Unknown exception';
     const stack = exception instanceof Error ? exception.stack : undefined;
@@ -28,7 +40,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const responseBody = {
       statusCode: httpStatus,
       timeStamp: new Date().toISOString(),
-      message: 'Internal server error',
+      message:
+        httpStatus === INTERNAL_SERVER_ERROR_STATUS
+          ? 'Internal server error'
+          : message,
     };
 
     httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);
