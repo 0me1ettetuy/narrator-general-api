@@ -6,6 +6,7 @@ import type { User } from './types/user.type.js';
 import { normalizeEmail } from './utils/normalize-email.js';
 import { toSafeUser } from './utils/to-safe-user.js';
 import { temporalNow } from '../prisma/temporal.js';
+import { API_ERROR_CODES } from '../global-filters/api-error.js';
 
 @Injectable()
 export class UsersService {
@@ -16,7 +17,10 @@ export class UsersService {
     const existingUser = await this.findByEmail(email);
 
     if (existingUser) {
-      throw new ConflictException('Email is already registered');
+      throw new ConflictException({
+        code: API_ERROR_CODES.emailAlreadyRegistered,
+        message: 'Email is already registered',
+      });
     }
 
     return this.prisma.db.orm.public.User.create({

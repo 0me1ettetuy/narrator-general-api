@@ -1,7 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { UsersService } from '../users/users.service.js';
+import { InvalidCredentialsException } from './exceptions/invalid-credentials.exception.js';
 import type { SafeUser } from '../users/types/safe-user.type.js';
 import {
   temporalFromEpochMilliseconds,
@@ -55,7 +56,7 @@ export class AuthService {
     response: Response,
   ): Promise<RefreshResponse> {
     if (!refreshToken) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new InvalidCredentialsException();
     }
 
     const payload = await this.verifyRefreshPayload(refreshToken);
@@ -65,14 +66,14 @@ export class AuthService {
     );
 
     if (isReused) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new InvalidCredentialsException();
     }
 
     const user = await this.usersService.findById(payload.sub);
 
     if (!user) {
       await this.sessionService.revokeSession(payload.sessionId);
-      throw new UnauthorizedException('Invalid credentials');
+      throw new InvalidCredentialsException();
     }
 
     const safeUser = this.usersService.toSafeUser(user);
@@ -114,7 +115,7 @@ export class AuthService {
     const user = await this.usersService.findById(userId);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new InvalidCredentialsException();
     }
 
     return {
@@ -126,7 +127,7 @@ export class AuthService {
     const user = await this.usersService.findByEmail(email);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new InvalidCredentialsException();
     }
 
     const isPasswordValid = await this.passwordService.comparePassword(
@@ -135,7 +136,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new InvalidCredentialsException();
     }
 
     return user;
@@ -172,12 +173,12 @@ export class AuthService {
       const payload = await this.tokenService.verifyRefreshToken(refreshToken);
 
       if (payload.type !== 'refresh') {
-        throw new UnauthorizedException('Invalid credentials');
+        throw new InvalidCredentialsException();
       }
 
       return payload;
     } catch {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new InvalidCredentialsException();
     }
   }
 

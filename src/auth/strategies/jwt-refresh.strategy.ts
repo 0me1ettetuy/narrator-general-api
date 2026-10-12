@@ -1,17 +1,28 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import type { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import type { RefreshPayload } from '../types/refresh.type.js';
+import { InvalidCredentialsException } from '../exceptions/invalid-credentials.exception.js';
 import { REFRESH_TOKEN_COOKIE_NAME } from '../utils/cookie-options.js';
 
 export type AuthenticatedRefreshPayload = RefreshPayload & {
   refreshToken: string;
 };
 
+type RequestWithUnknownCookies = Omit<Request, 'cookies'> & {
+  cookies?: unknown;
+};
+
 const extractRefreshTokenFromCookie = (request: Request): string | null => {
-  const token = request.cookies?.[REFRESH_TOKEN_COOKIE_NAME];
+  const cookies = (request as RequestWithUnknownCookies).cookies;
+
+  if (!cookies || typeof cookies !== 'object') {
+    return null;
+  }
+
+  const token = (cookies as Record<string, unknown>)[REFRESH_TOKEN_COOKIE_NAME];
 
   return typeof token === 'string' && token.length > 0 ? token : null;
 };
@@ -39,7 +50,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
     const refreshToken = extractRefreshTokenFromCookie(request);
 
     if (payload.type !== 'refresh' || !refreshToken) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new InvalidCredentialsException();
     }
 
     return {

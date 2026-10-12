@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
+import { createApiErrorResponse } from './api-error.js';
 
 @Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -24,19 +25,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     this.logger.error(`Exception: ${exception.message}, status: ${status}`);
 
-    response.status(status).json(
-      isProduction
-        ? {
-            statusCode: status,
-            timeStamp: new Date().toISOString(),
-            message: exception.message,
-          }
-        : {
-            statusCode: status,
-            timeStamp: new Date().toISOString(),
-            message: exception.message,
-            stackTrace: exception.stack,
-          },
+    const responseBody = createApiErrorResponse(
+      status,
+      exception.getResponse(),
+      exception.message,
     );
+
+    response
+      .status(status)
+      .json(
+        isProduction
+          ? responseBody
+          : { ...responseBody, stackTrace: exception.stack },
+      );
   }
 }

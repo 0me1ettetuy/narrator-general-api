@@ -1,5 +1,6 @@
 import type { ArgumentsHost } from '@nestjs/common';
 import type { HttpAdapterHost } from '@nestjs/core';
+import { API_ERROR_CODES } from './api-error';
 import { AllExceptionsFilter } from './all-exceptions.filter';
 
 describe('AllExceptionsFilter', () => {
@@ -32,6 +33,7 @@ describe('AllExceptionsFilter', () => {
       response,
       expect.objectContaining({
         statusCode: forbiddenStatus,
+        code: API_ERROR_CODES.forbidden,
         message: 'invalid csrf token',
       }),
       forbiddenStatus,
@@ -45,6 +47,7 @@ describe('AllExceptionsFilter', () => {
       response,
       expect.objectContaining({
         statusCode: internalServerErrorStatus,
+        code: API_ERROR_CODES.internalServerError,
         message: 'Internal server error',
       }),
       internalServerErrorStatus,
