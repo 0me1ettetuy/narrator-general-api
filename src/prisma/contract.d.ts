@@ -33,9 +33,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'76d410aa4aa9c037db4db201155b289b7df252be0bb79844f94809152ef18fd6'>;
+  StorageHashBase<'e1954dae80d101eba010909e0b114c16cc6fcee9fa4aff5ddb3aa25c744ed455'>;
 export type ExecutionHash =
-  ExecutionHashBase<'d9ffa302f6215e53035bef5bc9e304ae90c6f7e2bc9f798b59073de23ed88f1b'>;
+  ExecutionHashBase<'adbe6932d3c73af1ecfdd207e23af15991a237b6dd3076a003a89d9d3a1d2fbb'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -45,200 +45,68 @@ export type QueryOperationTypes = PgAdapterQueryOps<CodecTypes>;
 export type AggregateTypes = {
   readonly avg: {
     readonly byCodec: {
-      readonly 'pg/float@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/float4@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/float8@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int2@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int4@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int8@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int8number@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/interval@1': {
-        readonly output: 'pg/interval@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/numeric@1': {
-        readonly output: 'pg/numeric@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/time-string@1': {
-        readonly output: 'pg/interval@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/time-temporal@1': {
-        readonly output: 'pg/interval@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/unboundedint@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'sql/float@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'sql/int@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
+      readonly 'pg/float@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'pg/float4@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'pg/float8@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'pg/int@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'pg/int2@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'pg/int4@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'pg/int8@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'pg/int8number@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'pg/interval@1': { readonly output: 'pg/interval@1'; readonly nullable: true };
+      readonly 'pg/numeric@1': { readonly output: 'pg/numeric@1'; readonly nullable: true };
+      readonly 'pg/time-string@1': { readonly output: 'pg/interval@1'; readonly nullable: true };
+      readonly 'pg/time-temporal@1': { readonly output: 'pg/interval@1'; readonly nullable: true };
+      readonly 'pg/unboundedint@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'sql/float@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'sql/int@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
     };
   };
   readonly avgDecimal: {
     readonly byCodec: {
-      readonly 'pg/int@1': {
-        readonly output: 'pg/numeric@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int2@1': {
-        readonly output: 'pg/numeric@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int4@1': {
-        readonly output: 'pg/numeric@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int8@1': {
-        readonly output: 'pg/numeric@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int8number@1': {
-        readonly output: 'pg/numeric@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/numeric@1': {
-        readonly output: 'pg/numeric@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/unboundedint@1': {
-        readonly output: 'pg/numeric@1';
-        readonly nullable: true;
-      };
-      readonly 'sql/int@1': {
-        readonly output: 'pg/numeric@1';
-        readonly nullable: true;
-      };
+      readonly 'pg/int@1': { readonly output: 'pg/numeric@1'; readonly nullable: true };
+      readonly 'pg/int2@1': { readonly output: 'pg/numeric@1'; readonly nullable: true };
+      readonly 'pg/int4@1': { readonly output: 'pg/numeric@1'; readonly nullable: true };
+      readonly 'pg/int8@1': { readonly output: 'pg/numeric@1'; readonly nullable: true };
+      readonly 'pg/int8number@1': { readonly output: 'pg/numeric@1'; readonly nullable: true };
+      readonly 'pg/numeric@1': { readonly output: 'pg/numeric@1'; readonly nullable: true };
+      readonly 'pg/unboundedint@1': { readonly output: 'pg/numeric@1'; readonly nullable: true };
+      readonly 'sql/int@1': { readonly output: 'pg/numeric@1'; readonly nullable: true };
     };
   };
   readonly count: {
     readonly byCodec: {};
-    readonly withoutInput: {
-      readonly output: 'pg/int8number@1';
-      readonly nullable: false;
-    };
-    readonly anyInput: {
-      readonly output: 'pg/int8number@1';
-      readonly nullable: false;
-    };
+    readonly withoutInput: { readonly output: 'pg/int8number@1'; readonly nullable: false };
+    readonly anyInput: { readonly output: 'pg/int8number@1'; readonly nullable: false };
   };
   readonly countBigInt: {
     readonly byCodec: {};
-    readonly withoutInput: {
-      readonly output: 'pg/int8@1';
-      readonly nullable: false;
-    };
-    readonly anyInput: {
-      readonly output: 'pg/int8@1';
-      readonly nullable: false;
-    };
+    readonly withoutInput: { readonly output: 'pg/int8@1'; readonly nullable: false };
+    readonly anyInput: { readonly output: 'pg/int8@1'; readonly nullable: false };
   };
   readonly max: {
     readonly byCodec: {
-      readonly 'pg/char@1': {
-        readonly output: 'pg/char@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/date-string@1': {
-        readonly output: 'pg/date-string@1';
-        readonly nullable: true;
-      };
+      readonly 'pg/char@1': { readonly output: 'pg/char@1'; readonly nullable: true };
+      readonly 'pg/date-string@1': { readonly output: 'pg/date-string@1'; readonly nullable: true };
       readonly 'pg/date-temporal@1': {
         readonly output: 'pg/date-temporal@1';
         readonly nullable: true;
       };
-      readonly 'pg/enum@1': {
-        readonly output: 'pg/enum@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/float@1': {
-        readonly output: 'pg/float@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/float4@1': {
-        readonly output: 'pg/float4@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/float8@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/inet@1': {
-        readonly output: 'pg/inet@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int@1': {
-        readonly output: 'pg/int@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int2@1': {
-        readonly output: 'pg/int2@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int4@1': {
-        readonly output: 'pg/int4@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int8@1': {
-        readonly output: 'pg/int8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int8number@1': {
-        readonly output: 'pg/int8number@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/interval@1': {
-        readonly output: 'pg/interval@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/numeric@1': {
-        readonly output: 'pg/numeric@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/text-array@1': {
-        readonly output: 'pg/text-array@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/text@1': {
-        readonly output: 'pg/text@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/time-string@1': {
-        readonly output: 'pg/time-string@1';
-        readonly nullable: true;
-      };
+      readonly 'pg/enum@1': { readonly output: 'pg/enum@1'; readonly nullable: true };
+      readonly 'pg/float@1': { readonly output: 'pg/float@1'; readonly nullable: true };
+      readonly 'pg/float4@1': { readonly output: 'pg/float4@1'; readonly nullable: true };
+      readonly 'pg/float8@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'pg/inet@1': { readonly output: 'pg/inet@1'; readonly nullable: true };
+      readonly 'pg/int@1': { readonly output: 'pg/int@1'; readonly nullable: true };
+      readonly 'pg/int2@1': { readonly output: 'pg/int2@1'; readonly nullable: true };
+      readonly 'pg/int4@1': { readonly output: 'pg/int4@1'; readonly nullable: true };
+      readonly 'pg/int8@1': { readonly output: 'pg/int8@1'; readonly nullable: true };
+      readonly 'pg/int8number@1': { readonly output: 'pg/int8number@1'; readonly nullable: true };
+      readonly 'pg/interval@1': { readonly output: 'pg/interval@1'; readonly nullable: true };
+      readonly 'pg/numeric@1': { readonly output: 'pg/numeric@1'; readonly nullable: true };
+      readonly 'pg/text-array@1': { readonly output: 'pg/text-array@1'; readonly nullable: true };
+      readonly 'pg/text@1': { readonly output: 'pg/text@1'; readonly nullable: true };
+      readonly 'pg/time-string@1': { readonly output: 'pg/time-string@1'; readonly nullable: true };
       readonly 'pg/time-temporal@1': {
         readonly output: 'pg/time-temporal@1';
         readonly nullable: true;
@@ -259,114 +127,42 @@ export type AggregateTypes = {
         readonly output: 'pg/timestamptz-temporal@1';
         readonly nullable: true;
       };
-      readonly 'pg/timetz@1': {
-        readonly output: 'pg/timetz@1';
-        readonly nullable: true;
-      };
+      readonly 'pg/timetz@1': { readonly output: 'pg/timetz@1'; readonly nullable: true };
       readonly 'pg/unboundedint@1': {
         readonly output: 'pg/unboundedint@1';
         readonly nullable: true;
       };
-      readonly 'pg/varchar@1': {
-        readonly output: 'pg/text@1';
-        readonly nullable: true;
-      };
-      readonly 'sql/char@1': {
-        readonly output: 'sql/char@1';
-        readonly nullable: true;
-      };
-      readonly 'sql/float@1': {
-        readonly output: 'sql/float@1';
-        readonly nullable: true;
-      };
-      readonly 'sql/int@1': {
-        readonly output: 'sql/int@1';
-        readonly nullable: true;
-      };
-      readonly 'sql/text@1': {
-        readonly output: 'sql/text@1';
-        readonly nullable: true;
-      };
-      readonly 'sql/varchar@1': {
-        readonly output: 'pg/text@1';
-        readonly nullable: true;
-      };
+      readonly 'pg/varchar@1': { readonly output: 'pg/text@1'; readonly nullable: true };
+      readonly 'sql/char@1': { readonly output: 'sql/char@1'; readonly nullable: true };
+      readonly 'sql/float@1': { readonly output: 'sql/float@1'; readonly nullable: true };
+      readonly 'sql/int@1': { readonly output: 'sql/int@1'; readonly nullable: true };
+      readonly 'sql/text@1': { readonly output: 'sql/text@1'; readonly nullable: true };
+      readonly 'sql/varchar@1': { readonly output: 'pg/text@1'; readonly nullable: true };
     };
   };
   readonly min: {
     readonly byCodec: {
-      readonly 'pg/char@1': {
-        readonly output: 'pg/char@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/date-string@1': {
-        readonly output: 'pg/date-string@1';
-        readonly nullable: true;
-      };
+      readonly 'pg/char@1': { readonly output: 'pg/char@1'; readonly nullable: true };
+      readonly 'pg/date-string@1': { readonly output: 'pg/date-string@1'; readonly nullable: true };
       readonly 'pg/date-temporal@1': {
         readonly output: 'pg/date-temporal@1';
         readonly nullable: true;
       };
-      readonly 'pg/enum@1': {
-        readonly output: 'pg/enum@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/float@1': {
-        readonly output: 'pg/float@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/float4@1': {
-        readonly output: 'pg/float4@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/float8@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/inet@1': {
-        readonly output: 'pg/inet@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int@1': {
-        readonly output: 'pg/int@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int2@1': {
-        readonly output: 'pg/int2@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int4@1': {
-        readonly output: 'pg/int4@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int8@1': {
-        readonly output: 'pg/int8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int8number@1': {
-        readonly output: 'pg/int8number@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/interval@1': {
-        readonly output: 'pg/interval@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/numeric@1': {
-        readonly output: 'pg/numeric@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/text-array@1': {
-        readonly output: 'pg/text-array@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/text@1': {
-        readonly output: 'pg/text@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/time-string@1': {
-        readonly output: 'pg/time-string@1';
-        readonly nullable: true;
-      };
+      readonly 'pg/enum@1': { readonly output: 'pg/enum@1'; readonly nullable: true };
+      readonly 'pg/float@1': { readonly output: 'pg/float@1'; readonly nullable: true };
+      readonly 'pg/float4@1': { readonly output: 'pg/float4@1'; readonly nullable: true };
+      readonly 'pg/float8@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'pg/inet@1': { readonly output: 'pg/inet@1'; readonly nullable: true };
+      readonly 'pg/int@1': { readonly output: 'pg/int@1'; readonly nullable: true };
+      readonly 'pg/int2@1': { readonly output: 'pg/int2@1'; readonly nullable: true };
+      readonly 'pg/int4@1': { readonly output: 'pg/int4@1'; readonly nullable: true };
+      readonly 'pg/int8@1': { readonly output: 'pg/int8@1'; readonly nullable: true };
+      readonly 'pg/int8number@1': { readonly output: 'pg/int8number@1'; readonly nullable: true };
+      readonly 'pg/interval@1': { readonly output: 'pg/interval@1'; readonly nullable: true };
+      readonly 'pg/numeric@1': { readonly output: 'pg/numeric@1'; readonly nullable: true };
+      readonly 'pg/text-array@1': { readonly output: 'pg/text-array@1'; readonly nullable: true };
+      readonly 'pg/text@1': { readonly output: 'pg/text@1'; readonly nullable: true };
+      readonly 'pg/time-string@1': { readonly output: 'pg/time-string@1'; readonly nullable: true };
       readonly 'pg/time-temporal@1': {
         readonly output: 'pg/time-temporal@1';
         readonly nullable: true;
@@ -387,141 +183,57 @@ export type AggregateTypes = {
         readonly output: 'pg/timestamptz-temporal@1';
         readonly nullable: true;
       };
-      readonly 'pg/timetz@1': {
-        readonly output: 'pg/timetz@1';
-        readonly nullable: true;
-      };
+      readonly 'pg/timetz@1': { readonly output: 'pg/timetz@1'; readonly nullable: true };
       readonly 'pg/unboundedint@1': {
         readonly output: 'pg/unboundedint@1';
         readonly nullable: true;
       };
-      readonly 'pg/varchar@1': {
-        readonly output: 'pg/text@1';
-        readonly nullable: true;
-      };
-      readonly 'sql/char@1': {
-        readonly output: 'sql/char@1';
-        readonly nullable: true;
-      };
-      readonly 'sql/float@1': {
-        readonly output: 'sql/float@1';
-        readonly nullable: true;
-      };
-      readonly 'sql/int@1': {
-        readonly output: 'sql/int@1';
-        readonly nullable: true;
-      };
-      readonly 'sql/text@1': {
-        readonly output: 'sql/text@1';
-        readonly nullable: true;
-      };
-      readonly 'sql/varchar@1': {
-        readonly output: 'pg/text@1';
-        readonly nullable: true;
-      };
+      readonly 'pg/varchar@1': { readonly output: 'pg/text@1'; readonly nullable: true };
+      readonly 'sql/char@1': { readonly output: 'sql/char@1'; readonly nullable: true };
+      readonly 'sql/float@1': { readonly output: 'sql/float@1'; readonly nullable: true };
+      readonly 'sql/int@1': { readonly output: 'sql/int@1'; readonly nullable: true };
+      readonly 'sql/text@1': { readonly output: 'sql/text@1'; readonly nullable: true };
+      readonly 'sql/varchar@1': { readonly output: 'pg/text@1'; readonly nullable: true };
     };
   };
   readonly sum: {
     readonly byCodec: {
-      readonly 'pg/float@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/float4@1': {
-        readonly output: 'pg/float4@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/float8@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int@1': {
-        readonly output: 'pg/int8number@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int2@1': {
-        readonly output: 'pg/int8number@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int4@1': {
-        readonly output: 'pg/int8number@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int8@1': {
-        readonly output: 'pg/int8number@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int8number@1': {
-        readonly output: 'pg/int8number@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/interval@1': {
-        readonly output: 'pg/interval@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/numeric@1': {
-        readonly output: 'pg/numeric@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/time-string@1': {
-        readonly output: 'pg/interval@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/time-temporal@1': {
-        readonly output: 'pg/interval@1';
-        readonly nullable: true;
-      };
+      readonly 'pg/float@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'pg/float4@1': { readonly output: 'pg/float4@1'; readonly nullable: true };
+      readonly 'pg/float8@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'pg/int@1': { readonly output: 'pg/int8number@1'; readonly nullable: true };
+      readonly 'pg/int2@1': { readonly output: 'pg/int8number@1'; readonly nullable: true };
+      readonly 'pg/int4@1': { readonly output: 'pg/int8number@1'; readonly nullable: true };
+      readonly 'pg/int8@1': { readonly output: 'pg/int8number@1'; readonly nullable: true };
+      readonly 'pg/int8number@1': { readonly output: 'pg/int8number@1'; readonly nullable: true };
+      readonly 'pg/interval@1': { readonly output: 'pg/interval@1'; readonly nullable: true };
+      readonly 'pg/numeric@1': { readonly output: 'pg/numeric@1'; readonly nullable: true };
+      readonly 'pg/time-string@1': { readonly output: 'pg/interval@1'; readonly nullable: true };
+      readonly 'pg/time-temporal@1': { readonly output: 'pg/interval@1'; readonly nullable: true };
       readonly 'pg/unboundedint@1': {
         readonly output: 'pg/unboundedint@1';
         readonly nullable: true;
       };
-      readonly 'sql/float@1': {
-        readonly output: 'pg/float8@1';
-        readonly nullable: true;
-      };
-      readonly 'sql/int@1': {
-        readonly output: 'pg/int8number@1';
-        readonly nullable: true;
-      };
+      readonly 'sql/float@1': { readonly output: 'pg/float8@1'; readonly nullable: true };
+      readonly 'sql/int@1': { readonly output: 'pg/int8number@1'; readonly nullable: true };
     };
   };
   readonly sumBigInt: {
     readonly byCodec: {
-      readonly 'pg/int@1': {
-        readonly output: 'pg/int8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int2@1': {
-        readonly output: 'pg/int8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int4@1': {
-        readonly output: 'pg/int8@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int8@1': {
-        readonly output: 'pg/unboundedint@1';
-        readonly nullable: true;
-      };
-      readonly 'pg/int8number@1': {
-        readonly output: 'pg/unboundedint@1';
-        readonly nullable: true;
-      };
+      readonly 'pg/int@1': { readonly output: 'pg/int8@1'; readonly nullable: true };
+      readonly 'pg/int2@1': { readonly output: 'pg/int8@1'; readonly nullable: true };
+      readonly 'pg/int4@1': { readonly output: 'pg/int8@1'; readonly nullable: true };
+      readonly 'pg/int8@1': { readonly output: 'pg/unboundedint@1'; readonly nullable: true };
+      readonly 'pg/int8number@1': { readonly output: 'pg/unboundedint@1'; readonly nullable: true };
       readonly 'pg/unboundedint@1': {
         readonly output: 'pg/unboundedint@1';
         readonly nullable: true;
       };
-      readonly 'sql/int@1': {
-        readonly output: 'pg/int8@1';
-        readonly nullable: true;
-      };
+      readonly 'sql/int@1': { readonly output: 'pg/int8@1'; readonly nullable: true };
     };
   };
 };
-type DefaultLiteralValue<
-  CodecId extends string,
-  Encoded,
-> = CodecId extends keyof CodecTypes
+type DefaultLiteralValue<CodecId extends string, Encoded> = CodecId extends keyof CodecTypes
   ? Encoded extends CodecTypes[CodecId]['json']
     ? Encoded
     : CodecTypes[CodecId]['json']
@@ -529,14 +241,80 @@ type DefaultLiteralValue<
 
 export type FieldOutputTypes = {
   readonly public: {
+    readonly Audio: {
+      readonly id: CodecTypes['pg/text@1']['output'];
+      readonly chapterId: CodecTypes['pg/text@1']['output'];
+      readonly status: 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
+      readonly objectKey: CodecTypes['pg/text@1']['output'] | null;
+      readonly mimeType: CodecTypes['pg/text@1']['output'] | null;
+      readonly provider: CodecTypes['pg/text@1']['output'] | null;
+      readonly voice: CodecTypes['pg/text@1']['output'] | null;
+      readonly durationMs: CodecTypes['pg/int4@1']['output'] | null;
+      readonly byteSize: CodecTypes['pg/int4@1']['output'] | null;
+      readonly error: CodecTypes['pg/text@1']['output'] | null;
+      readonly completedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
+    readonly Book: {
+      readonly id: CodecTypes['pg/text@1']['output'];
+      readonly userId: CodecTypes['pg/text@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly sourceFormat: 'EPUB';
+      readonly sourceObjectKey: CodecTypes['pg/text@1']['output'];
+      readonly sourceOriginalFilename: CodecTypes['pg/text@1']['output'];
+      readonly sourceMimeType: CodecTypes['pg/text@1']['output'];
+      readonly sourceSize: CodecTypes['pg/int4@1']['output'];
+      readonly sourceChecksum: CodecTypes['pg/text@1']['output'] | null;
+      readonly parseStatus: 'UPLOADING' | 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
+      readonly parseError: CodecTypes['pg/text@1']['output'] | null;
+      readonly parsedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly chapterCount: CodecTypes['pg/int4@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
+    readonly BookAuthor: {
+      readonly id: CodecTypes['pg/text@1']['output'];
+      readonly bookId: CodecTypes['pg/text@1']['output'];
+      readonly name: CodecTypes['pg/text@1']['output'];
+      readonly position: CodecTypes['pg/int4@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
+    readonly Chapter: {
+      readonly id: CodecTypes['pg/text@1']['output'];
+      readonly bookId: CodecTypes['pg/text@1']['output'];
+      readonly position: CodecTypes['pg/int4@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly sourceHref: CodecTypes['pg/text@1']['output'] | null;
+      readonly text: CodecTypes['pg/text@1']['output'];
+      readonly wordCount: CodecTypes['pg/int4@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
+    readonly Job: {
+      readonly id: CodecTypes['pg/text@1']['output'];
+      readonly bookId: CodecTypes['pg/text@1']['output'];
+      readonly chapterId: CodecTypes['pg/text@1']['output'] | null;
+      readonly type: 'PARSE_BOOK' | 'SYNTHESIZE_CHAPTER';
+      readonly status: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+      readonly idempotencyKey: CodecTypes['pg/text@1']['output'];
+      readonly queueJobId: CodecTypes['pg/text@1']['output'] | null;
+      readonly progress: CodecTypes['pg/int4@1']['output'];
+      readonly attempts: CodecTypes['pg/int4@1']['output'];
+      readonly maxAttempts: CodecTypes['pg/int4@1']['output'];
+      readonly error: CodecTypes['pg/text@1']['output'] | null;
+      readonly startedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly completedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
     readonly Session: {
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly refreshTokenHash: CodecTypes['pg/text@1']['output'];
       readonly userId: CodecTypes['pg/text@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly expiresAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
-      readonly revokedAt:
-        CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly revokedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
     };
     readonly User: {
       readonly id: CodecTypes['pg/text@1']['output'];
@@ -549,14 +327,80 @@ export type FieldOutputTypes = {
 };
 export type FieldInputTypes = {
   readonly public: {
+    readonly Audio: {
+      readonly id: CodecTypes['pg/text@1']['input'];
+      readonly chapterId: CodecTypes['pg/text@1']['input'];
+      readonly status: 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
+      readonly objectKey: CodecTypes['pg/text@1']['input'] | null;
+      readonly mimeType: CodecTypes['pg/text@1']['input'] | null;
+      readonly provider: CodecTypes['pg/text@1']['input'] | null;
+      readonly voice: CodecTypes['pg/text@1']['input'] | null;
+      readonly durationMs: CodecTypes['pg/int4@1']['input'] | null;
+      readonly byteSize: CodecTypes['pg/int4@1']['input'] | null;
+      readonly error: CodecTypes['pg/text@1']['input'] | null;
+      readonly completedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly Book: {
+      readonly id: CodecTypes['pg/text@1']['input'];
+      readonly userId: CodecTypes['pg/text@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly sourceFormat: 'EPUB';
+      readonly sourceObjectKey: CodecTypes['pg/text@1']['input'];
+      readonly sourceOriginalFilename: CodecTypes['pg/text@1']['input'];
+      readonly sourceMimeType: CodecTypes['pg/text@1']['input'];
+      readonly sourceSize: CodecTypes['pg/int4@1']['input'];
+      readonly sourceChecksum: CodecTypes['pg/text@1']['input'] | null;
+      readonly parseStatus: 'UPLOADING' | 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
+      readonly parseError: CodecTypes['pg/text@1']['input'] | null;
+      readonly parsedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly chapterCount: CodecTypes['pg/int4@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly BookAuthor: {
+      readonly id: CodecTypes['pg/text@1']['input'];
+      readonly bookId: CodecTypes['pg/text@1']['input'];
+      readonly name: CodecTypes['pg/text@1']['input'];
+      readonly position: CodecTypes['pg/int4@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly Chapter: {
+      readonly id: CodecTypes['pg/text@1']['input'];
+      readonly bookId: CodecTypes['pg/text@1']['input'];
+      readonly position: CodecTypes['pg/int4@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly sourceHref: CodecTypes['pg/text@1']['input'] | null;
+      readonly text: CodecTypes['pg/text@1']['input'];
+      readonly wordCount: CodecTypes['pg/int4@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly Job: {
+      readonly id: CodecTypes['pg/text@1']['input'];
+      readonly bookId: CodecTypes['pg/text@1']['input'];
+      readonly chapterId: CodecTypes['pg/text@1']['input'] | null;
+      readonly type: 'PARSE_BOOK' | 'SYNTHESIZE_CHAPTER';
+      readonly status: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+      readonly idempotencyKey: CodecTypes['pg/text@1']['input'];
+      readonly queueJobId: CodecTypes['pg/text@1']['input'] | null;
+      readonly progress: CodecTypes['pg/int4@1']['input'];
+      readonly attempts: CodecTypes['pg/int4@1']['input'];
+      readonly maxAttempts: CodecTypes['pg/int4@1']['input'];
+      readonly error: CodecTypes['pg/text@1']['input'] | null;
+      readonly startedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly completedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
     readonly Session: {
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly refreshTokenHash: CodecTypes['pg/text@1']['input'];
       readonly userId: CodecTypes['pg/text@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly expiresAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
-      readonly revokedAt:
-        CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly revokedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
     };
     readonly User: {
       readonly id: CodecTypes['pg/text@1']['input'];
@@ -569,13 +413,79 @@ export type FieldInputTypes = {
 };
 export type StorageColumnTypes = {
   readonly public: {
+    readonly audio: {
+      readonly byteSize: CodecTypes['pg/int4@1']['output'] | null;
+      readonly chapterId: CodecTypes['pg/text@1']['output'];
+      readonly completedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly durationMs: CodecTypes['pg/int4@1']['output'] | null;
+      readonly error: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/text@1']['output'];
+      readonly mimeType: CodecTypes['pg/text@1']['output'] | null;
+      readonly objectKey: CodecTypes['pg/text@1']['output'] | null;
+      readonly provider: CodecTypes['pg/text@1']['output'] | null;
+      readonly status: 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly voice: CodecTypes['pg/text@1']['output'] | null;
+    };
+    readonly book: {
+      readonly chapterCount: CodecTypes['pg/int4@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly id: CodecTypes['pg/text@1']['output'];
+      readonly parsedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly parseError: CodecTypes['pg/text@1']['output'] | null;
+      readonly parseStatus: 'UPLOADING' | 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
+      readonly sourceChecksum: CodecTypes['pg/text@1']['output'] | null;
+      readonly sourceFormat: 'EPUB';
+      readonly sourceMimeType: CodecTypes['pg/text@1']['output'];
+      readonly sourceObjectKey: CodecTypes['pg/text@1']['output'];
+      readonly sourceOriginalFilename: CodecTypes['pg/text@1']['output'];
+      readonly sourceSize: CodecTypes['pg/int4@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly userId: CodecTypes['pg/text@1']['output'];
+    };
+    readonly book_author: {
+      readonly bookId: CodecTypes['pg/text@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly id: CodecTypes['pg/text@1']['output'];
+      readonly name: CodecTypes['pg/text@1']['output'];
+      readonly position: CodecTypes['pg/int4@1']['output'];
+    };
+    readonly chapter: {
+      readonly bookId: CodecTypes['pg/text@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly id: CodecTypes['pg/text@1']['output'];
+      readonly position: CodecTypes['pg/int4@1']['output'];
+      readonly sourceHref: CodecTypes['pg/text@1']['output'] | null;
+      readonly text: CodecTypes['pg/text@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly wordCount: CodecTypes['pg/int4@1']['output'];
+    };
+    readonly job: {
+      readonly attempts: CodecTypes['pg/int4@1']['output'];
+      readonly bookId: CodecTypes['pg/text@1']['output'];
+      readonly chapterId: CodecTypes['pg/text@1']['output'] | null;
+      readonly completedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly error: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/text@1']['output'];
+      readonly idempotencyKey: CodecTypes['pg/text@1']['output'];
+      readonly maxAttempts: CodecTypes['pg/int4@1']['output'];
+      readonly progress: CodecTypes['pg/int4@1']['output'];
+      readonly queueJobId: CodecTypes['pg/text@1']['output'] | null;
+      readonly startedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly status: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+      readonly type: 'PARSE_BOOK' | 'SYNTHESIZE_CHAPTER';
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
     readonly session: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly expiresAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly refreshTokenHash: CodecTypes['pg/text@1']['output'];
-      readonly revokedAt:
-        CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly revokedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
       readonly userId: CodecTypes['pg/text@1']['output'];
     };
     readonly user: {
@@ -589,13 +499,79 @@ export type StorageColumnTypes = {
 };
 export type StorageColumnInputTypes = {
   readonly public: {
+    readonly audio: {
+      readonly byteSize: CodecTypes['pg/int4@1']['input'] | null;
+      readonly chapterId: CodecTypes['pg/text@1']['input'];
+      readonly completedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly durationMs: CodecTypes['pg/int4@1']['input'] | null;
+      readonly error: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/text@1']['input'];
+      readonly mimeType: CodecTypes['pg/text@1']['input'] | null;
+      readonly objectKey: CodecTypes['pg/text@1']['input'] | null;
+      readonly provider: CodecTypes['pg/text@1']['input'] | null;
+      readonly status: 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly voice: CodecTypes['pg/text@1']['input'] | null;
+    };
+    readonly book: {
+      readonly chapterCount: CodecTypes['pg/int4@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly id: CodecTypes['pg/text@1']['input'];
+      readonly parsedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly parseError: CodecTypes['pg/text@1']['input'] | null;
+      readonly parseStatus: 'UPLOADING' | 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
+      readonly sourceChecksum: CodecTypes['pg/text@1']['input'] | null;
+      readonly sourceFormat: 'EPUB';
+      readonly sourceMimeType: CodecTypes['pg/text@1']['input'];
+      readonly sourceObjectKey: CodecTypes['pg/text@1']['input'];
+      readonly sourceOriginalFilename: CodecTypes['pg/text@1']['input'];
+      readonly sourceSize: CodecTypes['pg/int4@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly userId: CodecTypes['pg/text@1']['input'];
+    };
+    readonly book_author: {
+      readonly bookId: CodecTypes['pg/text@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly id: CodecTypes['pg/text@1']['input'];
+      readonly name: CodecTypes['pg/text@1']['input'];
+      readonly position: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly chapter: {
+      readonly bookId: CodecTypes['pg/text@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly id: CodecTypes['pg/text@1']['input'];
+      readonly position: CodecTypes['pg/int4@1']['input'];
+      readonly sourceHref: CodecTypes['pg/text@1']['input'] | null;
+      readonly text: CodecTypes['pg/text@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly wordCount: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly job: {
+      readonly attempts: CodecTypes['pg/int4@1']['input'];
+      readonly bookId: CodecTypes['pg/text@1']['input'];
+      readonly chapterId: CodecTypes['pg/text@1']['input'] | null;
+      readonly completedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly error: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/text@1']['input'];
+      readonly idempotencyKey: CodecTypes['pg/text@1']['input'];
+      readonly maxAttempts: CodecTypes['pg/int4@1']['input'];
+      readonly progress: CodecTypes['pg/int4@1']['input'];
+      readonly queueJobId: CodecTypes['pg/text@1']['input'] | null;
+      readonly startedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly status: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+      readonly type: 'PARSE_BOOK' | 'SYNTHESIZE_CHAPTER';
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
     readonly session: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly expiresAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly refreshTokenHash: CodecTypes['pg/text@1']['input'];
-      readonly revokedAt:
-        CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly revokedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
       readonly userId: CodecTypes['pg/text@1']['input'];
     };
     readonly user: {
@@ -625,6 +601,496 @@ type ContractBase = Omit<
         readonly kind: 'postgres-schema';
         readonly entries: {
           readonly table: {
+            readonly audio: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly chapterId: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly status: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'QUEUED'>;
+                  };
+                };
+                readonly objectKey: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly mimeType: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly provider: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly voice: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly durationMs: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly byteSize: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly error: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly completedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: true;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+                readonly updatedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['chapterId'] }];
+              indexes: readonly [];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'audio';
+                    readonly columns: readonly ['chapterId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'chapter';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly book: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly userId: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly title: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly sourceFormat: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly sourceObjectKey: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly sourceOriginalFilename: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly sourceMimeType: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly sourceSize: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly sourceChecksum: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly parseStatus: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'UPLOADING'>;
+                  };
+                };
+                readonly parseError: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly parsedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: true;
+                };
+                readonly chapterCount: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+                readonly updatedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['sourceObjectKey'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'book_userId_createdAt_idx_f726f04a';
+                  readonly prefix: 'book_userId_createdAt_idx';
+                  readonly columns: readonly ['userId', 'createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'book_userId_idx_a489d58a';
+                  readonly prefix: 'book_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'book';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'user';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly book_author: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly bookId: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly name: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly position: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['bookId', 'position'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'book_author_bookId_idx_3eec38a3';
+                  readonly prefix: 'book_author_bookId_idx';
+                  readonly columns: readonly ['bookId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'book_author';
+                    readonly columns: readonly ['bookId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'book';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly chapter: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly bookId: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly position: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly title: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly sourceHref: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly text: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly wordCount: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+                readonly updatedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['bookId', 'position'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'chapter_bookId_idx_3eec38a3';
+                  readonly prefix: 'chapter_bookId_idx';
+                  readonly columns: readonly ['bookId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'chapter';
+                    readonly columns: readonly ['bookId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'book';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly job: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly bookId: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly chapterId: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly type: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly status: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'QUEUED'>;
+                  };
+                };
+                readonly idempotencyKey: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly queueJobId: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly progress: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                };
+                readonly attempts: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                };
+                readonly maxAttempts: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 3>;
+                  };
+                };
+                readonly error: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly startedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: true;
+                };
+                readonly completedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: true;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+                readonly updatedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [
+                { readonly columns: readonly ['idempotencyKey'] },
+                { readonly columns: readonly ['queueJobId'] },
+              ];
+              indexes: readonly [
+                {
+                  readonly name: 'job_bookId_createdAt_idx_991a7081';
+                  readonly prefix: 'job_bookId_createdAt_idx';
+                  readonly columns: readonly ['bookId', 'createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'job_chapterId_createdAt_idx_f251df58';
+                  readonly prefix: 'job_chapterId_createdAt_idx';
+                  readonly columns: readonly ['chapterId', 'createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'job_bookId_idx_3eec38a3';
+                  readonly prefix: 'job_bookId_idx';
+                  readonly columns: readonly ['bookId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'job_chapterId_idx_411dd3d6';
+                  readonly prefix: 'job_chapterId_idx';
+                  readonly columns: readonly ['chapterId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'job';
+                    readonly columns: readonly ['bookId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'book';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'job';
+                    readonly columns: readonly ['chapterId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'chapter';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly session: {
               columns: {
                 readonly id: {
@@ -646,10 +1112,7 @@ type ContractBase = Omit<
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-temporal@1';
                   readonly nullable: false;
-                  readonly default: {
-                    readonly kind: 'function';
-                    readonly expression: 'now()';
-                  };
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                 };
                 readonly expiresAt: {
                   readonly nativeType: 'timestamptz';
@@ -708,10 +1171,7 @@ type ContractBase = Omit<
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-temporal@1';
                   readonly nullable: false;
-                  readonly default: {
-                    readonly kind: 'function';
-                    readonly expression: 'now()';
-                  };
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                 };
                 readonly updatedAt: {
                   readonly nativeType: 'timestamptz';
@@ -725,6 +1185,31 @@ type ContractBase = Omit<
               foreignKeys: readonly [];
             };
           };
+          readonly valueSet: {
+            readonly AudioStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['QUEUED', 'PROCESSING', 'READY', 'FAILED'];
+            };
+            readonly BookFormat: { readonly kind: 'valueSet'; readonly values: readonly ['EPUB'] };
+            readonly BookParseStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['UPLOADING', 'QUEUED', 'PROCESSING', 'READY', 'FAILED'];
+            };
+            readonly JobStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly [
+                'QUEUED',
+                'PROCESSING',
+                'COMPLETED',
+                'FAILED',
+                'CANCELLED',
+              ];
+            };
+            readonly JobType: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['PARSE_BOOK', 'SYNTHESIZE_CHAPTER'];
+            };
+          };
         };
       };
     };
@@ -735,41 +1220,521 @@ type ContractBase = Omit<
   readonly target: 'postgres';
   readonly targetFamily: 'sql';
   readonly roots: {
-    readonly user: {
+    readonly user: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+    readonly session: { readonly namespace: 'public' & NamespaceId; readonly model: 'Session' };
+    readonly book: { readonly namespace: 'public' & NamespaceId; readonly model: 'Book' };
+    readonly book_author: {
       readonly namespace: 'public' & NamespaceId;
-      readonly model: 'User';
+      readonly model: 'BookAuthor';
     };
-    readonly session: {
-      readonly namespace: 'public' & NamespaceId;
-      readonly model: 'Session';
-    };
+    readonly chapter: { readonly namespace: 'public' & NamespaceId; readonly model: 'Chapter' };
+    readonly audio: { readonly namespace: 'public' & NamespaceId; readonly model: 'Audio' };
+    readonly job: { readonly namespace: 'public' & NamespaceId; readonly model: 'Job' };
   };
   readonly domain: {
     readonly namespaces: {
       readonly public: {
         readonly models: {
+          readonly Audio: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly chapterId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly objectKey: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly mimeType: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly provider: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly voice: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly durationMs: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly byteSize: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly error: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly completedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly chapter: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Chapter';
+                };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['chapterId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'audio';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly chapterId: { readonly column: 'chapterId' };
+                readonly status: { readonly column: 'status' };
+                readonly objectKey: { readonly column: 'objectKey' };
+                readonly mimeType: { readonly column: 'mimeType' };
+                readonly provider: { readonly column: 'provider' };
+                readonly voice: { readonly column: 'voice' };
+                readonly durationMs: { readonly column: 'durationMs' };
+                readonly byteSize: { readonly column: 'byteSize' };
+                readonly error: { readonly column: 'error' };
+                readonly completedAt: { readonly column: 'completedAt' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly Book: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly sourceFormat: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly sourceObjectKey: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly sourceOriginalFilename: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly sourceMimeType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly sourceSize: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly sourceChecksum: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly parseStatus: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly parseError: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly parsedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly chapterCount: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly authors: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'BookAuthor';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['bookId'];
+                };
+              };
+              readonly chapters: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Chapter';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['bookId'];
+                };
+              };
+              readonly jobs: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Job' };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['bookId'];
+                };
+              };
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'book';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly userId: { readonly column: 'userId' };
+                readonly title: { readonly column: 'title' };
+                readonly sourceFormat: { readonly column: 'sourceFormat' };
+                readonly sourceObjectKey: { readonly column: 'sourceObjectKey' };
+                readonly sourceOriginalFilename: { readonly column: 'sourceOriginalFilename' };
+                readonly sourceMimeType: { readonly column: 'sourceMimeType' };
+                readonly sourceSize: { readonly column: 'sourceSize' };
+                readonly sourceChecksum: { readonly column: 'sourceChecksum' };
+                readonly parseStatus: { readonly column: 'parseStatus' };
+                readonly parseError: { readonly column: 'parseError' };
+                readonly parsedAt: { readonly column: 'parsedAt' };
+                readonly chapterCount: { readonly column: 'chapterCount' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly BookAuthor: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly bookId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly name: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly position: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly book: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Book' };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['bookId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'book_author';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly bookId: { readonly column: 'bookId' };
+                readonly name: { readonly column: 'name' };
+                readonly position: { readonly column: 'position' };
+                readonly createdAt: { readonly column: 'createdAt' };
+              };
+            };
+          };
+          readonly Chapter: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly bookId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly position: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly sourceHref: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly text: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly wordCount: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly audio: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Audio';
+                };
+                readonly cardinality: '1:1';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['chapterId'];
+                };
+              };
+              readonly book: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Book' };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['bookId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly jobs: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Job' };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['chapterId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'chapter';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly bookId: { readonly column: 'bookId' };
+                readonly position: { readonly column: 'position' };
+                readonly title: { readonly column: 'title' };
+                readonly sourceHref: { readonly column: 'sourceHref' };
+                readonly text: { readonly column: 'text' };
+                readonly wordCount: { readonly column: 'wordCount' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly Job: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly bookId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly chapterId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly type: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly idempotencyKey: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly queueJobId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly progress: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly attempts: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly maxAttempts: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly error: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly startedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly completedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly book: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Book' };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['bookId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly chapter: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Chapter';
+                };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['chapterId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'job';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly bookId: { readonly column: 'bookId' };
+                readonly chapterId: { readonly column: 'chapterId' };
+                readonly type: { readonly column: 'type' };
+                readonly status: { readonly column: 'status' };
+                readonly idempotencyKey: { readonly column: 'idempotencyKey' };
+                readonly queueJobId: { readonly column: 'queueJobId' };
+                readonly progress: { readonly column: 'progress' };
+                readonly attempts: { readonly column: 'attempts' };
+                readonly maxAttempts: { readonly column: 'maxAttempts' };
+                readonly error: { readonly column: 'error' };
+                readonly startedAt: { readonly column: 'startedAt' };
+                readonly completedAt: { readonly column: 'completedAt' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
           readonly Session: {
             readonly fields: {
               readonly id: {
                 readonly nullable: false;
-                readonly type: {
-                  readonly kind: 'scalar';
-                  readonly codecId: 'pg/text@1';
-                };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly refreshTokenHash: {
                 readonly nullable: false;
-                readonly type: {
-                  readonly kind: 'scalar';
-                  readonly codecId: 'pg/text@1';
-                };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly userId: {
                 readonly nullable: false;
-                readonly type: {
-                  readonly kind: 'scalar';
-                  readonly codecId: 'pg/text@1';
-                };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly createdAt: {
                 readonly nullable: false;
@@ -795,10 +1760,7 @@ type ContractBase = Omit<
             };
             readonly relations: {
               readonly user: {
-                readonly to: {
-                  readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'User';
-                };
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
                 readonly cardinality: 'N:1';
                 readonly on: {
                   readonly localFields: readonly ['userId'];
@@ -811,9 +1773,7 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly id: { readonly column: 'id' };
-                readonly refreshTokenHash: {
-                  readonly column: 'refreshTokenHash';
-                };
+                readonly refreshTokenHash: { readonly column: 'refreshTokenHash' };
                 readonly userId: { readonly column: 'userId' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly expiresAt: { readonly column: 'expiresAt' };
@@ -825,24 +1785,15 @@ type ContractBase = Omit<
             readonly fields: {
               readonly id: {
                 readonly nullable: false;
-                readonly type: {
-                  readonly kind: 'scalar';
-                  readonly codecId: 'pg/text@1';
-                };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly email: {
                 readonly nullable: false;
-                readonly type: {
-                  readonly kind: 'scalar';
-                  readonly codecId: 'pg/text@1';
-                };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly passwordHash: {
                 readonly nullable: false;
-                readonly type: {
-                  readonly kind: 'scalar';
-                  readonly codecId: 'pg/text@1';
-                };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly createdAt: {
                 readonly nullable: false;
@@ -860,6 +1811,14 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly books: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Book' };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
               readonly sessions: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -883,6 +1842,48 @@ type ContractBase = Omit<
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
+          };
+        };
+        readonly enum: {
+          readonly BookFormat: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [{ readonly name: 'EPUB'; readonly value: 'EPUB' }];
+          };
+          readonly BookParseStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'UPLOADING'; readonly value: 'UPLOADING' },
+              { readonly name: 'QUEUED'; readonly value: 'QUEUED' },
+              { readonly name: 'PROCESSING'; readonly value: 'PROCESSING' },
+              { readonly name: 'READY'; readonly value: 'READY' },
+              { readonly name: 'FAILED'; readonly value: 'FAILED' },
+            ];
+          };
+          readonly AudioStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'QUEUED'; readonly value: 'QUEUED' },
+              { readonly name: 'PROCESSING'; readonly value: 'PROCESSING' },
+              { readonly name: 'READY'; readonly value: 'READY' },
+              { readonly name: 'FAILED'; readonly value: 'FAILED' },
+            ];
+          };
+          readonly JobType: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'PARSE_BOOK'; readonly value: 'PARSE_BOOK' },
+              { readonly name: 'SYNTHESIZE_CHAPTER'; readonly value: 'SYNTHESIZE_CHAPTER' },
+            ];
+          };
+          readonly JobStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'QUEUED'; readonly value: 'QUEUED' },
+              { readonly name: 'PROCESSING'; readonly value: 'PROCESSING' },
+              { readonly name: 'COMPLETED'; readonly value: 'COMPLETED' },
+              { readonly name: 'FAILED'; readonly value: 'FAILED' },
+              { readonly name: 'CANCELLED'; readonly value: 'CANCELLED' },
+            ];
           };
         };
       };
@@ -914,13 +1915,50 @@ type ContractBase = Omit<
         {
           readonly ref: {
             readonly namespace: 'public';
+            readonly table: 'audio';
+            readonly column: 'id';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
+        },
+        {
+          readonly ref: {
+            readonly namespace: 'public';
+            readonly table: 'book';
+            readonly column: 'id';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
+        },
+        {
+          readonly ref: {
+            readonly namespace: 'public';
+            readonly table: 'book_author';
+            readonly column: 'id';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
+        },
+        {
+          readonly ref: {
+            readonly namespace: 'public';
+            readonly table: 'chapter';
+            readonly column: 'id';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
+        },
+        {
+          readonly ref: {
+            readonly namespace: 'public';
+            readonly table: 'job';
+            readonly column: 'id';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
+        },
+        {
+          readonly ref: {
+            readonly namespace: 'public';
             readonly table: 'session';
             readonly column: 'id';
           };
-          readonly onCreate: {
-            readonly kind: 'generator';
-            readonly id: 'uuidv4';
-          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
         },
         {
           readonly ref: {
@@ -928,10 +1966,7 @@ type ContractBase = Omit<
             readonly table: 'user';
             readonly column: 'id';
           };
-          readonly onCreate: {
-            readonly kind: 'generator';
-            readonly id: 'uuidv4';
-          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
         },
       ];
     };

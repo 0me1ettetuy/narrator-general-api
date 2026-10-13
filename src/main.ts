@@ -11,7 +11,7 @@ import type { Request } from 'express';
 import { REFRESH_TOKEN_COOKIE_NAME } from './auth/utils/cookie-options.js';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-type RequestWithCookies = Request & {
+type RequestWithCookies = Omit<Request, 'cookies'> & {
   cookies?: Record<string, unknown>;
 };
 

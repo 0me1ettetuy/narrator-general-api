@@ -7,6 +7,7 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime
   sessions     Session[]
+  books        Book[]
 
   @@map("user")
 }
@@ -22,4 +23,139 @@ model Session {
   user User @relation(fields: [userId], references: [id])
 
   @@map("session")
+}
+
+enum BookFormat {
+  EPUB
+}
+
+enum BookParseStatus {
+  UPLOADING
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum AudioStatus {
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum JobType {
+  PARSE_BOOK
+  SYNTHESIZE_CHAPTER
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model Book {
+  id                     String          @id @default(uuid())
+  userId                 String
+  title                  String
+  sourceFormat           BookFormat
+  sourceObjectKey        String          @unique
+  sourceOriginalFilename String
+  sourceMimeType         String
+  sourceSize             Int
+  sourceChecksum         String?
+  parseStatus            BookParseStatus @default(UPLOADING)
+  parseError             String?
+  parsedAt               DateTime?
+  chapterCount           Int             @default(0)
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime
+
+  user     User         @relation(fields: [userId], references: [id])
+  authors  BookAuthor[]
+  chapters Chapter[]
+  jobs     Job[]
+
+  @@index([userId, createdAt])
+  @@map("book")
+}
+
+model BookAuthor {
+  id        String   @id @default(uuid())
+  bookId    String
+  name      String
+  position  Int
+  createdAt DateTime @default(now())
+
+  book Book @relation(fields: [bookId], references: [id])
+
+  @@unique([bookId, position])
+  @@map("book_author")
+}
+
+model Chapter {
+  id        String   @id @default(uuid())
+  bookId    String
+  position  Int
+  title     String
+  sourceHref String?
+  text      String
+  wordCount Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  book  Book   @relation(fields: [bookId], references: [id])
+  audio Audio?
+  jobs  Job[]
+
+  @@unique([bookId, position])
+  @@map("chapter")
+}
+
+model Audio {
+  id          String      @id @default(uuid())
+  chapterId   String      @unique
+  status      AudioStatus @default(QUEUED)
+  objectKey   String?
+  mimeType    String?
+  provider    String?
+  voice       String?
+  durationMs  Int?
+  byteSize    Int?
+  error       String?
+  completedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime
+
+  chapter Chapter @relation(fields: [chapterId], references: [id])
+
+  @@map("audio")
+}
+
+model Job {
+  id             String    @id @default(uuid())
+  bookId         String
+  chapterId      String?
+  type           JobType
+  status         JobStatus @default(QUEUED)
+  idempotencyKey String    @unique
+  queueJobId     String?   @unique
+  progress       Int       @default(0)
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(3)
+  error          String?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+
+  book    Book     @relation(fields: [bookId], references: [id])
+  chapter Chapter? @relation(fields: [chapterId], references: [id])
+
+  @@index([bookId, createdAt])
+  @@index([chapterId, createdAt])
+  @@map("job")
 }
