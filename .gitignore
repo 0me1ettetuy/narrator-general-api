@@ -3,6 +3,11 @@
 /node_modules
 /build
 
+# Generated locally from src/prisma/contract.prisma.
+# Lifecycle scripts emit these after install and before build/start/test.
+/src/prisma/contract.json
+/src/prisma/contract.d.ts
+
 # Logs
 logs
 *.log

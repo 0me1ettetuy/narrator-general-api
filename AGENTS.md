@@ -45,8 +45,10 @@ backend code. For the detailed conventions and checklist, also read:
 
 - `src/prisma/contract.prisma` is the database schema source of truth.
   `contract.json` and `contract.d.ts` are generated; never hand-edit them.
-  After a schema change, regenerate with `pnpm contract:emit` and check in the
-  contract artifacts if this repository expects them.
+  They are intentionally Git-ignored and generated locally by lifecycle
+  scripts after install and before build/start/test. Run `pnpm contract:emit`
+  manually only when the editor needs refreshed types immediately. Commit the
+  schema and migration files/snapshots, never these generated artifacts.
 - Access the database through `PrismaService`; do not create ad-hoc clients or
   put SQL/database access in controllers.
 - Define ownership, unique constraints, foreign keys, indexes, defaults, and

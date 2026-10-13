@@ -31,6 +31,10 @@
 $ pnpm install
 ```
 
+Installation automatically emits the local Prisma contract files used for
+database types. They are generated from `src/prisma/contract.prisma` and are
+not committed to Git.
+
 ## Compile and run the project
 
 ```bash

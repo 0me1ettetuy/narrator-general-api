@@ -40,7 +40,10 @@ Your contract has two companion files in the same directory:
 - **`contract.json`** — this tells your application what models exist, just like `package-lock.json` tells your package manager what dependencies your project has
 - **`contract.d.ts`** — this powers autocomplete and type checking in your editor
 
-Commit both files to git. When you change your contract, run `pnpm prisma contract emit` to update them.
+Both files are deliberately Git-ignored in this repository. The `postinstall`
+script emits them for a fresh clone, and build/start/test scripts emit them
+again to prevent stale types. Run `pnpm contract:emit` manually only when you
+want the editor to see a schema change immediately.
 
 If you use a framework like Next.js or Vite, the Prisma Next plugin will do this for you automatically.
 
@@ -76,8 +79,9 @@ You can customize how your environment variables are loaded by changing or remov
 ### Commands
 
 ```bash
-pnpm prisma contract emit       # Update contract.json and contract.d.ts
-pnpm prisma db init             # Create tables in the database
+pnpm contract:emit              # Manually refresh local generated contract files
+pnpm prisma db update --dry-run # Preview direct local database changes
+pnpm prisma db update           # Apply direct local database changes
 pnpm prisma migration status    # Show migration status
 ```
 
@@ -88,14 +92,17 @@ pnpm prisma migration status    # Show migration status
 | [`src/prisma/contract.prisma`](src/prisma/contract.prisma) | Your data contract — define your models here |
 | [`prisma.config.ts`](prisma.config.ts) | CLI configuration |
 | [`src/prisma/db.ts`](src/prisma/db.ts) | Database client — `import { db } from './src/prisma/db'` |
-| `src/prisma/contract.json` | Compiled contract (generated) |
-| `src/prisma/contract.d.ts` | Contract types (generated) |
+| `src/prisma/contract.json` | Local compiled contract (generated, Git-ignored) |
+| `src/prisma/contract.d.ts` | Local contract types (generated, Git-ignored) |
 
 ### Workflow
 
 1. Edit [`src/prisma/contract.prisma`](src/prisma/contract.prisma) to add or change models.
-2. Run `pnpm prisma contract emit` to regenerate the contract.
-3. Query your models — your IDE will autocomplete everything.
+2. Run `pnpm contract:emit` only if you need immediate editor types; otherwise
+   the next build/start/test regenerates them.
+3. Apply the schema locally with `pnpm prisma db update` or create a planned
+   migration for a stable/deployable change.
+4. Query your models — your IDE will autocomplete everything.
 
 ## Monorepo notes (pnpm workspaces)
 

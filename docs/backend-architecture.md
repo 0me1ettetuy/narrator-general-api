@@ -69,9 +69,12 @@ transaction, and returns a safe contract-oriented result.
 
 ## Persistence rules
 
-`src/prisma/contract.prisma` defines the schema. Its generated JSON and TypeScript
-contract files are implementation artifacts. Update the schema first, then
-regenerate the contract.
+`src/prisma/contract.prisma` defines the schema. Its generated JSON and
+TypeScript contract files are local implementation artifacts: they are
+Git-ignored and emitted automatically after install and before build/start/test.
+Update the schema first; run `pnpm contract:emit` manually only when immediate
+editor type refresh is useful. Commit schema changes and migration
+files/snapshots, not emitted contract files.
 
 Model invariants in the database whenever possible:
 

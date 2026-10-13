@@ -18,8 +18,10 @@ Use this checklist for every meaningful backend change.
   service.
 - Add DTO validation for all client input; use explicit safe response types.
 - Scope user-owned data by authenticated user ID in the service/query.
-- Update `contract.prisma` for schema changes, then run `pnpm contract:emit`.
-  Never manually edit generated Prisma contract artifacts.
+- Update `contract.prisma` for schema changes. `contract:emit` runs
+  automatically after install and before build/start/test; run it manually
+  only for an immediate editor refresh. Never manually edit or commit the
+  generated Prisma contract artifacts; commit the schema and migrations.
 - Add constraints/indexes/transactions/idempotency appropriate to the data
   invariant and retry behavior.
 
