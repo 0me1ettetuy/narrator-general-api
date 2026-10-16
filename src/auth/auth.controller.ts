@@ -47,7 +47,7 @@ type RequestWithUser<TUser> = Request & {
   user: TUser;
 };
 
-type RequestWithCookies = Request & {
+type RequestWithCookies = Omit<Request, 'cookies'> & {
   cookies?: Record<string, unknown>;
 };
 
