@@ -67,6 +67,25 @@ export class BooksListResponseDto {
   nextOffset: number | null;
 }
 
+export class CreateBookUploadResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  bookId: string;
+
+  @ApiProperty({ format: 'uri' })
+  uploadUrl: string;
+}
+
+export class CompleteBookUploadResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  bookId: string;
+
+  @ApiProperty({ format: 'uuid' })
+  jobId: string;
+
+  @ApiProperty({ enum: ['QUEUED'] })
+  parseStatus: 'QUEUED';
+}
+
 export class BookDetailResponseDto {
   @ApiProperty({ type: () => BookSummaryResponseDto })
   book: BookSummaryResponseDto;

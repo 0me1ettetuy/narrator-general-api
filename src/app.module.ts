@@ -7,7 +7,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { BooksModule } from './books/books.module.js';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-import { StorageModule } from './storage/storage.module';
+import { StorageModule } from './storage/storage.module.js';
 
 @Module({
   imports: [

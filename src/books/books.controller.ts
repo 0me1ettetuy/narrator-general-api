@@ -1,7 +1,18 @@
-import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiBody,
+  ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -16,13 +27,18 @@ import type { JwtPayload } from '../auth/types/jwt.type.js';
 import {
   BookDetailResponseDto,
   BooksListResponseDto,
+  CompleteBookUploadResponseDto,
+  CreateBookUploadResponseDto,
 } from './contracts/books.openapi.js';
 import type {
   BookDetailResponse,
   BooksListResponse,
+  CompleteBookUploadResponse,
+  CreateBookUploadResponse,
 } from './contracts/books.response.js';
 import { BookIdParamsDto } from './dto/book-id-params.dto.js';
 import { BooksListQueryDto } from './dto/books-list-query.dto.js';
+import { CreateBookUploadDto } from './dto/create-book-upload.dto.js';
 import { BooksService } from './books.service.js';
 
 type RequestWithUser = Request & {
@@ -34,6 +50,37 @@ type RequestWithUser = Request & {
 @Controller('books')
 export class BooksController {
   constructor(private readonly booksService: BooksService) {}
+
+  @Post('uploads')
+  @ApiOperation({ summary: 'Create an EPUB upload intent' })
+  @ApiBody({ type: CreateBookUploadDto })
+  @ApiCreatedResponse({ type: CreateBookUploadResponseDto })
+  @ApiBadRequestResponse({ description: 'Invalid EPUB upload metadata' })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @UseGuards(JwtAccessGuard)
+  createUpload(
+    @Req() request: RequestWithUser,
+    @Body() dto: CreateBookUploadDto,
+  ): Promise<CreateBookUploadResponse> {
+    return this.booksService.createUpload(request.user.sub, dto);
+  }
+
+  @Post(':bookId/upload-complete')
+  @ApiOperation({ summary: 'Confirm an EPUB upload and queue parsing' })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiOkResponse({ type: CompleteBookUploadResponseDto })
+  @ApiBadRequestResponse({
+    description: 'bookId is invalid or the uploaded EPUB does not match',
+  })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book not found' })
+  @UseGuards(JwtAccessGuard)
+  completeUpload(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+  ): Promise<CompleteBookUploadResponse> {
+    return this.booksService.completeUpload(request.user.sub, params.bookId);
+  }
 
   @Get()
   @ApiOperation({ summary: "List the authenticated user's books" })

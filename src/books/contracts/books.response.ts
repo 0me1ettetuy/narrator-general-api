@@ -34,6 +34,17 @@ export type BooksListResponse = {
   nextOffset: number | null;
 };
 
+export type CreateBookUploadResponse = {
+  bookId: string;
+  uploadUrl: string;
+};
+
+export type CompleteBookUploadResponse = {
+  bookId: string;
+  jobId: string;
+  parseStatus: 'QUEUED';
+};
+
 export type BookDetailResponse = {
   book: BookSummary;
   authors: BookAuthorResponse[];
