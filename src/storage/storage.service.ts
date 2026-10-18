@@ -85,6 +85,34 @@ export class StorageService {
     }
   }
 
+  async getObjectBytes(
+    objectKey: string,
+    maxBytes: number,
+  ): Promise<Uint8Array> {
+    const object = await this.client.send(
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: objectKey,
+      }),
+    );
+
+    if (!object.Body) {
+      throw new Error('Object body is missing');
+    }
+
+    if (object.ContentLength !== undefined && object.ContentLength > maxBytes) {
+      throw new Error('Object exceeds the allowed size');
+    }
+
+    const bytes = await object.Body.transformToByteArray();
+
+    if (bytes.byteLength > maxBytes) {
+      throw new Error('Object exceeds the allowed size');
+    }
+
+    return bytes;
+  }
+
   private getRequiredConfig(key: string): string {
     const value = this.configService.get<string>(key);
 

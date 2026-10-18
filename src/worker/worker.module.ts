@@ -1,15 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { BooksModule } from '../books/books.module.js';
 import { JobsModule } from '../jobs/jobs.module.js';
-import { PrismaModule } from '../prisma/prisma.module.js';
-import { StorageModule } from '../storage/storage.module.js';
+import { ParseBookProcessor } from './parse-book.processor.js';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    JobsModule,
-    PrismaModule,
-    StorageModule,
-  ],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), BooksModule, JobsModule],
+  providers: [ParseBookProcessor],
 })
 export class WorkerModule {}

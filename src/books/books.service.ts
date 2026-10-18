@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { API_ERROR_CODES } from '../global-filters/api-error.js';
+import { JOB_MAX_ATTEMPTS } from '../jobs/jobs.constants.js';
 import { JobsService } from '../jobs/jobs.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { temporalNow } from '../prisma/temporal.js';
@@ -139,6 +140,7 @@ export class BooksService {
         bookId: book.id,
         type: 'PARSE_BOOK',
         idempotencyKey,
+        maxAttempts: JOB_MAX_ATTEMPTS,
         updatedAt: now,
       });
 

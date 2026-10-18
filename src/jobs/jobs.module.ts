@@ -1,7 +1,7 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { BOOK_PARSING_QUEUE } from './jobs.constants.js';
+import { BOOK_PARSING_QUEUE, JOB_MAX_ATTEMPTS } from './jobs.constants.js';
 import { JobsService } from './jobs.service.js';
 
 @Module({
@@ -18,7 +18,7 @@ import { JobsService } from './jobs.service.js';
     BullModule.registerQueue({
       name: BOOK_PARSING_QUEUE,
       defaultJobOptions: {
-        attempts: 3,
+        attempts: JOB_MAX_ATTEMPTS,
         backoff: {
           type: 'exponential',
           delay: 5_000,
