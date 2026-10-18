@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@abfcode/spine':
+        specifier: 0.15.0
+        version: 0.15.0
       '@aws-sdk/client-s3':
         specifier: ^3.1152.0
         version: 3.1152.0
@@ -173,6 +176,10 @@ importers:
         version: 8.68.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
 
 packages:
+
+  '@abfcode/spine@0.15.0':
+    resolution: {integrity: sha512-OkMR23hFUdWhiBtXFJezAcro2hTKmXIBmvZ0Uf5Ri86F6+T4TRKHS+Dsxlfa1n+5eG6B8sXa97ybiLmbyffJvw==}
+    engines: {node: '>=24'}
 
   '@alcalzone/ansi-tokenize@0.2.5':
     resolution: {integrity: sha512-3NX/MpTdroi0aKz134A6RC2Gb2iXVECN4QaAXnvCIxxIm3C3AVB1mkUe8NaaiyvOpDfsrqWhYtj+Q6a62RrTsw==}
@@ -3573,6 +3580,9 @@ packages:
       picomatch:
         optional: true
 
+  fflate@0.8.3:
+    resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
+
   figures@6.1.0:
     resolution: {integrity: sha512-d+l3qxjSesT4V7v2fh+QnmFnUWv9lSpjarhShNTgBOfA0ttejbQUAlHLitbjkoRiDulW0OPoQPYIGhIC8ohejg==}
     engines: {node: '>=18'}
@@ -5794,6 +5804,10 @@ packages:
     resolution: {integrity: sha512-KiGErG2J0G82LSpniV0CtIzjlJ10E04j02VOudJsPyPwNZgGnRKQy7I1R7GMyg/QswnE4l7ohSGrQbQbjXPPDA==}
 
 snapshots:
+
+  '@abfcode/spine@0.15.0':
+    dependencies:
+      fflate: 0.8.3
 
   '@alcalzone/ansi-tokenize@0.2.5':
     dependencies:
@@ -9601,6 +9615,8 @@ snapshots:
   fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
       picomatch: 4.0.7
+
+  fflate@0.8.3: {}
 
   figures@6.1.0:
     dependencies:

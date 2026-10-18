@@ -35,6 +35,7 @@
     "contract:emit": "prisma contract emit"
   },
   "dependencies": {
+    "@abfcode/spine": "0.15.0",
     "@aws-sdk/client-s3": "^3.1152.0",
     "@aws-sdk/s3-request-presigner": "^3.1152.0",
     "@js-temporal/polyfill": "^0.5.1",
@@ -102,6 +103,7 @@
     "testRegex": ".*\\.spec\\.ts$",
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1",
+      "^@abfcode/spine$": "<rootDir>/test-mocks/spine.ts",
       "^@nestjs/bullmq$": "<rootDir>/test-mocks/bullmq.ts",
       "^@nestjs/swagger$": "<rootDir>/test-mocks/swagger.ts",
       "^(\\.{1,2}/.*)\\.js$": "$1"

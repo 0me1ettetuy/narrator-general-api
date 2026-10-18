@@ -4,10 +4,12 @@ import { PrismaModule } from '../prisma/prisma.module.js';
 import { StorageModule } from '../storage/storage.module.js';
 import { BooksController } from './books.controller.js';
 import { BooksService } from './books.service.js';
+import { EpubParserService } from './epub-parser.service.js';
 
 @Module({
   imports: [PrismaModule, StorageModule, JobsModule],
   controllers: [BooksController],
-  providers: [BooksService],
+  providers: [BooksService, EpubParserService],
+  exports: [EpubParserService],
 })
 export class BooksModule {}
