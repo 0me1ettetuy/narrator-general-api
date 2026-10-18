@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { API_ERROR_CODES } from '../global-filters/api-error.js';
+import { JobsService } from '../jobs/jobs.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { temporalNow } from '../prisma/temporal.js';
 import { StorageService } from '../storage/storage.service.js';
@@ -33,6 +34,7 @@ export class BooksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
+    private readonly jobsService: JobsService,
   ) {}
 
   async createUpload(
@@ -83,6 +85,8 @@ export class BooksService {
     }).first();
 
     if (book.parseStatus === 'QUEUED' && existingJob) {
+      await this.jobsService.enqueueBookParsing(existingJob.id);
+
       return toCompleteBookUploadResponse(book.id, existingJob.id);
     }
 
@@ -155,6 +159,8 @@ export class BooksService {
         message: 'Book is not awaiting upload confirmation',
       });
     }
+
+    await this.jobsService.enqueueBookParsing(jobId);
 
     return toCompleteBookUploadResponse(book.id, jobId);
   }

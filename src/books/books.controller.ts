@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Post,
   Query,
@@ -12,7 +14,9 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiAcceptedResponse,
   ApiCreatedResponse,
+  ApiConflictResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -66,11 +70,15 @@ export class BooksController {
   }
 
   @Post(':bookId/upload-complete')
+  @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: 'Confirm an EPUB upload and queue parsing' })
   @ApiParam({ name: 'bookId', format: 'uuid' })
-  @ApiOkResponse({ type: CompleteBookUploadResponseDto })
+  @ApiAcceptedResponse({ type: CompleteBookUploadResponseDto })
   @ApiBadRequestResponse({
     description: 'bookId is invalid or the uploaded EPUB does not match',
+  })
+  @ApiConflictResponse({
+    description: 'Book is not awaiting upload confirmation',
   })
   @ApiUnauthorizedResponse({ description: 'Invalid access token' })
   @ApiNotFoundResponse({ description: 'Book not found' })

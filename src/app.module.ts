@@ -8,6 +8,7 @@ import { BooksModule } from './books/books.module.js';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { StorageModule } from './storage/storage.module.js';
+import { JobsModule } from './jobs/jobs.module.js';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { StorageModule } from './storage/storage.module.js';
     AuthModule,
     BooksModule,
     StorageModule,
+    JobsModule,
   ],
   controllers: [],
   providers: [

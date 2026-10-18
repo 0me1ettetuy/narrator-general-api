@@ -5,9 +5,11 @@ const decorator =
       undefined;
 
 export const ApiBearerAuth = decorator;
+export const ApiAcceptedResponse = decorator;
 export const ApiBadRequestResponse = decorator;
 export const ApiBody = decorator;
 export const ApiCookieAuth = decorator;
+export const ApiConflictResponse = decorator;
 export const ApiCreatedResponse = decorator;
 export const ApiNotFoundResponse = decorator;
 export const ApiOkResponse = decorator;
