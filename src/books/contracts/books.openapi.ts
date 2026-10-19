@@ -106,6 +106,17 @@ export class QueueChapterAudioResponseDto {
   job: ChapterAudioJobResponseDto | null;
 }
 
+export class ChapterAudioAccessResponseDto {
+  @ApiProperty({ format: 'uri' })
+  playbackUrl: string;
+
+  @ApiProperty({ format: 'uri' })
+  downloadUrl: string;
+
+  @ApiProperty({ minimum: 1 })
+  expiresInSeconds: number;
+}
+
 export class BooksListResponseDto {
   @ApiProperty({ type: () => [BookSummaryResponseDto] })
   books: BookSummaryResponseDto[];

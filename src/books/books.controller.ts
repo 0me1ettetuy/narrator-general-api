@@ -31,6 +31,7 @@ import type { JwtPayload } from '../auth/types/jwt.type.js';
 import {
   BookDetailResponseDto,
   BooksListResponseDto,
+  ChapterAudioAccessResponseDto,
   CompleteBookUploadResponseDto,
   CreateBookUploadResponseDto,
   QueueChapterAudioResponseDto,
@@ -38,6 +39,7 @@ import {
 import type {
   BookDetailResponse,
   BooksListResponse,
+  ChapterAudioAccessResponse,
   CompleteBookUploadResponse,
   CreateBookUploadResponse,
   QueueChapterAudioResponse,
@@ -107,6 +109,28 @@ export class BooksController {
     @Req() request: RequestWithUser,
   ): Promise<QueueChapterAudioResponse> {
     return this.booksService.queueChapterAudio(
+      request.user.sub,
+      params.bookId,
+      params.chapterId,
+    );
+  }
+
+  @Get(':bookId/chapters/:chapterId/audio')
+  @ApiOperation({
+    summary: 'Get signed playback and download URLs for chapter audio',
+  })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiParam({ name: 'chapterId', format: 'uuid' })
+  @ApiOkResponse({ type: ChapterAudioAccessResponseDto })
+  @ApiConflictResponse({ description: 'Chapter audio is not ready' })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book or chapter not found' })
+  @UseGuards(JwtAccessGuard)
+  getChapterAudioAccess(
+    @Param() params: ChapterAudioParamsDto,
+    @Req() request: RequestWithUser,
+  ): Promise<ChapterAudioAccessResponse> {
+    return this.booksService.getChapterAudioAccess(
       request.user.sub,
       params.bookId,
       params.chapterId,

@@ -10,8 +10,12 @@ import { JOB_MAX_ATTEMPTS } from '../jobs/jobs.constants.js';
 import { JobsService } from '../jobs/jobs.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { temporalNow } from '../prisma/temporal.js';
-import { StorageService } from '../storage/storage.service.js';
+import {
+  SIGNED_URL_TTL_SECONDS,
+  StorageService,
+} from '../storage/storage.service.js';
 import type {
+  ChapterAudioAccessResponse,
   BookAuthorResponse,
   BookDetailResponse,
   BookSummary,
@@ -39,6 +43,10 @@ import type {
 const DEFAULT_PAGE_SIZE = 20;
 const PARSE_BOOK_IDEMPOTENCY_KEY_PREFIX = 'parse-book';
 const SYNTHESIZE_CHAPTER_IDEMPOTENCY_KEY_PREFIX = 'synthesize-chapter';
+
+type StoredAudio = Audio & {
+  objectKey: string | null;
+};
 
 @Injectable()
 export class BooksService {
@@ -234,6 +242,60 @@ export class BooksService {
     return {
       audio: toChapterAudioResponse(queued.audio),
       job: toChapterAudioJobResponse(queued.job),
+    };
+  }
+
+  async getChapterAudioAccess(
+    userId: string,
+    bookId: string,
+    chapterId: string,
+  ): Promise<ChapterAudioAccessResponse> {
+    const book = await this.prisma.db.orm.public.Book.where({
+      id: bookId,
+      userId,
+    }).first();
+
+    if (!book) {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Book not found',
+      });
+    }
+
+    const chapter = await this.prisma.db.orm.public.Chapter.where({
+      id: chapterId,
+      bookId: book.id,
+    }).first();
+
+    if (!chapter) {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Chapter not found',
+      });
+    }
+
+    const audio = (await this.prisma.db.orm.public.Audio.where({
+      chapterId: chapter.id,
+    }).first()) as StoredAudio | null;
+
+    if (!audio || audio.status !== 'READY' || !audio.objectKey) {
+      throw new ConflictException({
+        code: API_ERROR_CODES.conflict,
+        message: 'Chapter audio is not ready',
+      });
+    }
+
+    const [playbackUrl, downloadUrl] = await Promise.all([
+      this.storageService.createDownloadUrl(audio.objectKey),
+      this.storageService.createDownloadUrl(audio.objectKey, {
+        asAttachment: true,
+      }),
+    ]);
+
+    return {
+      playbackUrl,
+      downloadUrl,
+      expiresInSeconds: SIGNED_URL_TTL_SECONDS,
     };
   }
 

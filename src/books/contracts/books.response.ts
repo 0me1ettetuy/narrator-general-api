@@ -58,6 +58,12 @@ export type QueueChapterAudioResponse = {
   job: ChapterAudioJobResponse | null;
 };
 
+export type ChapterAudioAccessResponse = {
+  playbackUrl: string;
+  downloadUrl: string;
+  expiresInSeconds: number;
+};
+
 export type BooksListResponse = {
   books: BookSummary[];
   nextOffset: number | null;

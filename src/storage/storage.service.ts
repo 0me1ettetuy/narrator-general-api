@@ -1,4 +1,5 @@
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
@@ -10,7 +11,11 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Readable } from 'node:stream';
 
-const DEFAULT_SIGNED_URL_TTL_SECONDS = 15 * 60;
+export const SIGNED_URL_TTL_SECONDS = 15 * 60;
+
+type CreateDownloadUrlOptions = {
+  asAttachment?: boolean;
+};
 
 export type StorageObjectMetadata = {
   contentLength: number | undefined;
@@ -43,18 +48,24 @@ export class StorageService {
         Key: objectKey,
         ContentType: contentType,
       }),
-      { expiresIn: DEFAULT_SIGNED_URL_TTL_SECONDS },
+      { expiresIn: SIGNED_URL_TTL_SECONDS },
     );
   }
 
-  createDownloadUrl(objectKey: string): Promise<string> {
+  createDownloadUrl(
+    objectKey: string,
+    options: CreateDownloadUrlOptions = {},
+  ): Promise<string> {
     return getSignedUrl(
       this.client,
       new GetObjectCommand({
         Bucket: this.bucket,
         Key: objectKey,
+        ResponseContentDisposition: options.asAttachment
+          ? 'attachment'
+          : undefined,
       }),
-      { expiresIn: DEFAULT_SIGNED_URL_TTL_SECONDS },
+      { expiresIn: SIGNED_URL_TTL_SECONDS },
     );
   }
 
@@ -69,6 +80,30 @@ export class StorageService {
         Key: objectKey,
         Body: bytes,
         ContentType: contentType,
+      }),
+    );
+  }
+
+  async putObjectStream(
+    objectKey: string,
+    stream: Readable,
+    contentType: string,
+  ): Promise<void> {
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: objectKey,
+        Body: stream,
+        ContentType: contentType,
+      }),
+    );
+  }
+
+  async deleteObject(objectKey: string): Promise<void> {
+    await this.client.send(
+      new DeleteObjectCommand({
+        Bucket: this.bucket,
+        Key: objectKey,
       }),
     );
   }
