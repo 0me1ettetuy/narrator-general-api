@@ -1,5 +1,6 @@
 import {
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
@@ -106,6 +107,27 @@ export class StorageService {
         Key: objectKey,
       }),
     );
+  }
+
+  async deleteObjects(objectKeys: string[]): Promise<void> {
+    const uniqueObjectKeys = [...new Set(objectKeys.filter(Boolean))];
+
+    for (let index = 0; index < uniqueObjectKeys.length; index += 1_000) {
+      const response = await this.client.send(
+        new DeleteObjectsCommand({
+          Bucket: this.bucket,
+          Delete: {
+            Objects: uniqueObjectKeys
+              .slice(index, index + 1_000)
+              .map((Key) => ({ Key })),
+          },
+        }),
+      );
+
+      if (response.Errors?.length) {
+        throw new Error('One or more storage objects could not be deleted');
+      }
+    }
   }
 
   async getObjectMetadata(

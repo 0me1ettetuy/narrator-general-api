@@ -48,6 +48,16 @@ type StoredAudio = Audio & {
   objectKey: string | null;
 };
 
+type CancellableChapterJob = {
+  id: string;
+  type: 'SYNTHESIZE_CHAPTER' | 'MERGE_CHAPTER_AUDIO';
+  status: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+};
+
+type StoredAudioChunk = {
+  objectKey: string | null;
+};
+
 @Injectable()
 export class BooksService {
   constructor(
@@ -245,6 +255,238 @@ export class BooksService {
     };
   }
 
+  async cancelChapterAudio(
+    userId: string,
+    bookId: string,
+    chapterId: string,
+  ): Promise<ChapterAudioResponse> {
+    const book = await this.prisma.db.orm.public.Book.where({
+      id: bookId,
+      userId,
+    }).first();
+
+    if (!book) {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Book not found',
+      });
+    }
+
+    const chapter = await this.prisma.db.orm.public.Chapter.where({
+      id: chapterId,
+      bookId: book.id,
+    }).first();
+
+    if (!chapter) {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Chapter not found',
+      });
+    }
+
+    const cancellation = await this.prisma.db.transaction(
+      async (transaction) => {
+        const audio = (await transaction.orm.public.Audio.where({
+          chapterId: chapter.id,
+        }).first()) as Audio | null;
+
+        if (!audio) {
+          throw new ConflictException({
+            code: API_ERROR_CODES.conflict,
+            message: 'Chapter audio is not being generated',
+          });
+        }
+
+        if (audio.status === 'READY') {
+          throw new ConflictException({
+            code: API_ERROR_CODES.conflict,
+            message: 'Completed chapter audio cannot be cancelled',
+          });
+        }
+
+        if (audio.status === 'CANCELLED') {
+          return { audio, jobs: [] as CancellableChapterJob[] };
+        }
+
+        if (audio.status !== 'QUEUED' && audio.status !== 'PROCESSING') {
+          throw new ConflictException({
+            code: API_ERROR_CODES.conflict,
+            message: 'Chapter audio is not being generated',
+          });
+        }
+
+        const jobs = (await transaction.orm.public.Job.where({
+          chapterId: chapter.id,
+        }).all()) as CancellableChapterJob[];
+        const activeJobs = jobs.filter(
+          (job) =>
+            (job.type === 'SYNTHESIZE_CHAPTER' ||
+              job.type === 'MERGE_CHAPTER_AUDIO') &&
+            (job.status === 'QUEUED' || job.status === 'PROCESSING'),
+        );
+        const now = temporalNow();
+
+        await transaction.orm.public.Audio.where({ id: audio.id }).update({
+          status: 'CANCELLED',
+          processingStage: null,
+          error: null,
+          completedAt: null,
+          updatedAt: now,
+        });
+
+        for (const job of activeJobs) {
+          await transaction.orm.public.Job.where({ id: job.id }).update({
+            status: 'CANCELLED',
+            error: null,
+            completedAt: now,
+            updatedAt: now,
+          });
+        }
+
+        return {
+          audio: {
+            ...audio,
+            status: 'CANCELLED' as const,
+            processingStage: null,
+            error: null,
+          },
+          jobs: activeJobs,
+        };
+      },
+    );
+
+    await Promise.all(
+      cancellation.jobs.map((job) =>
+        job.type === 'SYNTHESIZE_CHAPTER'
+          ? this.jobsService.cancelChapterSynthesis(job.id)
+          : this.jobsService.cancelAudioMerge(job.id),
+      ),
+    );
+
+    return toChapterAudioResponse(cancellation.audio);
+  }
+
+  async deleteChapterAudio(
+    userId: string,
+    bookId: string,
+    chapterId: string,
+  ): Promise<void> {
+    const book = await this.prisma.db.orm.public.Book.where({
+      id: bookId,
+      userId,
+    }).first();
+
+    if (!book) {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Book not found',
+      });
+    }
+
+    const chapter = await this.prisma.db.orm.public.Chapter.where({
+      id: chapterId,
+      bookId: book.id,
+    }).first();
+
+    if (!chapter) {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Chapter not found',
+      });
+    }
+
+    const deletion = await this.prisma.db.transaction(async (transaction) => {
+      const audio = (await transaction.orm.public.Audio.where({
+        chapterId: chapter.id,
+      }).first()) as StoredAudio | null;
+      const jobs = (await transaction.orm.public.Job.where({
+        chapterId: chapter.id,
+      }).all()) as CancellableChapterJob[];
+      const audioJobs = jobs.filter(
+        (job) =>
+          job.type === 'SYNTHESIZE_CHAPTER' ||
+          job.type === 'MERGE_CHAPTER_AUDIO',
+      );
+
+      if (!audio) {
+        return {
+          audioId: null,
+          jobs: audioJobs,
+          objectKeys: [] as string[],
+        };
+      }
+
+      const chunks = (await transaction.orm.public.AudioChunk.where({
+        audioId: audio.id,
+      }).all()) as StoredAudioChunk[];
+      const now = temporalNow();
+
+      await transaction.orm.public.Audio.where({ id: audio.id }).update({
+        status: 'DELETING',
+        processingStage: null,
+        error: null,
+        updatedAt: now,
+      });
+
+      for (const job of audioJobs) {
+        if (job.status !== 'QUEUED' && job.status !== 'PROCESSING') {
+          continue;
+        }
+
+        await transaction.orm.public.Job.where({ id: job.id }).update({
+          status: 'CANCELLED',
+          error: null,
+          completedAt: now,
+          updatedAt: now,
+        });
+      }
+
+      return {
+        audioId: audio.id,
+        jobs: audioJobs,
+        objectKeys: [
+          audio.objectKey,
+          ...chunks.map((chunk) => chunk.objectKey),
+        ].filter((objectKey): objectKey is string => Boolean(objectKey)),
+      };
+    });
+
+    await Promise.all(
+      deletion.jobs.map((job) =>
+        job.type === 'SYNTHESIZE_CHAPTER'
+          ? this.jobsService.removeChapterSynthesis(job.id)
+          : this.jobsService.removeAudioMerge(job.id),
+      ),
+    );
+    await this.storageService.deleteObjects(deletion.objectKeys);
+
+    if (!deletion.audioId) {
+      await this.deleteChapterAudioJobs(deletion.jobs);
+
+      return;
+    }
+
+    await this.prisma.db.transaction(async (transaction) => {
+      const audio = await transaction.orm.public.Audio.where({
+        id: deletion.audioId as string,
+        status: 'DELETING',
+      }).first();
+
+      if (!audio) {
+        return;
+      }
+
+      await transaction.orm.public.AudioChunk.where({
+        audioId: deletion.audioId as string,
+      }).deleteAndCount();
+      await this.deleteChapterAudioJobs(deletion.jobs, transaction);
+      await transaction.orm.public.Audio.where({
+        id: deletion.audioId as string,
+        status: 'DELETING',
+      }).deleteAndCount();
+    });
+  }
+
   async getChapterAudioAccess(
     userId: string,
     bookId: string,
@@ -375,6 +617,13 @@ export class BooksService {
         return { audio, job, shouldEnqueue: false };
       }
 
+      if (audio?.status === 'DELETING') {
+        throw new ConflictException({
+          code: API_ERROR_CODES.conflict,
+          message: 'Chapter audio is being deleted',
+        });
+      }
+
       const queuedAudio =
         audio ??
         (await transaction.orm.public.Audio.create({
@@ -436,6 +685,17 @@ export class BooksService {
         shouldEnqueue: true,
       };
     });
+  }
+
+  private async deleteChapterAudioJobs(
+    jobs: CancellableChapterJob[],
+    transaction?: Pick<PrismaService['db'], 'orm'>,
+  ): Promise<void> {
+    const database = transaction ?? this.prisma.db;
+
+    for (const job of jobs) {
+      await database.orm.public.Job.where({ id: job.id }).deleteAndCount();
+    }
   }
 }
 

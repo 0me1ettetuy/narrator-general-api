@@ -66,7 +66,9 @@ export class ChapterAudioResponseDto {
   @ApiProperty({ format: 'uuid' })
   id: string;
 
-  @ApiProperty({ enum: ['QUEUED', 'PROCESSING', 'READY', 'FAILED'] })
+  @ApiProperty({
+    enum: ['QUEUED', 'PROCESSING', 'READY', 'FAILED', 'CANCELLED', 'DELETING'],
+  })
   status: string;
 
   @ApiProperty({

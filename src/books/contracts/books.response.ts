@@ -3,7 +3,8 @@ import type { Instant } from '../../prisma/temporal.js';
 export type BookParseStatus =
   'UPLOADING' | 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
 
-export type AudioStatus = 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
+export type AudioStatus =
+  'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED' | 'CANCELLED' | 'DELETING';
 
 export type AudioProcessingStage =
   'CHUNKING' | 'GENERATING' | 'MERGING' | 'UPLOADING';

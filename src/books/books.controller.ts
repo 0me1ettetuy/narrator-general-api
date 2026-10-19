@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -18,6 +19,7 @@ import {
   ApiCreatedResponse,
   ApiConflictResponse,
   ApiNotFoundResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -31,6 +33,7 @@ import type { JwtPayload } from '../auth/types/jwt.type.js';
 import {
   BookDetailResponseDto,
   BooksListResponseDto,
+  ChapterAudioResponseDto,
   ChapterAudioAccessResponseDto,
   CompleteBookUploadResponseDto,
   CreateBookUploadResponseDto,
@@ -39,6 +42,7 @@ import {
 import type {
   BookDetailResponse,
   BooksListResponse,
+  ChapterAudioResponse,
   ChapterAudioAccessResponse,
   CompleteBookUploadResponse,
   CreateBookUploadResponse,
@@ -109,6 +113,55 @@ export class BooksController {
     @Req() request: RequestWithUser,
   ): Promise<QueueChapterAudioResponse> {
     return this.booksService.queueChapterAudio(
+      request.user.sub,
+      params.bookId,
+      params.chapterId,
+    );
+  }
+
+  @Post(':bookId/chapters/:chapterId/audio/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Cancel queued or processing chapter audio generation',
+  })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiParam({ name: 'chapterId', format: 'uuid' })
+  @ApiOkResponse({ type: ChapterAudioResponseDto })
+  @ApiConflictResponse({
+    description: 'Chapter audio is not being generated or is already ready',
+  })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book or chapter not found' })
+  @UseGuards(JwtAccessGuard)
+  cancelChapterAudio(
+    @Param() params: ChapterAudioParamsDto,
+    @Req() request: RequestWithUser,
+  ): Promise<ChapterAudioResponse> {
+    return this.booksService.cancelChapterAudio(
+      request.user.sub,
+      params.bookId,
+      params.chapterId,
+    );
+  }
+
+  @Delete(':bookId/chapters/:chapterId/audio')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete generated or in-progress chapter audio and its files',
+  })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiParam({ name: 'chapterId', format: 'uuid' })
+  @ApiNoContentResponse({
+    description: 'Chapter audio and temporary files were removed',
+  })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book or chapter not found' })
+  @UseGuards(JwtAccessGuard)
+  async deleteChapterAudio(
+    @Param() params: ChapterAudioParamsDto,
+    @Req() request: RequestWithUser,
+  ): Promise<void> {
+    await this.booksService.deleteChapterAudio(
       request.user.sub,
       params.bookId,
       params.chapterId,

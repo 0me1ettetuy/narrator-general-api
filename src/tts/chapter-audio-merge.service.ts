@@ -29,7 +29,8 @@ type PersistedBook = {
 type PersistedAudio = {
   id: string;
   chapterId: string;
-  status: 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
+  status:
+    'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED' | 'CANCELLED' | 'DELETING';
   totalChunks: number;
   objectKey: string | null;
 };
@@ -73,9 +74,18 @@ export class ChapterAudioMergeService {
     }
 
     const parts = await this.getReadyParts(claimedJob.audioId);
+
+    if (!(await this.isActive(claimedJob))) {
+      return claimedJob;
+    }
+
     const mergedAudio = await this.audioMergeService.merge(parts);
 
     try {
+      if (!(await this.isActive(claimedJob))) {
+        return claimedJob;
+      }
+
       const objectKey = getFinalAudioObjectKey(
         claimedJob.userId,
         claimedJob.bookId,
@@ -88,7 +98,19 @@ export class ChapterAudioMergeService {
         createReadStream(mergedAudio.filePath),
         MP3_MIME_TYPE,
       );
-      await this.markAudioReady(claimedJob, objectKey, mergedAudio.byteSize);
+      const markedReady = await this.markAudioReady(
+        claimedJob,
+        objectKey,
+        mergedAudio.byteSize,
+      );
+
+      if (!markedReady) {
+        await this.storageService
+          .deleteObject(objectKey)
+          .catch(() => undefined);
+
+        return claimedJob;
+      }
     } finally {
       // A local cleanup failure must not turn an already stored final asset
       // into a failed job. The operating system can reclaim stale temp files.
@@ -126,7 +148,10 @@ export class ChapterAudioMergeService {
         ? AUDIO_CLEANUP_FAILED_ERROR
         : AUDIO_MERGE_FAILED_ERROR;
 
-      await transaction.orm.public.Job.where({ id: job.id }).update({
+      await transaction.orm.public.Job.where({
+        id: job.id,
+        status: 'PROCESSING',
+      }).update({
         status,
         progress: 0,
         error,
@@ -135,7 +160,10 @@ export class ChapterAudioMergeService {
       });
 
       if (audio && !finalAudioIsReady) {
-        await transaction.orm.public.Audio.where({ id: audio.id }).update({
+        await transaction.orm.public.Audio.where({
+          id: audio.id,
+          status: 'PROCESSING',
+        }).update({
           status,
           processingStage: isFinalAttempt ? null : 'MERGING',
           error: isFinalAttempt ? AUDIO_MERGE_FAILED_ERROR : null,
@@ -171,8 +199,16 @@ export class ChapterAudioMergeService {
         chapterId: job.chapterId,
       }).first()) as PersistedAudio | null;
 
-      if (!book || !audio) {
+      if (!book) {
         throw new Error('Audio merge job references missing data');
+      }
+
+      if (
+        !audio ||
+        audio.status === 'CANCELLED' ||
+        audio.status === 'DELETING'
+      ) {
+        return null;
       }
 
       const finalAudioIsReady =
@@ -188,8 +224,10 @@ export class ChapterAudioMergeService {
         updatedAt: now,
       });
       if (!finalAudioIsReady) {
-        await transaction.orm.public.Audio.where({ id: audio.id }).update({
+        await transaction.orm.public.Audio.where({
+          id: audio.id,
           status: 'PROCESSING',
+        }).update({
           processingStage: 'MERGING',
           error: null,
           completedAt: null,
@@ -242,18 +280,35 @@ export class ChapterAudioMergeService {
     job: ClaimedAudioMergeJob,
     objectKey: string,
     byteSize: number,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const now = temporalNow();
 
-    await this.prisma.db.orm.public.Audio.where({ id: job.audioId }).update({
-      status: 'READY',
-      processingStage: null,
-      objectKey,
-      mimeType: MP3_MIME_TYPE,
-      byteSize,
-      error: null,
-      completedAt: now,
-      updatedAt: now,
+    return this.prisma.db.transaction(async (transaction) => {
+      const mergeJob = await transaction.orm.public.Job.where({
+        id: job.id,
+        type: 'MERGE_CHAPTER_AUDIO',
+        status: 'PROCESSING',
+      }).first();
+
+      if (!mergeJob) {
+        return false;
+      }
+
+      const audio = await transaction.orm.public.Audio.where({
+        id: job.audioId,
+        status: 'PROCESSING',
+      }).update({
+        status: 'READY',
+        processingStage: null,
+        objectKey,
+        mimeType: MP3_MIME_TYPE,
+        byteSize,
+        error: null,
+        completedAt: now,
+        updatedAt: now,
+      });
+
+      return Boolean(audio);
     });
   }
 
@@ -288,6 +343,24 @@ export class ChapterAudioMergeService {
         updatedAt: now,
       });
     });
+  }
+
+  private async isActive(
+    job: Pick<ClaimedAudioMergeJob, 'id' | 'audioId'>,
+  ): Promise<boolean> {
+    const [audio, mergeJob] = await Promise.all([
+      this.prisma.db.orm.public.Audio.where({
+        id: job.audioId,
+        status: 'PROCESSING',
+      }).first(),
+      this.prisma.db.orm.public.Job.where({
+        id: job.id,
+        type: 'MERGE_CHAPTER_AUDIO',
+        status: 'PROCESSING',
+      }).first(),
+    ]);
+
+    return Boolean(audio && mergeJob);
   }
 }
 

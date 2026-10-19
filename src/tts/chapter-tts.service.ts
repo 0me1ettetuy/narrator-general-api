@@ -33,6 +33,8 @@ type PersistedChapter = {
 type PersistedAudio = {
   id: string;
   chapterId: string;
+  status:
+    'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED' | 'CANCELLED' | 'DELETING';
 };
 
 type PersistedAudioChunk = {
@@ -71,6 +73,10 @@ export class ChapterTtsService {
 
     const plan = await this.audioChunkService.ensurePlan(claimedJob.audioId);
 
+    if (!(await this.isActive(claimedJob))) {
+      return claimedJob;
+    }
+
     await this.prepareGeneration(claimedJob, plan.totalChunks);
     await this.requeueUnfinishedChunks(claimedJob.audioId);
 
@@ -78,6 +84,10 @@ export class ChapterTtsService {
     let completedChunks = 0;
 
     for (const chunk of chunks) {
+      if (!(await this.isActive(claimedJob))) {
+        return claimedJob;
+      }
+
       if (await this.hasStoredPart(chunk)) {
         completedChunks += 1;
         await this.updateGenerationProgress(
@@ -91,6 +101,13 @@ export class ChapterTtsService {
       await this.markChunkProcessing(chunk.id);
 
       const result = await this.ttsService.synthesize({ text: chunk.text });
+
+      // A provider request already in flight cannot be recalled. Do not
+      // persist its response when the user cancelled while it was running.
+      if (!(await this.isActive(claimedJob))) {
+        return claimedJob;
+      }
+
       const objectKey = getTemporaryPartObjectKey(
         claimedJob.userId,
         claimedJob.bookId,
@@ -103,6 +120,14 @@ export class ChapterTtsService {
         result.bytes,
         result.mimeType,
       );
+
+      if (!(await this.isActive(claimedJob))) {
+        await this.storageService
+          .deleteObject(objectKey)
+          .catch(() => undefined);
+
+        return claimedJob;
+      }
 
       completedChunks += 1;
       await this.persistReadyChunk({
@@ -121,6 +146,10 @@ export class ChapterTtsService {
     }
 
     const mergeJobId = await this.prepareMerge(claimedJob, plan.totalChunks);
+
+    if (!mergeJobId) {
+      return claimedJob;
+    }
 
     // The database row exists before we ask Redis to enqueue it. If Redis is
     // temporarily unavailable, this synthesis job is retried and safely tries
@@ -152,7 +181,10 @@ export class ChapterTtsService {
         : null;
       const status = isFinalAttempt ? 'FAILED' : 'QUEUED';
 
-      await transaction.orm.public.Job.where({ id: job.id }).update({
+      await transaction.orm.public.Job.where({
+        id: job.id,
+        status: 'PROCESSING',
+      }).update({
         status,
         progress: 0,
         error: CHAPTER_TTS_FAILED_ERROR,
@@ -164,7 +196,10 @@ export class ChapterTtsService {
         return;
       }
 
-      await transaction.orm.public.Audio.where({ id: audio.id }).update({
+      await transaction.orm.public.Audio.where({
+        id: audio.id,
+        status: 'PROCESSING',
+      }).update({
         status,
         processingStage: null,
         error: isFinalAttempt ? CHAPTER_TTS_FAILED_ERROR : null,
@@ -211,8 +246,15 @@ export class ChapterTtsService {
         chapterId: job.chapterId,
       }).first()) as PersistedAudio | null;
 
-      if (!chapter || !book || !audio) {
+      if (!chapter || !book) {
         throw new Error('Chapter TTS job references missing data');
+      }
+
+      if (
+        !audio ||
+        (audio.status !== 'QUEUED' && audio.status !== 'PROCESSING')
+      ) {
+        return null;
       }
 
       await transaction.orm.public.Job.where({ id: job.id }).update({
@@ -250,8 +292,10 @@ export class ChapterTtsService {
     const now = temporalNow();
 
     await this.prisma.db.transaction(async (transaction) => {
-      await transaction.orm.public.Audio.where({ id: job.audioId }).update({
+      await transaction.orm.public.Audio.where({
+        id: job.audioId,
         status: 'PROCESSING',
+      }).update({
         processingStage: 'GENERATING',
         totalChunks,
         completedChunks: 0,
@@ -355,8 +399,10 @@ export class ChapterTtsService {
         completedAt: now,
         updatedAt: now,
       });
-      await transaction.orm.public.Audio.where({ id: input.audioId }).update({
+      await transaction.orm.public.Audio.where({
+        id: input.audioId,
         status: 'PROCESSING',
+      }).update({
         processingStage: 'GENERATING',
         totalChunks: input.totalChunks,
         completedChunks: input.completedChunks,
@@ -386,8 +432,10 @@ export class ChapterTtsService {
     const now = temporalNow();
 
     await this.prisma.db.transaction(async (transaction) => {
-      await transaction.orm.public.Audio.where({ id: job.audioId }).update({
+      await transaction.orm.public.Audio.where({
+        id: job.audioId,
         status: 'PROCESSING',
+      }).update({
         processingStage: 'GENERATING',
         totalChunks,
         completedChunks,
@@ -407,11 +455,25 @@ export class ChapterTtsService {
   private async prepareMerge(
     job: ClaimedChapterTtsJob,
     totalChunks: number,
-  ): Promise<string> {
+  ): Promise<string | null> {
     const now = temporalNow();
     const idempotencyKey = `${MERGE_JOB_IDEMPOTENCY_KEY_PREFIX}:${job.audioId}`;
 
     return this.prisma.db.transaction(async (transaction) => {
+      const activeAudio = (await transaction.orm.public.Audio.where({
+        id: job.audioId,
+        status: 'PROCESSING',
+      }).first()) as PersistedAudio | null;
+      const activeJob = (await transaction.orm.public.Job.where({
+        id: job.id,
+        type: 'SYNTHESIZE_CHAPTER',
+        status: 'PROCESSING',
+      }).first()) as PersistedJob | null;
+
+      if (!activeAudio || !activeJob) {
+        return null;
+      }
+
       const chunks = (await transaction.orm.public.AudioChunk.where({
         audioId: job.audioId,
       }).all()) as PersistedAudioChunk[];
@@ -438,10 +500,22 @@ export class ChapterTtsService {
           maxAttempts: JOB_MAX_ATTEMPTS,
           updatedAt: now,
         });
+      } else if (existingJob.status !== 'PROCESSING') {
+        await transaction.orm.public.Job.where({ id: existingJob.id }).update({
+          status: 'QUEUED',
+          attempts: 0,
+          progress: 0,
+          error: null,
+          startedAt: null,
+          completedAt: null,
+          updatedAt: now,
+        });
       }
 
-      await transaction.orm.public.Audio.where({ id: job.audioId }).update({
+      await transaction.orm.public.Audio.where({
+        id: job.audioId,
         status: 'PROCESSING',
+      }).update({
         processingStage: 'MERGING',
         totalChunks,
         completedChunks: totalChunks,
@@ -465,6 +539,24 @@ export class ChapterTtsService {
       completedAt: temporalNow(),
       updatedAt: temporalNow(),
     });
+  }
+
+  private async isActive(
+    job: Pick<ClaimedChapterTtsJob, 'id' | 'audioId'>,
+  ): Promise<boolean> {
+    const [audio, processingJob] = await Promise.all([
+      this.prisma.db.orm.public.Audio.where({
+        id: job.audioId,
+        status: 'PROCESSING',
+      }).first(),
+      this.prisma.db.orm.public.Job.where({
+        id: job.id,
+        type: 'SYNTHESIZE_CHAPTER',
+        status: 'PROCESSING',
+      }).first(),
+    ]);
+
+    return Boolean(audio && processingJob);
   }
 }
 

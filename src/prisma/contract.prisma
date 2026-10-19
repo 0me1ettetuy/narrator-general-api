@@ -42,6 +42,8 @@ enum AudioStatus {
   PROCESSING
   READY
   FAILED
+  CANCELLED
+  DELETING
 }
 
 enum AudioProcessingStage {
