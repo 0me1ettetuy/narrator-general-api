@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Response } from 'express';
 import {
+  getClearLegacyRefreshCookieOptions,
   getClearRefreshCookieOptions,
   getRefreshCookieOptions,
   REFRESH_TOKEN_COOKIE_NAME,
@@ -9,6 +10,10 @@ import {
 @Injectable()
 export class CookieService {
   setRefreshCookie(response: Response, refreshToken: string): void {
+    response.clearCookie(
+      REFRESH_TOKEN_COOKIE_NAME,
+      getClearLegacyRefreshCookieOptions(),
+    );
     response.cookie(
       REFRESH_TOKEN_COOKIE_NAME,
       refreshToken,
@@ -20,6 +25,10 @@ export class CookieService {
     response.clearCookie(
       REFRESH_TOKEN_COOKIE_NAME,
       getClearRefreshCookieOptions(),
+    );
+    response.clearCookie(
+      REFRESH_TOKEN_COOKIE_NAME,
+      getClearLegacyRefreshCookieOptions(),
     );
   }
 }

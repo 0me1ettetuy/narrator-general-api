@@ -1,7 +1,10 @@
 import type { CookieOptions } from 'express';
 
 export const REFRESH_TOKEN_COOKIE_NAME = 'refreshToken';
-export const REFRESH_TOKEN_COOKIE_PATH = '/auth';
+// CSRF tokens are bound to the refresh token. The refresh cookie must therefore
+// be sent to every protected route, not only to /auth/*.
+export const REFRESH_TOKEN_COOKIE_PATH = '/';
+const LEGACY_REFRESH_TOKEN_COOKIE_PATH = '/auth';
 
 const DEFAULT_REFRESH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -28,6 +31,14 @@ export const getRefreshCookieOptions = (): CookieOptions => ({
 
 export const getClearRefreshCookieOptions = (): CookieOptions => ({
   ...getBaseRefreshCookieOptions(),
+  expires: new Date(0),
+  maxAge: 0,
+});
+
+// Remove cookies issued before the refresh-cookie path changed to "/".
+export const getClearLegacyRefreshCookieOptions = (): CookieOptions => ({
+  ...getBaseRefreshCookieOptions(),
+  path: LEGACY_REFRESH_TOKEN_COOKIE_PATH,
   expires: new Date(0),
   maxAge: 0,
 });
