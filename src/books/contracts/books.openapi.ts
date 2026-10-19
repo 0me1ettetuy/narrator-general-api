@@ -57,6 +57,53 @@ export class ChapterSummaryResponseDto {
 
   @ApiProperty({ minimum: 0 })
   wordCount: number;
+
+  @ApiProperty({ type: () => ChapterAudioResponseDto, nullable: true })
+  audio: ChapterAudioResponseDto | null;
+}
+
+export class ChapterAudioResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+
+  @ApiProperty({ enum: ['QUEUED', 'PROCESSING', 'READY', 'FAILED'] })
+  status: string;
+
+  @ApiProperty({
+    nullable: true,
+    enum: ['CHUNKING', 'GENERATING', 'MERGING', 'UPLOADING'],
+  })
+  processingStage: string | null;
+
+  @ApiProperty({ minimum: 0 })
+  totalChunks: number;
+
+  @ApiProperty({ minimum: 0 })
+  completedChunks: number;
+
+  @ApiProperty({ nullable: true })
+  error: string | null;
+}
+
+export class ChapterAudioJobResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+
+  @ApiProperty({
+    enum: ['QUEUED', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED'],
+  })
+  status: string;
+
+  @ApiProperty({ minimum: 0, maximum: 100 })
+  progress: number;
+}
+
+export class QueueChapterAudioResponseDto {
+  @ApiProperty({ type: () => ChapterAudioResponseDto })
+  audio: ChapterAudioResponseDto;
+
+  @ApiProperty({ type: () => ChapterAudioJobResponseDto, nullable: true })
+  job: ChapterAudioJobResponseDto | null;
 }
 
 export class BooksListResponseDto {

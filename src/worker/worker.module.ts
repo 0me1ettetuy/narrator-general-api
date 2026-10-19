@@ -4,6 +4,7 @@ import { BooksModule } from '../books/books.module.js';
 import { JobsModule } from '../jobs/jobs.module.js';
 import { TtsModule } from '../tts/tts.module.js';
 import { ParseBookProcessor } from './parse-book.processor.js';
+import { SynthesizeChapterProcessor } from './synthesize-chapter.processor.js';
 
 @Module({
   imports: [
@@ -12,6 +13,6 @@ import { ParseBookProcessor } from './parse-book.processor.js';
     JobsModule,
     TtsModule,
   ],
-  providers: [ParseBookProcessor],
+  providers: [ParseBookProcessor, SynthesizeChapterProcessor],
 })
 export class WorkerModule {}

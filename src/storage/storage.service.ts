@@ -8,6 +8,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Readable } from 'node:stream';
 
 const DEFAULT_SIGNED_URL_TTL_SECONDS = 15 * 60;
 
@@ -54,6 +55,21 @@ export class StorageService {
         Key: objectKey,
       }),
       { expiresIn: DEFAULT_SIGNED_URL_TTL_SECONDS },
+    );
+  }
+
+  async putObjectBytes(
+    objectKey: string,
+    bytes: Uint8Array,
+    contentType: string,
+  ): Promise<void> {
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: objectKey,
+        Body: bytes,
+        ContentType: contentType,
+      }),
     );
   }
 
@@ -111,6 +127,21 @@ export class StorageService {
     }
 
     return bytes;
+  }
+
+  async getObjectStream(objectKey: string): Promise<Readable> {
+    const object = await this.client.send(
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: objectKey,
+      }),
+    );
+
+    if (!object.Body || !(object.Body instanceof Readable)) {
+      throw new Error('Object body is missing or is not a readable stream');
+    }
+
+    return object.Body;
   }
 
   private getRequiredConfig(key: string): string {

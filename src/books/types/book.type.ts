@@ -1,5 +1,10 @@
 import type { Instant } from '../../prisma/temporal.js';
-import type { BookParseStatus } from '../contracts/books.response.js';
+import type {
+  AudioProcessingStage,
+  AudioStatus,
+  BookParseStatus,
+  JobStatus,
+} from '../contracts/books.response.js';
 
 export type Book = {
   id: string;
@@ -34,4 +39,20 @@ export type Chapter = {
   sourceHref: string | null;
   text: string;
   wordCount: number;
+};
+
+export type Audio = {
+  id: string;
+  chapterId: string;
+  status: AudioStatus;
+  processingStage: AudioProcessingStage | null;
+  totalChunks: number;
+  completedChunks: number;
+  error: string | null;
+};
+
+export type ProcessingJob = {
+  id: string;
+  status: JobStatus;
+  progress: number;
 };

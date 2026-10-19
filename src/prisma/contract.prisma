@@ -44,9 +44,24 @@ enum AudioStatus {
   FAILED
 }
 
+enum AudioProcessingStage {
+  CHUNKING
+  GENERATING
+  MERGING
+  UPLOADING
+}
+
+enum AudioChunkStatus {
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
 enum JobType {
   PARSE_BOOK
   SYNTHESIZE_CHAPTER
+  MERGE_CHAPTER_AUDIO
 }
 
 enum JobStatus {
@@ -116,23 +131,50 @@ model Chapter {
 }
 
 model Audio {
-  id          String      @id @default(uuid())
-  chapterId   String      @unique
-  status      AudioStatus @default(QUEUED)
-  objectKey   String?
-  mimeType    String?
-  provider    String?
-  voice       String?
-  durationMs  Int?
-  byteSize    Int?
-  error       String?
-  completedAt DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime
+  id               String                @id @default(uuid())
+  chapterId        String                @unique
+  status           AudioStatus           @default(QUEUED)
+  processingStage  AudioProcessingStage?
+  totalChunks      Int                   @default(0)
+  completedChunks  Int                   @default(0)
+  objectKey        String?
+  mimeType         String?
+  provider         String?
+  voice            String?
+  durationMs       Int?
+  byteSize         Int?
+  error            String?
+  completedAt      DateTime?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime
 
-  chapter Chapter @relation(fields: [chapterId], references: [id])
+  chapter Chapter      @relation(fields: [chapterId], references: [id])
+  chunks  AudioChunk[]
 
   @@map("audio")
+}
+
+model AudioChunk {
+  id                   String           @id @default(uuid())
+  audioId              String
+  position             Int
+  text                 String
+  textChecksum         String
+  status               AudioChunkStatus @default(QUEUED)
+  objectKey            String?
+  mimeType             String?
+  byteSize             Int?
+  providerGenerationId String?
+  error                String?
+  completedAt          DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime
+
+  audio Audio @relation(fields: [audioId], references: [id])
+
+  @@unique([audioId, position])
+  @@index([audioId, status, position])
+  @@map("audio_chunk")
 }
 
 model Job {

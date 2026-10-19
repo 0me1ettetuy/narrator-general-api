@@ -3,6 +3,14 @@ import type { Instant } from '../../prisma/temporal.js';
 export type BookParseStatus =
   'UPLOADING' | 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
 
+export type AudioStatus = 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
+
+export type AudioProcessingStage =
+  'CHUNKING' | 'GENERATING' | 'MERGING' | 'UPLOADING';
+
+export type JobStatus =
+  'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+
 export type BookSummary = {
   id: string;
   title: string;
@@ -27,6 +35,27 @@ export type ChapterSummaryResponse = {
   position: number;
   title: string;
   wordCount: number;
+  audio: ChapterAudioResponse | null;
+};
+
+export type ChapterAudioResponse = {
+  id: string;
+  status: AudioStatus;
+  processingStage: AudioProcessingStage | null;
+  totalChunks: number;
+  completedChunks: number;
+  error: string | null;
+};
+
+export type ChapterAudioJobResponse = {
+  id: string;
+  status: JobStatus;
+  progress: number;
+};
+
+export type QueueChapterAudioResponse = {
+  audio: ChapterAudioResponse;
+  job: ChapterAudioJobResponse | null;
 };
 
 export type BooksListResponse = {

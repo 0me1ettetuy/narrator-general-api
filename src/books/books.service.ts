@@ -16,19 +16,29 @@ import type {
   BookDetailResponse,
   BookSummary,
   BooksListResponse,
+  ChapterAudioJobResponse,
+  ChapterAudioResponse,
   ChapterSummaryResponse,
   CompleteBookUploadResponse,
   CreateBookUploadResponse,
+  QueueChapterAudioResponse,
 } from './contracts/books.response.js';
 import type { BooksListQueryDto } from './dto/books-list-query.dto.js';
 import {
   EPUB_MIME_TYPE,
   type CreateBookUploadDto,
 } from './dto/create-book-upload.dto.js';
-import type { Book, BookAuthor, Chapter } from './types/book.type.js';
+import type {
+  Audio,
+  Book,
+  BookAuthor,
+  Chapter,
+  ProcessingJob,
+} from './types/book.type.js';
 
 const DEFAULT_PAGE_SIZE = 20;
 const PARSE_BOOK_IDEMPOTENCY_KEY_PREFIX = 'parse-book';
+const SYNTHESIZE_CHAPTER_IDEMPOTENCY_KEY_PREFIX = 'synthesize-chapter';
 
 @Injectable()
 export class BooksService {
@@ -186,6 +196,47 @@ export class BooksService {
     };
   }
 
+  async queueChapterAudio(
+    userId: string,
+    bookId: string,
+    chapterId: string,
+  ): Promise<QueueChapterAudioResponse> {
+    const book = await this.prisma.db.orm.public.Book.where({
+      id: bookId,
+      userId,
+    }).first();
+
+    if (!book) {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Book not found',
+      });
+    }
+
+    const chapter = await this.prisma.db.orm.public.Chapter.where({
+      id: chapterId,
+      bookId: book.id,
+    }).first();
+
+    if (!chapter) {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Chapter not found',
+      });
+    }
+
+    const queued = await this.createOrReuseChapterAudioJob(book.id, chapter.id);
+
+    if (queued.shouldEnqueue) {
+      await this.jobsService.enqueueChapterSynthesis(queued.job.id);
+    }
+
+    return {
+      audio: toChapterAudioResponse(queued.audio),
+      job: toChapterAudioJobResponse(queued.job),
+    };
+  }
+
   async getBook(userId: string, bookId: string): Promise<BookDetailResponse> {
     const book = await this.prisma.db.orm.public.Book.where({
       id: bookId,
@@ -203,12 +254,126 @@ export class BooksService {
       this.prisma.db.orm.public.BookAuthor.where({ bookId }).all(),
       this.prisma.db.orm.public.Chapter.where({ bookId }).all(),
     ])) as [BookAuthor[], Chapter[]];
+    const sortedChapters = chapters.sort(compareByPosition);
+    const audioByChapterId = new Map(
+      (
+        await Promise.all(
+          sortedChapters.map(async (chapter) => {
+            const audio = (await this.prisma.db.orm.public.Audio.where({
+              chapterId: chapter.id,
+            }).first()) as Audio | null;
+
+            return [chapter.id, audio] as const;
+          }),
+        )
+      ).filter((entry): entry is readonly [string, Audio] => entry[1] !== null),
+    );
 
     return {
       book: toBookSummary(book),
       authors: authors.sort(compareByPosition).map(toBookAuthorResponse),
-      chapters: chapters.sort(compareByPosition).map(toChapterSummaryResponse),
+      chapters: sortedChapters.map((chapter) =>
+        toChapterSummaryResponse(
+          chapter,
+          audioByChapterId.get(chapter.id) ?? null,
+        ),
+      ),
     };
+  }
+
+  private async createOrReuseChapterAudioJob(
+    bookId: string,
+    chapterId: string,
+  ): Promise<{
+    audio: Audio;
+    job: ProcessingJob;
+    shouldEnqueue: boolean;
+  }> {
+    const idempotencyKey = getSynthesizeChapterIdempotencyKey(chapterId);
+    const now = temporalNow();
+
+    return this.prisma.db.transaction(async (transaction) => {
+      const audio = (await transaction.orm.public.Audio.where({
+        chapterId,
+      }).first()) as Audio | null;
+      const job = (await transaction.orm.public.Job.where({
+        idempotencyKey,
+      }).first()) as
+        | (ProcessingJob & {
+            type: string;
+            attempts: number;
+          })
+        | null;
+
+      if (audio?.status === 'READY' || audio?.status === 'PROCESSING') {
+        if (!job) {
+          throw new Error('Chapter audio is missing its synthesis job');
+        }
+
+        return { audio, job, shouldEnqueue: false };
+      }
+
+      const queuedAudio =
+        audio ??
+        (await transaction.orm.public.Audio.create({
+          id: randomUUID(),
+          chapterId,
+          updatedAt: now,
+        }));
+      const queuedJob =
+        job ??
+        (await transaction.orm.public.Job.create({
+          id: randomUUID(),
+          bookId,
+          chapterId,
+          type: 'SYNTHESIZE_CHAPTER',
+          idempotencyKey,
+          maxAttempts: JOB_MAX_ATTEMPTS,
+          updatedAt: now,
+        }));
+
+      if (queuedJob.type !== 'SYNTHESIZE_CHAPTER') {
+        throw new Error('Chapter audio has an invalid job type');
+      }
+
+      if (job) {
+        await transaction.orm.public.Job.where({ id: queuedJob.id }).update({
+          status: 'QUEUED',
+          attempts: 0,
+          progress: 0,
+          error: null,
+          startedAt: null,
+          completedAt: null,
+          updatedAt: now,
+        });
+      }
+      if (audio) {
+        await transaction.orm.public.Audio.where({ id: queuedAudio.id }).update(
+          {
+            status: 'QUEUED',
+            processingStage: null,
+            error: null,
+            completedAt: null,
+            updatedAt: now,
+          },
+        );
+      }
+
+      return {
+        audio: {
+          ...queuedAudio,
+          status: 'QUEUED',
+          processingStage: null,
+          error: null,
+        },
+        job: {
+          ...queuedJob,
+          status: 'QUEUED',
+          progress: 0,
+        },
+        shouldEnqueue: true,
+      };
+    });
   }
 }
 
@@ -237,6 +402,10 @@ function getParseBookIdempotencyKey(bookId: string): string {
   return `${PARSE_BOOK_IDEMPOTENCY_KEY_PREFIX}:${bookId}`;
 }
 
+function getSynthesizeChapterIdempotencyKey(chapterId: string): string {
+  return `${SYNTHESIZE_CHAPTER_IDEMPOTENCY_KEY_PREFIX}:${chapterId}`;
+}
+
 function toCompleteBookUploadResponse(
   bookId: string,
   jobId: string,
@@ -256,12 +425,37 @@ function toBookAuthorResponse(author: BookAuthor): BookAuthorResponse {
   };
 }
 
-function toChapterSummaryResponse(chapter: Chapter): ChapterSummaryResponse {
+function toChapterSummaryResponse(
+  chapter: Chapter,
+  audio: Audio | null,
+): ChapterSummaryResponse {
   return {
     id: chapter.id,
     position: chapter.position,
     title: chapter.title,
     wordCount: chapter.wordCount,
+    audio: audio ? toChapterAudioResponse(audio) : null,
+  };
+}
+
+function toChapterAudioResponse(audio: Audio): ChapterAudioResponse {
+  return {
+    id: audio.id,
+    status: audio.status,
+    processingStage: audio.processingStage,
+    totalChunks: audio.totalChunks,
+    completedChunks: audio.completedChunks,
+    error: audio.error,
+  };
+}
+
+function toChapterAudioJobResponse(
+  job: ProcessingJob,
+): ChapterAudioJobResponse {
+  return {
+    id: job.id,
+    status: job.status,
+    progress: job.progress,
   };
 }
 
