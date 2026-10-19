@@ -106,6 +106,7 @@
       "^@/(.*)$": "<rootDir>/$1",
       "^@abfcode/spine$": "<rootDir>/test-mocks/spine.ts",
       "^@nestjs/bullmq$": "<rootDir>/test-mocks/bullmq.ts",
+      "^@nestjs/config$": "<rootDir>/test-mocks/config.ts",
       "^@nestjs/swagger$": "<rootDir>/test-mocks/swagger.ts",
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
