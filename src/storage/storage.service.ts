@@ -15,6 +15,9 @@ import { Readable } from 'node:stream';
 
 export const SIGNED_URL_TTL_SECONDS = 15 * 60;
 const MULTIPART_UPLOAD_PART_SIZE_BYTES = 5 * 1024 * 1024;
+const STORAGE_PROVIDERS = ['r2', 's3', 'minio'] as const;
+
+type StorageProvider = (typeof STORAGE_PROVIDERS)[number];
 
 type CreateDownloadUrlOptions = {
   asAttachment?: boolean;
@@ -32,10 +35,12 @@ export class StorageService {
   private readonly bucket: string;
 
   constructor(private readonly configService: ConfigService) {
+    const provider = this.getStorageProvider();
     this.bucket = this.getRequiredConfig('STORAGE_BUCKET');
     this.client = new S3Client({
       region: this.getRequiredConfig('STORAGE_REGION'),
-      endpoint: this.getRequiredConfig('STORAGE_ENDPOINT'),
+      endpoint: this.getEndpoint(provider),
+      forcePathStyle: provider === 'minio',
       credentials: {
         accessKeyId: this.getRequiredConfig('STORAGE_ACCESS_KEY_ID'),
         secretAccessKey: this.getRequiredConfig('STORAGE_SECRET_ACCESS_KEY'),
@@ -214,5 +219,31 @@ export class StorageService {
     }
 
     return value;
+  }
+
+  private getStorageProvider(): StorageProvider {
+    const value = this.getRequiredConfig('STORAGE_PROVIDER');
+
+    if (STORAGE_PROVIDERS.includes(value as StorageProvider)) {
+      return value as StorageProvider;
+    }
+
+    throw new Error(
+      `STORAGE_PROVIDER must be one of: ${STORAGE_PROVIDERS.join(', ')}`,
+    );
+  }
+
+  private getEndpoint(provider: StorageProvider): string | undefined {
+    const endpoint = this.configService.get<string>('STORAGE_ENDPOINT');
+
+    if (endpoint) {
+      return endpoint;
+    }
+
+    if (provider === 's3') {
+      return undefined;
+    }
+
+    throw new Error('STORAGE_ENDPOINT is required for R2 and MinIO');
   }
 }
