@@ -7,12 +7,14 @@ import {
   S3Client,
   S3ServiceException,
 } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Readable } from 'node:stream';
 
 export const SIGNED_URL_TTL_SECONDS = 15 * 60;
+const MULTIPART_UPLOAD_PART_SIZE_BYTES = 5 * 1024 * 1024;
 
 type CreateDownloadUrlOptions = {
   asAttachment?: boolean;
@@ -90,14 +92,17 @@ export class StorageService {
     stream: Readable,
     contentType: string,
   ): Promise<void> {
-    await this.client.send(
-      new PutObjectCommand({
+    await new Upload({
+      client: this.client,
+      params: {
         Bucket: this.bucket,
         Key: objectKey,
         Body: stream,
         ContentType: contentType,
-      }),
-    );
+      },
+      queueSize: 1,
+      partSize: MULTIPART_UPLOAD_PART_SIZE_BYTES,
+    }).done();
   }
 
   async deleteObject(objectKey: string): Promise<void> {

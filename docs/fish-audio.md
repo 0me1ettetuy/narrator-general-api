@@ -1,16 +1,19 @@
 # Fish Audio S2.1 Pro Free notes
 
-Last verified: 2026-10-19.
+Last verified: 2026-10-20.
 
 ## What we are using now
 
-Narrator will call **Fish Audio through OpenRouter** with the server-owned
-`OPENROUTER_API_KEY`. It will not call the Fish API directly in the first
-version. See [OpenRouter TTS notes](./openrouter.md) for the actual adapter
-contract we should implement.
+Narrator calls **Fish Audio directly** from its background worker with the
+server-owned `FISH_AUDIO_API_KEY`. The browser never receives this key.
 
-This distinction matters because the two APIs look similar but are not the
-same.
+The worker reads Fish's chunked MP3 response as it arrives and forwards it to
+a multipart R2 upload. It permits a five-minute period with no response/audio
+bytes, resetting that timer whenever Fish sends audio. This supports long
+segments without the old fixed 60-second whole-request limit or a complete
+segment MP3 held in worker memory.
+
+Fish and OpenRouter have different contracts:
 
 | Concern | OpenRouter route used by Narrator | Direct Fish API |
 | --- | --- | --- |
@@ -21,9 +24,7 @@ same.
 | Output-format field | `response_format` | `format` |
 | Saved-voice field | provider-specific `voice` | `reference_id` |
 
-Never mix direct-Fish fields such as `reference_id` or `format` into the
-OpenRouter payload. The differences above are the main reason this file
-exists.
+The direct Fish adapter uses the right-hand column. Do not mix the fields.
 
 ## S2.1 Pro Free, at the time of research
 
@@ -44,27 +45,18 @@ them before launch and before presenting this as a user-facing promise.
 
 ## Fish capabilities relevant later
 
-- **Narration/style:** Fish accepts natural delivery directions. Through
-  OpenRouter, use `instructions`; Fish also recognizes square-bracketed text
-  directions. Keep the initial audiobook output plain rather than modifying
-  book text.
-- **Multiple speakers:** direct Fish supports it for the S2 family, and
-  OpenRouter documents multi-speaker support for Fish models other than S1.
-  This is not needed for the first chapter-to-audio flow.
+- **Narration/style:** Fish accepts natural delivery directions and
+  square-bracketed text directions. Keep the initial audiobook output plain
+  rather than modifying book text.
+- **Multiple speakers:** direct Fish supports it for the S2 family. This is
+  not needed for the first chapter-to-audio flow.
 - **Voice cloning:** direct Fish can use either a saved `reference_id` or
-  zero-shot `references`. Via OpenRouter, voice cloning uses
-  `input_references` and capability-dependent routing. Treat it as a later
-  feature requiring consent, audio-upload rules, retention/deletion behavior,
-  and ownership controls.
-- **Text normalization:** direct Fish can normalize numbers, dates, units, and
-  symbols, and accepts a language tag for that normalization. The OpenRouter
-  adapter abstracts direct Fish controls, so do not assume every direct option
-  is exposed through OpenRouter.
+  zero-shot `references`. Treat it as a later feature requiring consent,
+  audio-upload rules, retention/deletion behavior, and ownership controls.
+- **Text normalization:** Fish can normalize numbers, dates, units, and
+  symbols, and accepts a language tag for that normalization.
 
-## Direct Fish API reference only — do not implement yet
-
-If we later intentionally choose direct Fish instead of OpenRouter, its basic
-request has this shape:
+## Direct Fish request shape
 
 ```http
 POST https://api.fish.audio/v1/tts
@@ -79,22 +71,19 @@ model: s2.1-pro-free
 }
 ```
 
-The direct endpoint accepts JSON or MessagePack. Its documentation recommends
+The endpoint accepts JSON or MessagePack. Its documentation recommends
 creating/uploading a voice model before synthesis for better quality and lower
-latency; it can also receive zero-shot references. These direct-only controls
-do not change the initial OpenRouter plan.
+latency; it can also receive zero-shot references.
 
-## What to decide before the real TTS adapter
+## Future decisions
 
-1. Confirm the OpenRouter route's default/allowed voice behavior with a
-   harmless short probe.
-2. Pick a single application-default narration voice, or deliberately support
+1. Pick a single application-default narration voice, or deliberately support
    no voice selection until the route supplies one.
-3. Define a tested segment size, timeout, retry policy, and queue concurrency.
-4. Define R2 object keys and the `Audio`/job state transition before a worker
+2. Define a tested segment size, timeout, retry policy, and queue concurrency.
+3. Define R2 object keys and the `Audio`/job state transition before a worker
    can mark a conversion complete.
-5. Keep user-supplied OpenRouter keys out of this first adapter. Add them later
-   using the credential-security plan, not frontend local storage.
+4. Add user-supplied provider keys later using the credential-security plan,
+   not frontend local storage.
 
 ## Official sources
 

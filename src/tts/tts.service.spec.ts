@@ -1,11 +1,22 @@
 import { ConfigService } from '@nestjs/config';
+import { Readable } from 'node:stream';
 import { TtsService, TtsSynthesisError } from './tts.service.js';
+
+async function readStream(stream: Readable): Promise<Uint8Array> {
+  const parts: Buffer[] = [];
+
+  for await (const part of stream) {
+    parts.push(Buffer.from(part));
+  }
+
+  return new Uint8Array(Buffer.concat(parts));
+}
 
 describe('TtsService', () => {
   const originalFetch = global.fetch;
   const fetchMock = jest.fn();
   const configValues = {
-    OPENROUTER_API_KEY: 'test-openrouter-key',
+    FISH_AUDIO_API_KEY: 'test-fish-audio-key',
     VOICE_ID: 'test-voice-id',
   };
 
@@ -23,7 +34,7 @@ describe('TtsService', () => {
     global.fetch = originalFetch;
   });
 
-  it('sends the configured model and voice, then returns validated MP3 bytes', async () => {
+  it('sends the configured model and voice, then exposes a validated MP3 stream', async () => {
     const audio = new Uint8Array([1, 2, 3]);
     fetchMock.mockResolvedValue(
       new Response(audio, {
@@ -31,35 +42,45 @@ describe('TtsService', () => {
         headers: {
           'content-type': 'audio/mpeg',
           'content-length': String(audio.byteLength),
-          'x-generation-id': 'generation-123',
+          'x-request-id': 'request-123',
         },
       }),
     );
 
-    await expect(
-      service.synthesize({ text: ' Hello world. ' }),
-    ).resolves.toEqual({
-      bytes: audio,
+    const result = await service.synthesizeStream({ text: ' Hello world. ' });
+
+    expect({
+      mimeType: result.mimeType,
+      provider: result.provider,
+      model: result.model,
+      voice: result.voice,
+      generationId: result.generationId,
+      byteSize: result.getByteSize(),
+    }).toEqual({
       mimeType: 'audio/mpeg',
-      provider: 'openrouter',
-      model: 'fish-audio/s2.1-pro-free:free',
+      provider: 'fish-audio',
+      model: 's2.1-pro-free',
       voice: 'test-voice-id',
-      generationId: 'generation-123',
+      generationId: 'request-123',
+      byteSize: 0,
     });
 
+    await expect(readStream(result.stream)).resolves.toEqual(audio);
+    expect(result.getByteSize()).toBe(audio.byteLength);
+
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://openrouter.ai/api/v1/audio/speech',
+      'https://api.fish.audio/v1/tts',
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Authorization: 'Bearer test-openrouter-key',
+          Authorization: 'Bearer test-fish-audio-key',
           'Content-Type': 'application/json',
+          model: 's2.1-pro-free',
         },
         body: JSON.stringify({
-          model: 'fish-audio/s2.1-pro-free:free',
-          voice: 'test-voice-id',
-          input: 'Hello world.',
-          response_format: 'mp3',
+          text: 'Hello world.',
+          reference_id: 'test-voice-id',
+          format: 'mp3',
         }),
         signal: expect.any(AbortSignal),
       }),
@@ -74,7 +95,9 @@ describe('TtsService', () => {
       }),
     );
 
-    await expect(service.synthesize({ text: 'Hello world.' })).rejects.toEqual(
+    await expect(
+      service.synthesizeStream({ text: 'Hello world.' }),
+    ).rejects.toEqual(
       new TtsSynthesisError('TTS provider request failed with status 429'),
     );
   });
@@ -87,13 +110,35 @@ describe('TtsService', () => {
       }),
     );
 
-    await expect(service.synthesize({ text: 'Hello world.' })).rejects.toThrow(
-      'TTS provider returned an unexpected format',
+    await expect(
+      service.synthesizeStream({ text: 'Hello world.' }),
+    ).rejects.toThrow('TTS provider returned an unexpected format');
+  });
+
+  it('rejects an empty chunked MP3 response while it is streamed', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.close();
+          },
+        }),
+        {
+          status: 200,
+          headers: { 'content-type': 'audio/mpeg' },
+        },
+      ),
+    );
+
+    const result = await service.synthesizeStream({ text: 'Hello world.' });
+
+    await expect(readStream(result.stream)).rejects.toThrow(
+      'TTS provider returned an empty audio file',
     );
   });
 
   it('rejects empty input before making a provider request', async () => {
-    await expect(service.synthesize({ text: '   ' })).rejects.toThrow(
+    await expect(service.synthesizeStream({ text: '   ' })).rejects.toThrow(
       'TTS input must not be empty',
     );
 

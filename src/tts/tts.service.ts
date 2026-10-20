@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Readable, Transform } from 'node:stream';
 import { DEFAULT_TTS_SEGMENT_MAX_CHARACTERS } from './chapter-segmenter.js';
 
-const OPENROUTER_TTS_URL = 'https://openrouter.ai/api/v1/audio/speech';
-const DEFAULT_OPENROUTER_TTS_MODEL = 'fish-audio/s2.1-pro-free:free';
-const DEFAULT_TTS_TIMEOUT_MS = 60_000;
+const FISH_AUDIO_TTS_URL = 'https://api.fish.audio/v1/tts';
+const DEFAULT_FISH_TTS_MODEL = 's2.1-pro-free';
+const DEFAULT_TTS_IDLE_TIMEOUT_MS = 300_000;
 const MAX_TTS_AUDIO_BYTES = 20 * 1024 * 1024;
 const MP3_CONTENT_TYPE = 'audio/mpeg';
 
@@ -12,13 +13,15 @@ export type TtsSynthesisInput = {
   text: string;
 };
 
-export type TtsSynthesisResult = {
-  bytes: Uint8Array;
+export type TtsSynthesisStream = {
+  stream: Readable;
   mimeType: typeof MP3_CONTENT_TYPE;
-  provider: 'openrouter';
+  provider: 'fish-audio';
   model: string;
   voice: string;
   generationId: string | null;
+  getByteSize: () => number;
+  abort: () => void;
 };
 
 export class TtsSynthesisError extends Error {
@@ -33,21 +36,23 @@ export class TtsService {
   private readonly apiKey: string;
   private readonly model: string;
   private readonly voice: string;
-  private readonly timeoutMs: number;
+  private readonly idleTimeoutMs: number;
 
   constructor(private readonly configService: ConfigService) {
-    this.apiKey = this.getRequiredConfig('OPENROUTER_API_KEY');
+    this.apiKey = this.getRequiredConfig('FISH_AUDIO_API_KEY');
     this.voice = this.getRequiredConfig('VOICE_ID');
     this.model =
-      this.configService.get<string>('OPENROUTER_TTS_MODEL') ??
-      DEFAULT_OPENROUTER_TTS_MODEL;
-    this.timeoutMs = this.getPositiveNumberConfig(
-      'OPENROUTER_TTS_TIMEOUT_MS',
-      DEFAULT_TTS_TIMEOUT_MS,
+      this.configService.get<string>('FISH_TTS_MODEL') ??
+      DEFAULT_FISH_TTS_MODEL;
+    this.idleTimeoutMs = this.getPositiveNumberConfig(
+      'FISH_TTS_IDLE_TIMEOUT_MS',
+      DEFAULT_TTS_IDLE_TIMEOUT_MS,
     );
   }
 
-  async synthesize(input: TtsSynthesisInput): Promise<TtsSynthesisResult> {
+  async synthesizeStream(
+    input: TtsSynthesisInput,
+  ): Promise<TtsSynthesisStream> {
     const text = input.text.trim();
 
     if (!text) {
@@ -58,50 +63,150 @@ export class TtsService {
       throw new TtsSynthesisError('TTS input exceeds the allowed size');
     }
 
-    const response = await this.requestAudio(text);
-    this.assertSuccessfulMp3Response(response);
+    const { response, controller, clearTimeout } =
+      await this.requestAudio(text);
 
-    const bytes = new Uint8Array(await response.arrayBuffer());
+    try {
+      this.assertSuccessfulMp3Response(response);
 
-    if (!bytes.byteLength) {
-      throw new TtsSynthesisError('TTS provider returned an empty audio file');
+      if (!response.body) {
+        throw new TtsSynthesisError(
+          'TTS provider returned an empty audio file',
+        );
+      }
+
+      clearTimeout();
+      const audioStream = this.createAudioStream(response.body, controller);
+
+      return {
+        ...audioStream,
+        mimeType: MP3_CONTENT_TYPE,
+        provider: 'fish-audio',
+        model: this.model,
+        voice: this.voice,
+        generationId: response.headers.get('x-request-id'),
+      };
+    } catch (error) {
+      if (error instanceof TtsSynthesisError) {
+        throw error;
+      }
+
+      if (controller.signal.aborted) {
+        throw new TtsSynthesisError('TTS provider stream became idle');
+      }
+
+      throw new TtsSynthesisError('TTS provider response could not be read');
+    } finally {
+      clearTimeout();
     }
-
-    if (bytes.byteLength > MAX_TTS_AUDIO_BYTES) {
-      throw new TtsSynthesisError(
-        'TTS provider audio exceeds the allowed size',
-      );
-    }
-
-    return {
-      bytes,
-      mimeType: MP3_CONTENT_TYPE,
-      provider: 'openrouter',
-      model: this.model,
-      voice: this.voice,
-      generationId: response.headers.get('x-generation-id'),
-    };
   }
 
-  private async requestAudio(text: string): Promise<Response> {
+  private async requestAudio(text: string): Promise<{
+    response: Response;
+    controller: AbortController;
+    clearTimeout: () => void;
+  }> {
+    const controller = new AbortController();
+    const timeout = this.startIdleTimeout(controller);
+
     try {
-      return await fetch(OPENROUTER_TTS_URL, {
+      const response = await fetch(FISH_AUDIO_TTS_URL, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
+          model: this.model,
         },
         body: JSON.stringify({
-          model: this.model,
-          voice: this.voice,
-          input: text,
-          response_format: 'mp3',
+          text,
+          reference_id: this.voice,
+          format: 'mp3',
         }),
-        signal: AbortSignal.timeout(this.timeoutMs),
+        signal: controller.signal,
       });
-    } catch {
+
+      return {
+        response,
+        controller,
+        clearTimeout: () => clearTimeout(timeout),
+      };
+    } catch (error) {
+      clearTimeout(timeout);
+
+      if (controller.signal.aborted) {
+        throw new TtsSynthesisError('TTS provider did not start responding');
+      }
+
       throw new TtsSynthesisError('TTS provider request failed');
     }
+  }
+
+  private startIdleTimeout(
+    controller: AbortController,
+  ): ReturnType<typeof setTimeout> {
+    return setTimeout(() => controller.abort(), this.idleTimeoutMs);
+  }
+
+  private createAudioStream(
+    body: ReadableStream<Uint8Array>,
+    controller: AbortController,
+  ): Pick<TtsSynthesisStream, 'stream' | 'getByteSize' | 'abort'> {
+    let byteSize = 0;
+    let idleTimeout = this.startIdleTimeout(controller);
+    const source = Readable.fromWeb(
+      body as unknown as Parameters<typeof Readable.fromWeb>[0],
+    );
+    const stream = new Transform({
+      transform: (chunk, _encoding, callback) => {
+        const chunkByteSize = Buffer.byteLength(chunk);
+
+        if (chunkByteSize > 0) {
+          clearTimeout(idleTimeout);
+          idleTimeout = this.startIdleTimeout(controller);
+          byteSize += chunkByteSize;
+        }
+
+        if (byteSize > MAX_TTS_AUDIO_BYTES) {
+          controller.abort();
+          callback(
+            new TtsSynthesisError(
+              'TTS provider audio exceeds the allowed size',
+            ),
+          );
+          return;
+        }
+
+        callback(null, chunk);
+      },
+      flush: (callback) => {
+        if (!byteSize) {
+          callback(
+            new TtsSynthesisError('TTS provider returned an empty audio file'),
+          );
+          return;
+        }
+
+        callback();
+      },
+    });
+
+    const clearIdleTimeout = () => clearTimeout(idleTimeout);
+
+    source.once('error', (error) => stream.destroy(error));
+    stream.once('close', clearIdleTimeout);
+    stream.once('end', clearIdleTimeout);
+    stream.once('error', clearIdleTimeout);
+    source.pipe(stream);
+
+    return {
+      stream,
+      getByteSize: () => byteSize,
+      abort: () => {
+        controller.abort();
+        source.destroy();
+        stream.destroy();
+      },
+    };
   }
 
   private assertSuccessfulMp3Response(response: Response): void {

@@ -100,11 +100,14 @@ export class ChapterTtsService {
 
       await this.markChunkProcessing(chunk.id);
 
-      const result = await this.ttsService.synthesize({ text: chunk.text });
+      const result = await this.ttsService.synthesizeStream({
+        text: chunk.text,
+      });
 
       // A provider request already in flight cannot be recalled. Do not
       // persist its response when the user cancelled while it was running.
       if (!(await this.isActive(claimedJob))) {
+        result.abort();
         return claimedJob;
       }
 
@@ -115,11 +118,19 @@ export class ChapterTtsService {
         chunk.position,
       );
 
-      await this.storageService.putObjectBytes(
-        objectKey,
-        result.bytes,
-        result.mimeType,
-      );
+      try {
+        await this.storageService.putObjectStream(
+          objectKey,
+          result.stream,
+          result.mimeType,
+        );
+      } catch (error) {
+        result.abort();
+        await this.storageService
+          .deleteObject(objectKey)
+          .catch(() => undefined);
+        throw error;
+      }
 
       if (!(await this.isActive(claimedJob))) {
         await this.storageService
@@ -138,7 +149,7 @@ export class ChapterTtsService {
         completedChunks,
         objectKey,
         mimeType: result.mimeType,
-        byteSize: result.bytes.byteLength,
+        byteSize: result.getByteSize(),
         provider: result.provider,
         voice: result.voice,
         providerGenerationId: result.generationId,

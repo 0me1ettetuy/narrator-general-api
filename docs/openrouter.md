@@ -1,6 +1,10 @@
 # OpenRouter TTS notes
 
-Last verified: 2026-10-19.
+Last verified: 2026-10-20.
+
+> Historical reference only. Narrator now uses Fish Audio directly for TTS;
+> see [Fish Audio notes](./fish-audio.md). Keep `OPENROUTER_API_KEY` for
+> planned non-TTS use only.
 
 ## Decision for the first Narrator TTS integration
 
