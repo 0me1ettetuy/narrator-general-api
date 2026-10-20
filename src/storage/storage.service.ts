@@ -32,13 +32,13 @@ export class StorageService {
   private readonly bucket: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.bucket = this.getRequiredConfig('R2_BUCKET');
+    this.bucket = this.getRequiredConfig('STORAGE_BUCKET');
     this.client = new S3Client({
-      region: this.getRequiredConfig('R2_REGION'),
-      endpoint: this.getRequiredConfig('R2_ENDPOINT'),
+      region: this.getRequiredConfig('STORAGE_REGION'),
+      endpoint: this.getRequiredConfig('STORAGE_ENDPOINT'),
       credentials: {
-        accessKeyId: this.getRequiredConfig('R2_ACCESS_KEY_ID'),
-        secretAccessKey: this.getRequiredConfig('R2_SECRET_ACCESS_KEY'),
+        accessKeyId: this.getRequiredConfig('STORAGE_ACCESS_KEY_ID'),
+        secretAccessKey: this.getRequiredConfig('STORAGE_SECRET_ACCESS_KEY'),
       },
     });
   }
