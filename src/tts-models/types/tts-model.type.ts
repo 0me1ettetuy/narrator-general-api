@@ -12,15 +12,17 @@ export type LocalTtsModelDefinition = {
   displayName: string;
   enabledConfigKey: string;
   healthUrlConfigKey: string;
-  healthStrategy: 'HTTP_OK' | 'JSON_STATUS_READY';
+  synthesisUrlConfigKey: string;
+  healthStrategy: 'HTTP_OK' | 'JSON_STATUS_HEALTHY' | 'JSON_STATUS_OK';
 };
 
 export type ConfiguredLocalTtsModel = Omit<
   LocalTtsModelDefinition,
-  'enabledConfigKey' | 'healthUrlConfigKey'
+  'enabledConfigKey' | 'healthUrlConfigKey' | 'synthesisUrlConfigKey'
 > & {
   enabled: boolean;
   healthUrl: string | null;
+  synthesisUrl: string | null;
   healthStrategy: LocalTtsModelDefinition['healthStrategy'];
 };
 

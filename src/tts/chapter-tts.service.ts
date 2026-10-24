@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { temporalNow } from '../prisma/temporal.js';
 import { StorageService } from '../storage/storage.service.js';
 import { AudioChunkService } from './audio-chunk.service.js';
-import { TtsService } from './tts.service.js';
+import { TtsAdapterResolverService } from './tts-adapter-resolver.service.js';
 
 const CHAPTER_TTS_FAILED_ERROR = 'CHAPTER_TTS_FAILED';
 const MERGE_JOB_IDEMPOTENCY_KEY_PREFIX = 'merge-audio';
@@ -33,6 +33,7 @@ type PersistedChapter = {
 type PersistedAudio = {
   id: string;
   chapterId: string;
+  modelKey: string | null;
   status:
     'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED' | 'CANCELLED' | 'DELETING';
 };
@@ -51,6 +52,7 @@ export type ClaimedChapterTtsJob = {
   chapterId: string;
   audioId: string;
   userId: string;
+  modelKey: string | null;
   maxAttempts: number;
 };
 
@@ -60,7 +62,7 @@ export class ChapterTtsService {
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
     private readonly audioChunkService: AudioChunkService,
-    private readonly ttsService: TtsService,
+    private readonly ttsAdapterResolver: TtsAdapterResolverService,
     private readonly jobsService: JobsService,
   ) {}
 
@@ -81,6 +83,9 @@ export class ChapterTtsService {
     await this.requeueUnfinishedChunks(claimedJob.audioId);
 
     const chunks = await this.getChunks(claimedJob.audioId);
+    const ttsAdapter = await this.ttsAdapterResolver.resolve(
+      claimedJob.modelKey,
+    );
     let completedChunks = 0;
 
     for (const chunk of chunks) {
@@ -100,7 +105,7 @@ export class ChapterTtsService {
 
       await this.markChunkProcessing(chunk.id);
 
-      const result = await this.ttsService.synthesizeStream({
+      const result = await ttsAdapter.synthesizeStream({
         text: chunk.text,
       });
 
@@ -291,6 +296,7 @@ export class ChapterTtsService {
         chapterId: chapter.id,
         audioId: audio.id,
         userId: book.userId,
+        modelKey: audio.modelKey,
         maxAttempts: job.maxAttempts,
       };
     });

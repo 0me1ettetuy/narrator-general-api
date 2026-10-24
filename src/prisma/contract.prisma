@@ -141,6 +141,7 @@ model Audio {
   completedChunks  Int                   @default(0)
   objectKey        String?
   mimeType         String?
+  modelKey         String?
   provider         String?
   voice            String?
   durationMs       Int?

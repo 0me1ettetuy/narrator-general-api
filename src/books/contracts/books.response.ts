@@ -41,6 +41,7 @@ export type ChapterSummaryResponse = {
 
 export type ChapterAudioResponse = {
   id: string;
+  modelId: string | null;
   status: AudioStatus;
   processingStage: AudioProcessingStage | null;
   totalChunks: number;

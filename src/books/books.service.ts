@@ -14,6 +14,7 @@ import {
   SIGNED_URL_TTL_SECONDS,
   StorageService,
 } from '../storage/storage.service.js';
+import { TtsModelsService } from '../tts-models/tts-models.service.js';
 import type {
   ChapterAudioAccessResponse,
   BookAuthorResponse,
@@ -64,6 +65,7 @@ export class BooksService {
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
     private readonly jobsService: JobsService,
+    private readonly ttsModelsService: TtsModelsService,
   ) {}
 
   async createUpload(
@@ -218,6 +220,7 @@ export class BooksService {
     userId: string,
     bookId: string,
     chapterId: string,
+    modelId: string | null,
   ): Promise<QueueChapterAudioResponse> {
     const book = await this.prisma.db.orm.public.Book.where({
       id: bookId,
@@ -243,7 +246,15 @@ export class BooksService {
       });
     }
 
-    const queued = await this.createOrReuseChapterAudioJob(book.id, chapter.id);
+    if (modelId) {
+      await this.ttsModelsService.getSelectableLocalModel(modelId);
+    }
+
+    const queued = await this.createOrReuseChapterAudioJob(
+      book.id,
+      chapter.id,
+      modelId,
+    );
 
     if (queued.shouldEnqueue) {
       await this.jobsService.enqueueChapterSynthesis(queued.job.id);
@@ -588,6 +599,7 @@ export class BooksService {
   private async createOrReuseChapterAudioJob(
     bookId: string,
     chapterId: string,
+    modelId: string | null,
   ): Promise<{
     audio: Audio;
     job: ProcessingJob;
@@ -609,6 +621,14 @@ export class BooksService {
           })
         | null;
 
+      if (audio && audio.modelKey !== modelId) {
+        throw new ConflictException({
+          code: API_ERROR_CODES.conflict,
+          message:
+            'Delete the existing chapter audio before changing its model',
+        });
+      }
+
       if (audio?.status === 'READY' || audio?.status === 'PROCESSING') {
         if (!job) {
           throw new Error('Chapter audio is missing its synthesis job');
@@ -629,6 +649,7 @@ export class BooksService {
         (await transaction.orm.public.Audio.create({
           id: randomUUID(),
           chapterId,
+          modelKey: modelId,
           updatedAt: now,
         }));
       const queuedJob =
@@ -763,6 +784,7 @@ function toChapterSummaryResponse(
 function toChapterAudioResponse(audio: Audio): ChapterAudioResponse {
   return {
     id: audio.id,
+    modelId: audio.modelKey,
     status: audio.status,
     processingStage: audio.processingStage,
     totalChunks: audio.totalChunks,

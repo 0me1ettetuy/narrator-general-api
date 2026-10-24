@@ -12,6 +12,7 @@ const LOCAL_TTS_MODEL_DEFINITIONS: LocalTtsModelDefinition[] = [
     displayName: 'Piper — English (Amy)',
     enabledConfigKey: 'TTS_LOCAL_PIPER_EN_US_AMY_ENABLED',
     healthUrlConfigKey: 'TTS_LOCAL_PIPER_EN_US_AMY_HEALTH_URL',
+    synthesisUrlConfigKey: 'TTS_LOCAL_PIPER_EN_US_AMY_URL',
     healthStrategy: 'HTTP_OK',
   },
   {
@@ -20,6 +21,7 @@ const LOCAL_TTS_MODEL_DEFINITIONS: LocalTtsModelDefinition[] = [
     displayName: 'Kokoro-82M',
     enabledConfigKey: 'TTS_LOCAL_KOKORO_82M_ENABLED',
     healthUrlConfigKey: 'TTS_LOCAL_KOKORO_82M_HEALTH_URL',
+    synthesisUrlConfigKey: 'TTS_LOCAL_KOKORO_82M_URL',
     healthStrategy: 'HTTP_OK',
   },
   {
@@ -28,7 +30,8 @@ const LOCAL_TTS_MODEL_DEFINITIONS: LocalTtsModelDefinition[] = [
     displayName: 'Qwen3-TTS 0.6B',
     enabledConfigKey: 'TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED',
     healthUrlConfigKey: 'TTS_LOCAL_QWEN3_TTS_0_6B_HEALTH_URL',
-    healthStrategy: 'HTTP_OK',
+    synthesisUrlConfigKey: 'TTS_LOCAL_QWEN3_TTS_0_6B_URL',
+    healthStrategy: 'JSON_STATUS_HEALTHY',
   },
   {
     id: 'local.chatterbox-turbo',
@@ -36,7 +39,8 @@ const LOCAL_TTS_MODEL_DEFINITIONS: LocalTtsModelDefinition[] = [
     displayName: 'Chatterbox Turbo',
     enabledConfigKey: 'TTS_LOCAL_CHATTERBOX_TURBO_ENABLED',
     healthUrlConfigKey: 'TTS_LOCAL_CHATTERBOX_TURBO_HEALTH_URL',
-    healthStrategy: 'JSON_STATUS_READY',
+    synthesisUrlConfigKey: 'TTS_LOCAL_CHATTERBOX_TURBO_URL',
+    healthStrategy: 'JSON_STATUS_OK',
   },
 ];
 
@@ -66,11 +70,15 @@ export class TtsModelRegistryService {
         displayName: definition.displayName,
         enabled: false,
         healthUrl: null,
+        synthesisUrl: null,
         healthStrategy: definition.healthStrategy,
       };
     }
 
     const healthUrl = this.getRequiredHttpUrl(definition.healthUrlConfigKey);
+    const synthesisUrl = this.getRequiredHttpUrl(
+      definition.synthesisUrlConfigKey,
+    );
 
     return {
       id: definition.id,
@@ -78,6 +86,7 @@ export class TtsModelRegistryService {
       displayName: definition.displayName,
       enabled: true,
       healthUrl,
+      synthesisUrl,
       healthStrategy: definition.healthStrategy,
     };
   }

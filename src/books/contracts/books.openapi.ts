@@ -67,6 +67,13 @@ export class ChapterAudioResponseDto {
   id: string;
 
   @ApiProperty({
+    nullable: true,
+    example: 'local.kokoro-82m',
+    description: 'The Narrator model selected when this audio was queued',
+  })
+  modelId: string | null;
+
+  @ApiProperty({
     enum: ['QUEUED', 'PROCESSING', 'READY', 'FAILED', 'CANCELLED', 'DELETING'],
   })
   status: string;

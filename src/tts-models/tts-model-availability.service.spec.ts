@@ -8,6 +8,7 @@ const enabledModel: ConfiguredLocalTtsModel = {
   displayName: 'Piper — English (Amy)',
   enabled: true,
   healthUrl: 'http://localhost:9100/health',
+  synthesisUrl: 'http://localhost:9100/',
   healthStrategy: 'HTTP_OK',
 };
 
@@ -100,7 +101,7 @@ describe('TtsModelAvailabilityService', () => {
     await expect(
       service.getLocalModelAvailability({
         ...enabledModel,
-        healthStrategy: 'JSON_STATUS_READY',
+        healthStrategy: 'JSON_STATUS_HEALTHY',
       }),
     ).resolves.toEqual({
       status: 'UNAVAILABLE',

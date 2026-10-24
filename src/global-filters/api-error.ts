@@ -6,6 +6,8 @@ export const API_ERROR_CODES = {
   invalidCredentials: 'INVALID_CREDENTIALS',
   notFound: 'NOT_FOUND',
   rateLimited: 'RATE_LIMITED',
+  ttsModelNotFound: 'TTS_MODEL_NOT_FOUND',
+  ttsModelUnavailable: 'TTS_MODEL_UNAVAILABLE',
   unauthorized: 'UNAUTHORIZED',
   unknownError: 'UNKNOWN_ERROR',
   validationFailed: 'VALIDATION_FAILED',

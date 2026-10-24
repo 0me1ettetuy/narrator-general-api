@@ -17,6 +17,7 @@ describe('TtsModelRegistryService', () => {
         displayName: 'Piper — English (Amy)',
         enabled: false,
         healthUrl: null,
+        synthesisUrl: null,
         healthStrategy: 'HTTP_OK',
       },
       {
@@ -25,6 +26,7 @@ describe('TtsModelRegistryService', () => {
         displayName: 'Kokoro-82M',
         enabled: false,
         healthUrl: null,
+        synthesisUrl: null,
         healthStrategy: 'HTTP_OK',
       },
       {
@@ -33,7 +35,8 @@ describe('TtsModelRegistryService', () => {
         displayName: 'Qwen3-TTS 0.6B',
         enabled: false,
         healthUrl: null,
-        healthStrategy: 'HTTP_OK',
+        synthesisUrl: null,
+        healthStrategy: 'JSON_STATUS_HEALTHY',
       },
       {
         id: 'local.chatterbox-turbo',
@@ -41,7 +44,8 @@ describe('TtsModelRegistryService', () => {
         displayName: 'Chatterbox Turbo',
         enabled: false,
         healthUrl: null,
-        healthStrategy: 'JSON_STATUS_READY',
+        synthesisUrl: null,
+        healthStrategy: 'JSON_STATUS_OK',
       },
     ]);
   });
@@ -51,6 +55,7 @@ describe('TtsModelRegistryService', () => {
       createConfigService({
         TTS_LOCAL_PIPER_EN_US_AMY_ENABLED: 'true',
         TTS_LOCAL_PIPER_EN_US_AMY_HEALTH_URL: 'http://localhost:9100/health',
+        TTS_LOCAL_PIPER_EN_US_AMY_URL: 'http://localhost:9100',
       }),
     );
 
@@ -58,6 +63,7 @@ describe('TtsModelRegistryService', () => {
       id: 'local.piper.en-us-amy',
       enabled: true,
       healthUrl: 'http://localhost:9100/health',
+      synthesisUrl: 'http://localhost:9100/',
     });
   });
 
@@ -70,6 +76,19 @@ describe('TtsModelRegistryService', () => {
           }),
         ),
     ).toThrow('TTS_LOCAL_PIPER_EN_US_AMY_HEALTH_URL is required');
+  });
+
+  it('fails fast when an enabled model has no synthesis URL', () => {
+    expect(
+      () =>
+        new TtsModelRegistryService(
+          createConfigService({
+            TTS_LOCAL_PIPER_EN_US_AMY_ENABLED: 'true',
+            TTS_LOCAL_PIPER_EN_US_AMY_HEALTH_URL:
+              'http://localhost:9100/health',
+          }),
+        ),
+    ).toThrow('TTS_LOCAL_PIPER_EN_US_AMY_URL is required');
   });
 
   it('rejects an invalid enabled flag', () => {

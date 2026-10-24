@@ -52,6 +52,7 @@ import { BookIdParamsDto } from './dto/book-id-params.dto.js';
 import { BooksListQueryDto } from './dto/books-list-query.dto.js';
 import { ChapterAudioParamsDto } from './dto/chapter-audio-params.dto.js';
 import { CreateBookUploadDto } from './dto/create-book-upload.dto.js';
+import { QueueChapterAudioDto } from './dto/queue-chapter-audio.dto.js';
 import { BooksService } from './books.service.js';
 
 type RequestWithUser = Request & {
@@ -104,18 +105,25 @@ export class BooksController {
   @ApiOperation({ summary: 'Queue or resume one chapter audio generation' })
   @ApiParam({ name: 'bookId', format: 'uuid' })
   @ApiParam({ name: 'chapterId', format: 'uuid' })
+  @ApiBody({ type: QueueChapterAudioDto, required: false })
   @ApiAcceptedResponse({ type: QueueChapterAudioResponseDto })
+  @ApiConflictResponse({
+    description:
+      'The requested model is unavailable or this audio uses another model',
+  })
   @ApiUnauthorizedResponse({ description: 'Invalid access token' })
   @ApiNotFoundResponse({ description: 'Book or chapter not found' })
   @UseGuards(JwtAccessGuard)
   queueChapterAudio(
     @Param() params: ChapterAudioParamsDto,
     @Req() request: RequestWithUser,
+    @Body() dto: QueueChapterAudioDto,
   ): Promise<QueueChapterAudioResponse> {
     return this.booksService.queueChapterAudio(
       request.user.sub,
       params.bookId,
       params.chapterId,
+      dto?.modelId ?? null,
     );
   }
 

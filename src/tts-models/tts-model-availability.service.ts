@@ -111,11 +111,14 @@ export class TtsModelAvailabilityService {
     try {
       const body: unknown = await response.json();
 
+      const expectedStatus =
+        model.healthStrategy === 'JSON_STATUS_HEALTHY' ? 'healthy' : 'ok';
+
       return (
         typeof body === 'object' &&
         body !== null &&
         'status' in body &&
-        body.status === 'ready'
+        body.status === expectedStatus
       );
     } catch {
       return false;

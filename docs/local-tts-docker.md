@@ -4,9 +4,9 @@ Narrator provides opt-in Docker Compose profiles for four local TTS engines.
 They are disabled by default: no image or model weights download until the
 deployment owner enables a profile.
 
-> Current scope: these profiles power the Models API's local availability list.
-> The local synthesis adapters are the next implementation step, so a model
-> cannot generate chapter audio through Narrator yet.
+Each profile has a synthesis adapter in the worker. Once it is `READY`, a user
+can select it when queuing chapter audio. The worker keeps that selected model
+on the audio record and checks its health again immediately before generation.
 
 ## Available profiles
 
@@ -52,6 +52,29 @@ The backend calls each configured health URL. A service returns:
 - `UNAVAILABLE` when it is enabled but not reachable or still loading;
 - `DISABLED` when its `*_ENABLED` value is false.
 
+## Queue audio with a local model
+
+First call authenticated `GET /tts/models`. Only a model with
+`status: "READY"` and `selectable: true` can be used.
+
+Pass its `id` to the existing chapter-audio command:
+
+```http
+POST /books/:bookId/chapters/:chapterId/audio
+Content-Type: application/json
+
+{ "modelId": "local.kokoro-82m" }
+```
+
+The response and the book-detail chapter audio expose that choice as
+`audio.modelId`. To prevent an accidental mixed-model file, reusing an
+existing audio record with a different model returns `409`; delete that audio
+first, then queue it again with the desired model.
+
+Omit the body to keep the existing Fish Audio behavior. Fish configuration is
+now read only when Fish is selected, so a local-only worker does not require a
+Fish API key.
+
 Run only the model(s) you need. Starting both GPU profiles on a small GPU can
 exhaust VRAM.
 
@@ -83,6 +106,18 @@ Source projects/wrappers:
 - [Qwen3-TTS server](https://github.com/malaiwah/qwen3-tts-server)
 - [Chatterbox Open TTS](https://github.com/OpenTTSGroup/chatterbox-open-tts)
 - [Piper OpenAI TTS server](https://github.com/Kamil-Krawiec/piper-tts-http-server)
+
+All four wrappers accept the OpenAI-style `POST /v1/audio/speech` request used
+by Narrator. They return a normal MP3 response; the backend streams that
+response directly to temporary object storage rather than buffering it all in
+memory. See their wrapper documentation for provider-specific voices and
+language limitations.
+
+The Piper and Kokoro compatibility wrappers finish synthesis before they begin
+their HTTP response. That keeps Narrator's worker memory bounded, but it is not
+live inference streaming inside those model containers. Kokoro's native
+`/tts/stream` endpoint is a future provider-specific optimisation if lower
+time-to-first-audio becomes important.
 
 ## Backend in a container
 
