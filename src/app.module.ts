@@ -9,6 +9,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { StorageModule } from './storage/storage.module.js';
 import { JobsModule } from './jobs/jobs.module.js';
+import { TtsModelsModule } from './tts-models/tts-models.module.js';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { JobsModule } from './jobs/jobs.module.js';
     BooksModule,
     StorageModule,
     JobsModule,
+    TtsModelsModule,
   ],
   controllers: [],
   providers: [
