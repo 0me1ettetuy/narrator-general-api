@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { FishCredentialService } from '../tts-models/fish-credential.service.js';
 import { DEFAULT_TTS_SEGMENT_MAX_CHARACTERS } from './chapter-segmenter.js';
 import {
   type TtsAdapter,
@@ -21,12 +22,16 @@ export {
 
 const FISH_AUDIO_TTS_URL = 'https://api.fish.audio/v1/tts';
 const DEFAULT_FISH_TTS_MODEL = 's2.1-pro-free';
+const DEFAULT_FISH_TTS_VOICE = 'default';
 const DEFAULT_TTS_IDLE_TIMEOUT_MS = 300_000;
 @Injectable()
 export class TtsService implements TtsAdapter {
   private readonly idleTimeoutMs: number;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly fishCredentials: FishCredentialService,
+  ) {
     this.idleTimeoutMs = this.getPositiveNumberConfig(
       'FISH_TTS_IDLE_TIMEOUT_MS',
       DEFAULT_TTS_IDLE_TIMEOUT_MS,
@@ -46,9 +51,17 @@ export class TtsService implements TtsAdapter {
       throw new TtsSynthesisError('TTS input exceeds the allowed size');
     }
 
-    const configuration = this.getConfiguration();
+    if (!input.userId) {
+      throw new TtsSynthesisError('Fish Audio requires an authenticated user');
+    }
+
+    const configuration = await this.getConfiguration(
+      input.userId,
+      input.providerModel,
+    );
     const { response, controller, clearTimeout } = await this.requestAudio(
       text,
+      input.userId,
       configuration,
     );
 
@@ -93,6 +106,7 @@ export class TtsService implements TtsAdapter {
 
   private async requestAudio(
     text: string,
+    userId: string,
     configuration: { apiKey: string; model: string; voice: string },
   ): Promise<{
     response: Response;
@@ -112,11 +126,17 @@ export class TtsService implements TtsAdapter {
         },
         body: JSON.stringify({
           text,
-          reference_id: configuration.voice,
+          ...(configuration.voice === DEFAULT_FISH_TTS_VOICE
+            ? {}
+            : { reference_id: configuration.voice }),
           format: 'mp3',
         }),
         signal: controller.signal,
       });
+
+      if (response.status === 401) {
+        await this.fishCredentials.markInvalid(userId);
+      }
 
       return {
         response,
@@ -134,28 +154,22 @@ export class TtsService implements TtsAdapter {
     }
   }
 
-  private getConfiguration(): {
+  private async getConfiguration(
+    userId: string,
+    providerModel: string | null | undefined,
+  ): Promise<{
     apiKey: string;
     model: string;
     voice: string;
-  } {
+  }> {
     return {
-      apiKey: this.getRequiredConfig('FISH_AUDIO_API_KEY'),
-      model:
-        this.configService.get<string>('FISH_TTS_MODEL') ??
-        DEFAULT_FISH_TTS_MODEL,
-      voice: this.getRequiredConfig('VOICE_ID'),
+      apiKey: await this.fishCredentials.getValidApiKey(userId),
+      model: providerModel ?? DEFAULT_FISH_TTS_MODEL,
+      voice:
+        this.configService.get<string>('FISH_DEFAULT_VOICE_ID')?.trim() ||
+        this.configService.get<string>('VOICE_ID')?.trim() ||
+        DEFAULT_FISH_TTS_VOICE,
     };
-  }
-
-  private getRequiredConfig(key: string): string {
-    const value = this.configService.get<string>(key);
-
-    if (!value) {
-      throw new TtsSynthesisError(`${key} is required for Fish Audio`);
-    }
-
-    return value;
   }
 
   private getPositiveNumberConfig(key: string, fallback: number): number {

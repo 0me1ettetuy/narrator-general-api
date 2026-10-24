@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type {
+  ConfiguredFishTtsModel,
   ConfiguredLocalTtsModel,
+  FishTtsModelDefinition,
   LocalTtsModelDefinition,
 } from './types/tts-model.type.js';
 
@@ -44,18 +46,41 @@ const LOCAL_TTS_MODEL_DEFINITIONS: LocalTtsModelDefinition[] = [
   },
 ];
 
+const FISH_TTS_MODEL_DEFINITIONS: FishTtsModelDefinition[] = [
+  {
+    id: 'fish.s2.1-pro-free',
+    providerModel: 's2.1-pro-free',
+    displayName: 'Fish Audio — S2.1 Pro Free',
+    enabledConfigKey: 'TTS_FISH_S2_1_PRO_FREE_ENABLED',
+  },
+  {
+    id: 'fish.s2.1-pro',
+    providerModel: 's2.1-pro',
+    displayName: 'Fish Audio — S2.1 Pro',
+    enabledConfigKey: 'TTS_FISH_S2_1_PRO_ENABLED',
+  },
+];
+
 @Injectable()
 export class TtsModelRegistryService {
   private readonly localModels: ConfiguredLocalTtsModel[];
+  private readonly fishModels: ConfiguredFishTtsModel[];
 
   constructor(private readonly configService: ConfigService) {
     this.localModels = LOCAL_TTS_MODEL_DEFINITIONS.map((definition) =>
       this.configureLocalModel(definition),
     );
+    this.fishModels = FISH_TTS_MODEL_DEFINITIONS.map((definition) =>
+      this.configureFishModel(definition),
+    );
   }
 
   getLocalModels(): readonly ConfiguredLocalTtsModel[] {
     return this.localModels;
+  }
+
+  getFishModels(): readonly ConfiguredFishTtsModel[] {
+    return this.fishModels;
   }
 
   private configureLocalModel(
@@ -91,11 +116,25 @@ export class TtsModelRegistryService {
     };
   }
 
-  private getBooleanConfig(key: string): boolean {
+  private configureFishModel(
+    definition: FishTtsModelDefinition,
+  ): ConfiguredFishTtsModel {
+    return {
+      id: definition.id,
+      providerModel: definition.providerModel,
+      displayName: definition.displayName,
+      enabled: this.getBooleanConfig(
+        definition.enabledConfigKey,
+        definition.id === 'fish.s2.1-pro-free',
+      ),
+    };
+  }
+
+  private getBooleanConfig(key: string, fallback = false): boolean {
     const value = this.configService.get<string>(key)?.trim().toLowerCase();
 
     if (!value) {
-      return false;
+      return fallback;
     }
 
     if (value === 'true') {

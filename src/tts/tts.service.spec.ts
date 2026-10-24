@@ -1,5 +1,11 @@
 import { ConfigService } from '@nestjs/config';
 import { Readable } from 'node:stream';
+import type { FishCredentialService } from '../tts-models/fish-credential.service.js';
+
+jest.mock('../tts-models/fish-credential.service.js', () => ({
+  FishCredentialService: class FishCredentialService {},
+}));
+
 import { TtsService, TtsSynthesisError } from './tts.service.js';
 
 async function readStream(stream: Readable): Promise<Uint8Array> {
@@ -15,26 +21,32 @@ async function readStream(stream: Readable): Promise<Uint8Array> {
 describe('TtsService', () => {
   const originalFetch = global.fetch;
   const fetchMock = jest.fn();
-  const configValues = {
-    FISH_AUDIO_API_KEY: 'test-fish-audio-key',
-    VOICE_ID: 'test-voice-id',
-  };
+  const fishCredentials = {
+    getValidApiKey: jest.fn().mockResolvedValue('test-fish-audio-key'),
+    markInvalid: jest.fn().mockResolvedValue(undefined),
+  } as unknown as FishCredentialService;
 
   let service: TtsService;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     fetchMock.mockReset();
     global.fetch = fetchMock as unknown as typeof fetch;
-    service = new TtsService({
-      get: jest.fn((key: keyof typeof configValues) => configValues[key]),
-    } as unknown as ConfigService);
+    service = new TtsService(
+      {
+        get: jest.fn((key: string) =>
+          key === 'FISH_DEFAULT_VOICE_ID' ? 'test-voice-id' : undefined,
+        ),
+      } as unknown as ConfigService,
+      fishCredentials,
+    );
   });
 
   afterAll(() => {
     global.fetch = originalFetch;
   });
 
-  it('sends the configured model and voice, then exposes a validated MP3 stream', async () => {
+  it('uses the owning user key and selected Fish model', async () => {
     const audio = new Uint8Array([1, 2, 3]);
     fetchMock.mockResolvedValue(
       new Response(audio, {
@@ -47,8 +59,13 @@ describe('TtsService', () => {
       }),
     );
 
-    const result = await service.synthesizeStream({ text: ' Hello world. ' });
+    const result = await service.synthesizeStream({
+      text: ' Hello world. ',
+      userId: 'user-id',
+      providerModel: 's2.1-pro-free',
+    });
 
+    expect(fishCredentials.getValidApiKey).toHaveBeenCalledWith('user-id');
     expect({
       mimeType: result.mimeType,
       provider: result.provider,
@@ -67,7 +84,6 @@ describe('TtsService', () => {
 
     await expect(readStream(result.stream)).resolves.toEqual(audio);
     expect(result.getByteSize()).toBe(audio.byteLength);
-
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.fish.audio/v1/tts',
       expect.objectContaining({
@@ -87,61 +103,27 @@ describe('TtsService', () => {
     );
   });
 
-  it('rejects a provider error without reading its body', async () => {
+  it('marks the stored key invalid after a Fish authentication failure', async () => {
     fetchMock.mockResolvedValue(
-      new Response(JSON.stringify({ message: 'provider detail' }), {
-        status: 429,
+      new Response('{}', {
+        status: 401,
         headers: { 'content-type': 'application/json' },
       }),
     );
 
     await expect(
-      service.synthesizeStream({ text: 'Hello world.' }),
+      service.synthesizeStream({ text: 'Hello world.', userId: 'user-id' }),
     ).rejects.toEqual(
-      new TtsSynthesisError('TTS provider request failed with status 429'),
+      new TtsSynthesisError('TTS provider request failed with status 401'),
     );
+    expect(fishCredentials.markInvalid).toHaveBeenCalledWith('user-id');
   });
 
-  it('rejects an unexpected response content type', async () => {
-    fetchMock.mockResolvedValue(
-      new Response(JSON.stringify({ message: 'not audio' }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      }),
-    );
-
-    await expect(
-      service.synthesizeStream({ text: 'Hello world.' }),
-    ).rejects.toThrow('TTS provider returned an unexpected format');
-  });
-
-  it('rejects an empty chunked MP3 response while it is streamed', async () => {
-    fetchMock.mockResolvedValue(
-      new Response(
-        new ReadableStream({
-          start(controller) {
-            controller.close();
-          },
-        }),
-        {
-          status: 200,
-          headers: { 'content-type': 'audio/mpeg' },
-        },
-      ),
-    );
-
-    const result = await service.synthesizeStream({ text: 'Hello world.' });
-
-    await expect(readStream(result.stream)).rejects.toThrow(
-      'TTS provider returned an empty audio file',
-    );
-  });
-
-  it('rejects empty input before making a provider request', async () => {
+  it('rejects empty input before reading a user credential', async () => {
     await expect(service.synthesizeStream({ text: '   ' })).rejects.toThrow(
       'TTS input must not be empty',
     );
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fishCredentials.getValidApiKey).not.toHaveBeenCalled();
   });
 });

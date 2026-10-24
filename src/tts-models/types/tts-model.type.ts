@@ -31,3 +31,26 @@ export type LocalTtsModelAvailability = {
   selectable: boolean;
   reasonCode: string | null;
 };
+
+export type FishTtsModelDefinition = {
+  id: string;
+  providerModel: string;
+  displayName: string;
+  enabledConfigKey: string;
+};
+
+export type ConfiguredFishTtsModel = Omit<
+  FishTtsModelDefinition,
+  'enabledConfigKey'
+> & {
+  enabled: boolean;
+};
+
+export const FISH_CREDENTIAL_STATES = [
+  'MISSING',
+  'VALID',
+  'INVALID',
+  'UNKNOWN',
+] as const;
+
+export type FishCredentialState = (typeof FISH_CREDENTIAL_STATES)[number];

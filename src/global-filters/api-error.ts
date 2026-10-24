@@ -1,6 +1,8 @@
 export const API_ERROR_CODES = {
   conflict: 'CONFLICT',
   emailAlreadyRegistered: 'EMAIL_ALREADY_REGISTERED',
+  fishCredentialInvalid: 'FISH_CREDENTIAL_INVALID',
+  fishCredentialRequired: 'FISH_CREDENTIAL_REQUIRED',
   forbidden: 'FORBIDDEN',
   internalServerError: 'INTERNAL_SERVER_ERROR',
   invalidCredentials: 'INVALID_CREDENTIALS',

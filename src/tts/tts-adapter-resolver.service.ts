@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { TtsModelsService } from '../tts-models/tts-models.service.js';
+import {
+  type SelectableTtsModel,
+  TtsModelsService,
+} from '../tts-models/tts-models.service.js';
 import { ChatterboxTtsAdapter } from './adapters/chatterbox-tts.adapter.js';
 import { KokoroTtsAdapter } from './adapters/kokoro-tts.adapter.js';
 import { PiperTtsAdapter } from './adapters/piper-tts.adapter.js';
@@ -15,6 +18,11 @@ const LOCAL_TTS_ADAPTER_IDS = [
 ] as const;
 
 type LocalTtsAdapterId = (typeof LOCAL_TTS_ADAPTER_IDS)[number];
+
+export type ResolvedTtsAdapter = {
+  adapter: TtsAdapter;
+  providerModel: string | null;
+};
 
 @Injectable()
 export class TtsAdapterResolverService {
@@ -36,18 +44,35 @@ export class TtsAdapterResolverService {
     ]);
   }
 
-  async resolve(modelKey: string | null): Promise<TtsAdapter> {
-    if (!modelKey) {
-      return this.fishAudioTtsAdapter;
+  async resolve(
+    userId: string,
+    modelKey: string | null,
+  ): Promise<ResolvedTtsAdapter> {
+    const model = await this.ttsModelsService.getSelectableModel(
+      userId,
+      modelKey,
+    );
+
+    return this.toResolvedAdapter(model);
+  }
+
+  private toResolvedAdapter(model: SelectableTtsModel): ResolvedTtsAdapter {
+    if (model.source === 'FISH') {
+      return {
+        adapter: this.fishAudioTtsAdapter,
+        providerModel: model.providerModel,
+      };
     }
 
-    await this.ttsModelsService.getSelectableLocalModel(modelKey);
-    const adapter = this.localAdapters.get(modelKey as LocalTtsAdapterId);
+    const adapter = this.localAdapters.get(model.id as LocalTtsAdapterId);
 
     if (!adapter) {
       throw new TtsSynthesisError('TTS model does not have an adapter');
     }
 
-    return adapter;
+    return {
+      adapter,
+      providerModel: null,
+    };
   }
 }

@@ -12,6 +12,7 @@ export const ApiCookieAuth = decorator;
 export const ApiConflictResponse = decorator;
 export const ApiCreatedResponse = decorator;
 export const ApiNotFoundResponse = decorator;
+export const ApiNoContentResponse = decorator;
 export const ApiOkResponse = decorator;
 export const ApiOperation = decorator;
 export const ApiProperty = decorator;

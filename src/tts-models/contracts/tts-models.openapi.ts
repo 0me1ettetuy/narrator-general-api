@@ -10,8 +10,8 @@ export class TtsModelResponseDto {
   @ApiProperty({ example: 'Piper — English (Amy)' })
   displayName: string;
 
-  @ApiProperty({ enum: ['LOCAL'] })
-  source: 'LOCAL';
+  @ApiProperty({ enum: ['LOCAL', 'FISH'] })
+  source: string;
 
   @ApiProperty({ enum: ['READY', 'UNAVAILABLE', 'DISABLED'] })
   status: string;
@@ -27,17 +27,34 @@ export class TtsModelResponseDto {
 }
 
 export class TtsModelGroupResponseDto {
-  @ApiProperty({ enum: ['local'] })
-  id: 'local';
+  @ApiProperty({ enum: ['local', 'fish-audio'] })
+  id: string;
 
   @ApiProperty({ example: 'Local models' })
-  displayName: 'Local models';
+  displayName: string;
 
   @ApiProperty({ type: () => [TtsModelResponseDto] })
   models: TtsModelResponseDto[];
 }
 
+export class FishCredentialResponseDto {
+  @ApiProperty({ enum: ['fish-audio'] })
+  id: 'fish-audio';
+
+  @ApiProperty({ enum: ['MISSING', 'VALID', 'INVALID', 'UNKNOWN'] })
+  credentialState: string;
+
+  @ApiProperty()
+  setupRequired: boolean;
+
+  @ApiProperty({ format: 'date-time', nullable: true })
+  lastValidatedAt: string | null;
+}
+
 export class TtsModelsResponseDto {
+  @ApiProperty({ type: () => [FishCredentialResponseDto] })
+  providers: [FishCredentialResponseDto];
+
   @ApiProperty({ type: () => [TtsModelGroupResponseDto] })
   groups: TtsModelGroupResponseDto[];
 }

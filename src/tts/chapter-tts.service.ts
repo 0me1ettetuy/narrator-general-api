@@ -83,7 +83,8 @@ export class ChapterTtsService {
     await this.requeueUnfinishedChunks(claimedJob.audioId);
 
     const chunks = await this.getChunks(claimedJob.audioId);
-    const ttsAdapter = await this.ttsAdapterResolver.resolve(
+    const resolvedTtsAdapter = await this.ttsAdapterResolver.resolve(
+      claimedJob.userId,
       claimedJob.modelKey,
     );
     let completedChunks = 0;
@@ -105,8 +106,10 @@ export class ChapterTtsService {
 
       await this.markChunkProcessing(chunk.id);
 
-      const result = await ttsAdapter.synthesizeStream({
+      const result = await resolvedTtsAdapter.adapter.synthesizeStream({
         text: chunk.text,
+        userId: claimedJob.userId,
+        providerModel: resolvedTtsAdapter.providerModel,
       });
 
       // A provider request already in flight cannot be recalled. Do not

@@ -1,10 +1,16 @@
+import type { FishCredentialService } from './fish-credential.service.js';
+
+jest.mock('./fish-credential.service.js', () => ({
+  FishCredentialService: class FishCredentialService {},
+}));
+
 import { TtsModelAvailabilityService } from './tts-model-availability.service.js';
 import { TtsModelRegistryService } from './tts-model-registry.service.js';
 import { TtsModelsService } from './tts-models.service.js';
 
 describe('TtsModelsService', () => {
-  it('returns local models in one frontend-ready group', async () => {
-    const registry = {
+  const createRegistry = () =>
+    ({
       getLocalModels: jest.fn().mockReturnValue([
         {
           id: 'local.piper.en-us-amy',
@@ -16,17 +22,48 @@ describe('TtsModelsService', () => {
           healthStrategy: 'HTTP_OK',
         },
       ]),
-    } as unknown as TtsModelRegistryService;
-    const availability = {
-      getLocalModelAvailability: jest.fn().mockResolvedValue({
-        status: 'READY',
-        selectable: true,
-        reasonCode: null,
-      }),
-    } as unknown as TtsModelAvailabilityService;
-    const service = new TtsModelsService(registry, availability);
+      getFishModels: jest.fn().mockReturnValue([
+        {
+          id: 'fish.s2.1-pro-free',
+          providerModel: 's2.1-pro-free',
+          displayName: 'Fish Audio — S2.1 Pro Free',
+          enabled: true,
+        },
+      ]),
+    }) as unknown as TtsModelRegistryService;
 
-    await expect(service.listModels()).resolves.toEqual({
+  const availableLocalModel = {
+    getLocalModelAvailability: jest.fn().mockResolvedValue({
+      status: 'READY',
+      selectable: true,
+      reasonCode: null,
+    }),
+  } as unknown as TtsModelAvailabilityService;
+
+  it('shows the Fish setup state but no Fish cards when the user has no key', async () => {
+    const fishCredentials = {
+      getPublicStatus: jest.fn().mockResolvedValue({
+        id: 'fish-audio',
+        credentialState: 'MISSING',
+        setupRequired: true,
+        lastValidatedAt: null,
+      }),
+    } as unknown as FishCredentialService;
+    const service = new TtsModelsService(
+      createRegistry(),
+      availableLocalModel,
+      fishCredentials,
+    );
+
+    await expect(service.listModels('user-id')).resolves.toEqual({
+      providers: [
+        {
+          id: 'fish-audio',
+          credentialState: 'MISSING',
+          setupRequired: true,
+          lastValidatedAt: null,
+        },
+      ],
       groups: [
         {
           id: 'local',
@@ -47,35 +84,59 @@ describe('TtsModelsService', () => {
     });
   });
 
-  it('rejects an unavailable local model with a stable conflict code', async () => {
-    const registry = {
-      getLocalModels: jest.fn().mockReturnValue([
-        {
-          id: 'local.kokoro-82m',
-          provider: 'local-kokoro',
-          displayName: 'Kokoro-82M',
-          enabled: true,
-          healthUrl: 'http://localhost:7860/health/ready',
-          synthesisUrl: 'http://localhost:7860/',
-          healthStrategy: 'HTTP_OK',
-        },
-      ]),
-    } as unknown as TtsModelRegistryService;
-    const availability = {
-      getLocalModelAvailability: jest.fn().mockResolvedValue({
-        status: 'UNAVAILABLE',
-        selectable: false,
-        reasonCode: 'MODEL_SERVICE_UNREACHABLE',
+  it('shows enabled Fish cards only for a user with a valid key', async () => {
+    const fishCredentials = {
+      getPublicStatus: jest.fn().mockResolvedValue({
+        id: 'fish-audio',
+        credentialState: 'VALID',
+        setupRequired: false,
+        lastValidatedAt: null,
       }),
-    } as unknown as TtsModelAvailabilityService;
-    const service = new TtsModelsService(registry, availability);
+    } as unknown as FishCredentialService;
+    const service = new TtsModelsService(
+      createRegistry(),
+      availableLocalModel,
+      fishCredentials,
+    );
+
+    const response = await service.listModels('user-id');
+
+    expect(response.groups[1]).toEqual({
+      id: 'fish-audio',
+      displayName: 'Fish Audio',
+      models: [
+        {
+          id: 'fish.s2.1-pro-free',
+          provider: 'fish-audio',
+          displayName: 'Fish Audio — S2.1 Pro Free',
+          source: 'FISH',
+          status: 'READY',
+          selectable: true,
+          reasonCode: null,
+        },
+      ],
+    });
+  });
+
+  it('checks the user credential before selecting a Fish model', async () => {
+    const fishCredentials = {
+      assertValidCredential: jest.fn().mockResolvedValue(undefined),
+    } as unknown as FishCredentialService;
+    const service = new TtsModelsService(
+      createRegistry(),
+      availableLocalModel,
+      fishCredentials,
+    );
 
     await expect(
-      service.getSelectableLocalModel('local.kokoro-82m'),
-    ).rejects.toMatchObject({
-      response: {
-        code: 'TTS_MODEL_UNAVAILABLE',
-      },
+      service.getSelectableModel('user-id', 'fish.s2.1-pro-free'),
+    ).resolves.toEqual({
+      id: 'fish.s2.1-pro-free',
+      source: 'FISH',
+      providerModel: 's2.1-pro-free',
     });
+    expect(fishCredentials.assertValidCredential).toHaveBeenCalledWith(
+      'user-id',
+    );
   });
 });

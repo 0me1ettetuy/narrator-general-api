@@ -5,6 +5,8 @@ export const MAX_TTS_AUDIO_BYTES = 20 * 1024 * 1024;
 
 export type TtsSynthesisInput = {
   text: string;
+  userId?: string;
+  providerModel?: string | null;
 };
 
 export type TtsSynthesisStream = {

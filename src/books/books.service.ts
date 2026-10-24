@@ -246,14 +246,15 @@ export class BooksService {
       });
     }
 
-    if (modelId) {
-      await this.ttsModelsService.getSelectableLocalModel(modelId);
-    }
+    const selectedModel = await this.ttsModelsService.getSelectableModel(
+      userId,
+      modelId,
+    );
 
     const queued = await this.createOrReuseChapterAudioJob(
       book.id,
       chapter.id,
-      modelId,
+      selectedModel.id,
     );
 
     if (queued.shouldEnqueue) {

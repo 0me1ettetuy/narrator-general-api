@@ -8,6 +8,7 @@ model User {
   updatedAt    DateTime
   sessions     Session[]
   books        Book[]
+  ttsProviderCredentials UserTtsProviderCredential[]
 
   @@map("user")
 }
@@ -23,6 +24,25 @@ model Session {
   user User @relation(fields: [userId], references: [id])
 
   @@map("session")
+}
+
+model UserTtsProviderCredential {
+  id                   String                @id @default(uuid())
+  userId               String
+  provider             TtsCredentialProvider
+  encryptedSecret      String
+  encryptionKeyVersion Int                   @default(1)
+  state                TtsCredentialState    @default(UNKNOWN)
+  lastValidatedAt      DateTime?
+  lastValidationError  String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, provider])
+  @@index([userId, provider])
+  @@map("user_tts_provider_credential")
 }
 
 enum BookFormat {
@@ -58,6 +78,16 @@ enum AudioChunkStatus {
   PROCESSING
   READY
   FAILED
+}
+
+enum TtsCredentialProvider {
+  FISH_AUDIO
+}
+
+enum TtsCredentialState {
+  VALID
+  INVALID
+  UNKNOWN
 }
 
 enum JobType {

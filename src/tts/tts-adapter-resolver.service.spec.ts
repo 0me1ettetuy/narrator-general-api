@@ -1,3 +1,11 @@
+jest.mock('../tts-models/tts-models.service.js', () => ({
+  TtsModelsService: class TtsModelsService {},
+}));
+
+jest.mock('./tts.service.js', () => ({
+  TtsService: class TtsService {},
+}));
+
 import { TtsModelsService } from '../tts-models/tts-models.service.js';
 import { ChatterboxTtsAdapter } from './adapters/chatterbox-tts.adapter.js';
 import { KokoroTtsAdapter } from './adapters/kokoro-tts.adapter.js';
@@ -13,9 +21,13 @@ describe('TtsAdapterResolverService', () => {
   const qwen = {} as Qwen3TtsAdapter;
   const chatterbox = {} as ChatterboxTtsAdapter;
 
-  it('uses Fish Audio for legacy audio without a selected local model', async () => {
+  it('resolves a Fish adapter with its provider model for the owner', async () => {
     const models = {
-      getSelectableLocalModel: jest.fn(),
+      getSelectableModel: jest.fn().mockResolvedValue({
+        id: 'fish.s2.1-pro-free',
+        source: 'FISH',
+        providerModel: 's2.1-pro-free',
+      }),
     } as unknown as TtsModelsService;
     const resolver = new TtsAdapterResolverService(
       fish,
@@ -26,13 +38,20 @@ describe('TtsAdapterResolverService', () => {
       models,
     );
 
-    await expect(resolver.resolve(null)).resolves.toBe(fish);
-    expect(models.getSelectableLocalModel).not.toHaveBeenCalled();
+    await expect(resolver.resolve('user-id', null)).resolves.toEqual({
+      adapter: fish,
+      providerModel: 's2.1-pro-free',
+    });
+    expect(models.getSelectableModel).toHaveBeenCalledWith('user-id', null);
   });
 
-  it('checks live availability before returning the requested local adapter', async () => {
+  it('checks availability before returning a requested local adapter', async () => {
     const models = {
-      getSelectableLocalModel: jest.fn().mockResolvedValue(undefined),
+      getSelectableModel: jest.fn().mockResolvedValue({
+        id: 'local.kokoro-82m',
+        source: 'LOCAL',
+        providerModel: null,
+      }),
     } as unknown as TtsModelsService;
     const resolver = new TtsAdapterResolverService(
       fish,
@@ -43,9 +62,8 @@ describe('TtsAdapterResolverService', () => {
       models,
     );
 
-    await expect(resolver.resolve('local.kokoro-82m')).resolves.toBe(kokoro);
-    expect(models.getSelectableLocalModel).toHaveBeenCalledWith(
-      'local.kokoro-82m',
-    );
+    await expect(
+      resolver.resolve('user-id', 'local.kokoro-82m'),
+    ).resolves.toEqual({ adapter: kokoro, providerModel: null });
   });
 });

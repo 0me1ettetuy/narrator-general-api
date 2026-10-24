@@ -12,9 +12,26 @@ There will be two model sources:
 2. **Fish Audio models** — enabled by the deployment owner, but usable only
    after the individual user saves their own Fish API key.
 
-The current Fish API key in the server environment is a temporary development
-credential. It must not be used for another user's generation once this work
-is complete.
+There is no server-global Fish API key in the completed design. Each Fish
+request uses the owning user's encrypted credential.
+
+## Implementation status — October 2026
+
+Implemented in the backend:
+
+- Local Docker catalogue, health checks, and the four initial local adapters.
+- `UserTtsProviderCredential` with user-bound AES-256-GCM encryption, safe
+  status states, and credential deletion.
+- Authenticated `GET /tts/models`, plus throttled Fish credential save/remove
+  endpoints. Submitted keys are validated with Fish's wallet endpoint, not a
+  synthesis request.
+- Fish model cards are included only after the caller has a valid key.
+- Queueing persists the selected `Audio.modelKey`; the worker rechecks model
+  availability and decrypts only the owning user's key when it must call Fish.
+
+Still to build: the frontend Models page/key form, generated frontend API
+client update, mandatory model selection after that UI is wired, and model
+selection on the book page.
 
 ## Desired user experience
 
@@ -107,9 +124,9 @@ label. Examples:
 
 ```text
 fish.s2.1-pro-free
-fish.s2.1-standard
+fish.s2.1-pro
 local.piper.en-us-amy
-local.kokoro.en
+local.kokoro-82m
 ```
 
 Use explicit environment flags for each supported descriptor. The exact model
@@ -118,14 +135,14 @@ names will be finalised when its adapter is added.
 ```dotenv
 # Fish catalogue. These flags only expose/configure a model; they contain no key.
 TTS_FISH_S2_1_PRO_FREE_ENABLED="true"
-TTS_FISH_S2_1_STANDARD_ENABLED="false"
+TTS_FISH_S2_1_PRO_ENABLED="false"
 
 # Local catalogue. An enabled model must also have a reachable service URL.
 TTS_LOCAL_PIPER_EN_US_AMY_ENABLED="false"
 TTS_LOCAL_PIPER_EN_US_AMY_URL="http://localhost:9100"
 
-TTS_LOCAL_KOKORO_EN_ENABLED="false"
-TTS_LOCAL_KOKORO_EN_URL="http://localhost:9200"
+TTS_LOCAL_KOKORO_82M_ENABLED="false"
+TTS_LOCAL_KOKORO_82M_URL="http://localhost:9200"
 
 # Shared limits, not user credentials.
 FISH_DEFAULT_VOICE_ID="replace-with-default-voice-id"
@@ -299,8 +316,8 @@ Return stable safe reason codes such as `MODEL_SERVICE_UNREACHABLE` or
 ### Save/remove Fish credential
 
 ```text
-PUT    /tts/providers/fish-audio/credential   { "apiKey": "..." }
-DELETE /tts/providers/fish-audio/credential
+PUT    /tts/models/providers/fish-audio/credential   { "apiKey": "..." }
+DELETE /tts/models/providers/fish-audio/credential
 ```
 
 - `PUT` encrypts and upserts the credential, then validates it with a small,
@@ -319,8 +336,9 @@ is created, the service verifies ownership, model existence, model readiness,
 and the current user's Fish credential state.
 
 Final desired behavior: `modelId` is required. During the coordinated frontend
-migration it may be temporarily optional only behind an explicit compatibility
-path; remove that fallback along with `FISH_AUDIO_API_KEY`.
+migration it is temporarily optional and chooses the enabled default Fish
+model, but only if the caller has a valid Fish credential. Remove that fallback
+when the frontend model picker is wired.
 
 Use stable errors for the frontend:
 
@@ -372,8 +390,8 @@ remain normal retryable TTS failures and must not erase a user's credential.
 3. Implement authenticated encryption, key-version handling, secure delete,
    and redaction tests.
 4. Add `TTS_CREDENTIAL_ENCRYPTION_KEY` to the single `.env.example`; remove
-   real `FISH_AUDIO_API_KEY` and `FISH_TTS_MODEL` only when the worker has
-   migrated. Keep the non-secret timeout/default-voice settings.
+   `FISH_AUDIO_API_KEY` and `FISH_TTS_MODEL` from deployment configuration.
+   Keep the non-secret timeout/default-voice settings.
 
 ### Phase 2 — catalogue and availability read API
 
