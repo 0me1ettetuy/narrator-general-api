@@ -115,6 +115,9 @@ model Book {
   sourceMimeType         String
   sourceSize             Int
   sourceChecksum         String?
+  coverObjectKey         String?
+  coverMimeType          String?
+  coverSize              Int?
   parseStatus            BookParseStatus @default(UPLOADING)
   parseError             String?
   parsedAt               DateTime?

@@ -4,13 +4,20 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { temporalNow } from '../prisma/temporal.js';
 import { StorageService } from '../storage/storage.service.js';
 import { EpubParserService } from './epub-parser.service.js';
-import type { ParsedEpub } from './types/parsed-epub.type.js';
+import type { ParsedEpub, ParsedEpubCover } from './types/parsed-epub.type.js';
 
 const BOOK_PARSE_FAILED_ERROR = 'BOOK_PARSE_FAILED';
+
+type StoredBookCover = {
+  objectKey: string;
+  mimeType: string;
+  size: number;
+};
 
 export type ClaimedBookParsingJob = {
   id: string;
   bookId: string;
+  userId: string;
   sourceObjectKey: string;
   sourceSize: number;
   maxAttempts: number;
@@ -38,7 +45,20 @@ export class BookParsingService {
     await this.updateProgress(claimedJob.id, 25);
 
     const parsedEpub = this.epubParserService.parse(epubBytes);
-    await this.persistParsedBook(claimedJob, parsedEpub);
+    const cover = await this.storeCover(claimedJob, parsedEpub.cover);
+    await this.updateProgress(claimedJob.id, 75);
+
+    try {
+      await this.persistParsedBook(claimedJob, parsedEpub, cover);
+    } catch (error) {
+      if (cover) {
+        await this.storageService.deleteObject(cover.objectKey).catch(() => {
+          // The parser retry overwrites this deterministic key if cleanup fails.
+        });
+      }
+
+      throw error;
+    }
 
     return claimedJob;
   }
@@ -116,6 +136,7 @@ export class BookParsingService {
       return {
         id: job.id,
         bookId: book.id,
+        userId: book.userId,
         sourceObjectKey: book.sourceObjectKey,
         sourceSize: book.sourceSize,
         maxAttempts: job.maxAttempts,
@@ -136,6 +157,7 @@ export class BookParsingService {
   private async persistParsedBook(
     job: ClaimedBookParsingJob,
     parsedEpub: ParsedEpub,
+    cover: StoredBookCover | null,
   ): Promise<void> {
     const now = temporalNow();
 
@@ -175,6 +197,9 @@ export class BookParsingService {
 
       await transaction.orm.public.Book.where({ id: book.id }).update({
         title: parsedEpub.title ?? book.title,
+        coverObjectKey: cover?.objectKey ?? null,
+        coverMimeType: cover?.mimeType ?? null,
+        coverSize: cover?.size ?? null,
         parseStatus: 'READY',
         parseError: null,
         parsedAt: now,
@@ -192,5 +217,43 @@ export class BookParsingService {
         updatedAt: now,
       });
     });
+  }
+
+  private async storeCover(
+    job: ClaimedBookParsingJob,
+    cover: ParsedEpubCover | null,
+  ): Promise<StoredBookCover | null> {
+    if (!cover) {
+      return null;
+    }
+
+    const objectKey = `books/${job.userId}/${job.bookId}/cover/original.${getCoverExtension(
+      cover.mimeType,
+    )}`;
+
+    await this.storageService.putObjectBytes(
+      objectKey,
+      cover.bytes,
+      cover.mimeType,
+    );
+
+    return {
+      objectKey,
+      mimeType: cover.mimeType,
+      size: cover.bytes.byteLength,
+    };
+  }
+}
+
+function getCoverExtension(mimeType: string): string {
+  switch (mimeType) {
+    case 'image/gif':
+      return 'gif';
+    case 'image/png':
+      return 'png';
+    case 'image/webp':
+      return 'webp';
+    default:
+      return 'jpg';
   }
 }

@@ -1,11 +1,19 @@
-import { parse, type Chapter } from '@abfcode/spine';
+import { parse, type Book, type Chapter, type Cover } from '@abfcode/spine';
 import { Injectable } from '@nestjs/common';
 import type {
   ParsedEpub,
   ParsedEpubChapter,
+  ParsedEpubCover,
 } from './types/parsed-epub.type.js';
 
 const MAX_EPUB_INFLATED_ENTRY_BYTES = 16 * 1024 * 1024;
+const MAX_COVER_BYTES = 10 * 1024 * 1024;
+const COVER_MIME_TYPES = new Set([
+  'image/gif',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
 
 @Injectable()
 export class EpubParserService {
@@ -25,9 +33,42 @@ export class EpubParserService {
     return {
       title: normalizeText(book.metadata.title) || null,
       authors: uniqueNonEmpty(book.metadata.authors.map(normalizeText)),
+      cover: readCover(book),
       chapters,
     };
   }
+}
+
+function readCover(book: Book): ParsedEpubCover | null {
+  try {
+    return toParsedEpubCover(book.cover());
+  } catch {
+    return null;
+  }
+}
+
+function toParsedEpubCover(cover: Cover | undefined): ParsedEpubCover | null {
+  if (!cover || cover.bytes.byteLength > MAX_COVER_BYTES) {
+    return null;
+  }
+
+  const mimeType = normalizeCoverMimeType(cover.contentType);
+
+  if (!mimeType || !COVER_MIME_TYPES.has(mimeType)) {
+    return null;
+  }
+
+  return { bytes: cover.bytes, mimeType };
+}
+
+function normalizeCoverMimeType(contentType: string): string | null {
+  const normalized = contentType.split(';', 1)[0]?.trim().toLowerCase();
+
+  if (normalized === 'image/jpg') {
+    return 'image/jpeg';
+  }
+
+  return normalized || null;
 }
 
 function toParsedEpubChapter(chapter: Chapter): ParsedEpubChapter | null {

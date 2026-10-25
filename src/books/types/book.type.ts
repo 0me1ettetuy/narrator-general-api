@@ -16,6 +16,9 @@ export type Book = {
   sourceMimeType: string;
   sourceSize: number;
   sourceChecksum: string | null;
+  coverObjectKey: string | null;
+  coverMimeType: string | null;
+  coverSize: number | null;
   parseStatus: BookParseStatus;
   parseError: string | null;
   parsedAt: Instant | null;

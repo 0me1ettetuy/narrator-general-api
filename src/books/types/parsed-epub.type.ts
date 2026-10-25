@@ -1,7 +1,13 @@
 export type ParsedEpub = {
   title: string | null;
   authors: string[];
+  cover: ParsedEpubCover | null;
   chapters: ParsedEpubChapter[];
+};
+
+export type ParsedEpubCover = {
+  bytes: Uint8Array;
+  mimeType: string;
 };
 
 export type ParsedEpubChapter = {
