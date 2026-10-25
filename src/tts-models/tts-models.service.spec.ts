@@ -1,7 +1,12 @@
 import type { FishCredentialService } from './fish-credential.service.js';
+import type { PrismaService } from '../prisma/prisma.service.js';
 
 jest.mock('./fish-credential.service.js', () => ({
   FishCredentialService: class FishCredentialService {},
+}));
+
+jest.mock('../prisma/prisma.service.js', () => ({
+  PrismaService: class PrismaService {},
 }));
 
 import { TtsModelAvailabilityService } from './tts-model-availability.service.js';
@@ -40,6 +45,29 @@ describe('TtsModelsService', () => {
     }),
   } as unknown as TtsModelAvailabilityService;
 
+  const userPreferenceFirst = jest.fn();
+  const userPreferenceUpdate = jest.fn();
+  const prisma = {
+    db: {
+      orm: {
+        public: {
+          User: {
+            where: jest.fn(() => ({
+              first: userPreferenceFirst,
+              update: userPreferenceUpdate,
+            })),
+          },
+        },
+      },
+    },
+  } as unknown as PrismaService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    userPreferenceFirst.mockResolvedValue({ defaultTtsModelKey: null });
+    userPreferenceUpdate.mockResolvedValue(undefined);
+  });
+
   it('shows the Fish setup state but no Fish cards when the user has no key', async () => {
     const fishCredentials = {
       getPublicStatus: jest.fn().mockResolvedValue({
@@ -50,12 +78,14 @@ describe('TtsModelsService', () => {
       }),
     } as unknown as FishCredentialService;
     const service = new TtsModelsService(
+      prisma,
       createRegistry(),
       availableLocalModel,
       fishCredentials,
     );
 
     await expect(service.listModels('user-id')).resolves.toEqual({
+      selectedModelId: null,
       providers: [
         {
           id: 'fish-audio',
@@ -94,6 +124,7 @@ describe('TtsModelsService', () => {
       }),
     } as unknown as FishCredentialService;
     const service = new TtsModelsService(
+      prisma,
       createRegistry(),
       availableLocalModel,
       fishCredentials,
@@ -123,6 +154,7 @@ describe('TtsModelsService', () => {
       assertValidCredential: jest.fn().mockResolvedValue(undefined),
     } as unknown as FishCredentialService;
     const service = new TtsModelsService(
+      prisma,
       createRegistry(),
       availableLocalModel,
       fishCredentials,
@@ -138,5 +170,44 @@ describe('TtsModelsService', () => {
     expect(fishCredentials.assertValidCredential).toHaveBeenCalledWith(
       'user-id',
     );
+  });
+
+  it('saves a validated model as the user default', async () => {
+    const fishCredentials = {
+      assertValidCredential: jest.fn().mockResolvedValue(undefined),
+    } as unknown as FishCredentialService;
+    const service = new TtsModelsService(
+      prisma,
+      createRegistry(),
+      availableLocalModel,
+      fishCredentials,
+    );
+
+    await expect(
+      service.selectModel('user-id', 'local.piper.en-us-amy'),
+    ).resolves.toEqual({ selectedModelId: 'local.piper.en-us-amy' });
+    expect(userPreferenceUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        defaultTtsModelKey: 'local.piper.en-us-amy',
+      }),
+    );
+  });
+
+  it('uses the saved model when generation does not specify one', async () => {
+    userPreferenceFirst.mockResolvedValue({
+      defaultTtsModelKey: 'local.piper.en-us-amy',
+    });
+    const service = new TtsModelsService(
+      prisma,
+      createRegistry(),
+      availableLocalModel,
+      {} as FishCredentialService,
+    );
+
+    await expect(service.getSelectableModel('user-id', null)).resolves.toEqual({
+      id: 'local.piper.en-us-amy',
+      source: 'LOCAL',
+      providerModel: null,
+    });
   });
 });

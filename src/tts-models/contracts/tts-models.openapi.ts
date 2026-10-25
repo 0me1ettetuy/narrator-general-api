@@ -52,9 +52,23 @@ export class FishCredentialResponseDto {
 }
 
 export class TtsModelsResponseDto {
+  @ApiProperty({
+    description:
+      'The authenticated user’s saved default model for future audio generation',
+    example: 'local.kokoro-82m',
+    nullable: true,
+    type: String,
+  })
+  selectedModelId: string | null;
+
   @ApiProperty({ type: () => [FishCredentialResponseDto] })
   providers: [FishCredentialResponseDto];
 
   @ApiProperty({ type: () => [TtsModelGroupResponseDto] })
   groups: TtsModelGroupResponseDto[];
+}
+
+export class TtsModelSelectionResponseDto {
+  @ApiProperty({ example: 'local.kokoro-82m' })
+  selectedModelId: string;
 }

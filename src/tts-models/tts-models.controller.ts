@@ -12,7 +12,9 @@ import {
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConflictResponse,
   ApiNoContentResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -24,13 +26,16 @@ import { JwtAccessGuard } from '../auth/guards/jwt-access.guard.js';
 import type { JwtPayload } from '../auth/types/jwt.type.js';
 import {
   FishCredentialResponseDto,
+  TtsModelSelectionResponseDto,
   TtsModelsResponseDto,
 } from './contracts/tts-models.openapi.js';
 import type {
   FishCredentialResponse,
+  TtsModelSelectionResponse,
   TtsModelsResponse,
 } from './contracts/tts-models.response.js';
 import { SaveFishCredentialDto } from './dto/save-fish-credential.dto.js';
+import { SelectTtsModelDto } from './dto/select-tts-model.dto.js';
 import { FishCredentialService } from './fish-credential.service.js';
 import { TtsModelsService } from './tts-models.service.js';
 
@@ -56,6 +61,22 @@ export class TtsModelsController {
   @UseGuards(JwtAccessGuard)
   listModels(@Req() request: RequestWithUser): Promise<TtsModelsResponse> {
     return this.ttsModelsService.listModels(request.user.sub);
+  }
+
+  @Put('selection')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Set the user’s default TTS model' })
+  @ApiBody({ type: SelectTtsModelDto })
+  @ApiOkResponse({ type: TtsModelSelectionResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'TTS model does not exist' })
+  @ApiConflictResponse({ description: 'TTS model is unavailable' })
+  @UseGuards(JwtAccessGuard)
+  selectModel(
+    @Req() request: RequestWithUser,
+    @Body() dto: SelectTtsModelDto,
+  ): Promise<TtsModelSelectionResponse> {
+    return this.ttsModelsService.selectModel(request.user.sub, dto.modelId);
   }
 
   @Put('providers/fish-audio/credential')

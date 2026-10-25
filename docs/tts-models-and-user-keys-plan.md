@@ -28,10 +28,11 @@ Implemented in the backend:
 - Fish model cards are included only after the caller has a valid key.
 - Queueing persists the selected `Audio.modelKey`; the worker rechecks model
   availability and decrypts only the owning user's key when it must call Fish.
+- `User.defaultTtsModelKey`, `PUT /tts/models/selection`, and a Models-page
+  picker persist a user's default model for future generation.
 
-Still to build: the frontend Models page/key form, generated frontend API
-client update, mandatory model selection after that UI is wired, and model
-selection on the book page.
+Still to build: an optional per-chapter model override in the book UI, plus
+the later voice/reference-selection and multiple-audio-version work.
 
 ## Desired user experience
 
@@ -80,6 +81,7 @@ This prevents a stale DB row from claiming a stopped local container is ready.
 The database does persist the things that need durable ownership/history:
 
 - each user's encrypted provider credential;
+- each user's nullable saved default model key;
 - the exact model key used to create an audio asset;
 - safe credential validation timestamps/statuses.
 
@@ -196,6 +198,17 @@ Never store plaintext API keys in `Job`, `Audio`, `AudioChunk`, Redis, logs,
 exceptions, Swagger examples, or HTTP responses. Decrypt only in worker memory
 at the moment a Fish request is about to be made.
 
+### `User.defaultTtsModelKey`
+
+Add one nullable string field to `User` for the selected default model ID.
+It deliberately has no database foreign key because model descriptors are
+configuration/code rather than database rows. Validate it against the current
+catalogue when saving the preference and again when queueing generation.
+
+Changing this field affects only future generation. The resolved ID is copied
+to `Audio.modelKey`, so queued, retried, and finished audio never changes when
+a user picks a different default later.
+
 ### Existing `Audio` record
 
 Add nullable migration fields first, then make new work populate them:
@@ -261,6 +274,7 @@ Response is user-specific but contains no secret:
 
 ```json
 {
+  "selectedModelId": "local.piper.en-us-amy",
   "providers": [
     {
       "id": "fish-audio",
@@ -313,6 +327,17 @@ MISSING | VALID | INVALID | UNKNOWN
 Return stable safe reason codes such as `MODEL_SERVICE_UNREACHABLE` or
 `FISH_CREDENTIAL_REQUIRED`, never raw Docker, HTTP, or provider error text.
 
+### Save default model
+
+```text
+PUT /tts/models/selection   { "modelId": "local.kokoro-82m" }
+```
+
+The endpoint accepts only a currently selectable model, saves its stable ID in
+`User.defaultTtsModelKey`, and returns `{ "selectedModelId": "..." }`.
+Selecting a Fish model also requires the caller's valid Fish credential. The
+frontend refetches the catalogue to show the new selected card.
+
 ### Save/remove Fish credential
 
 ```text
@@ -331,14 +356,15 @@ DELETE /tts/models/providers/fish-audio/credential
 
 ### Start generation
 
-Extend the existing chapter-audio generation DTO with `modelId`. Before a job
-is created, the service verifies ownership, model existence, model readiness,
-and the current user's Fish credential state.
+The existing chapter-audio generation DTO accepts an optional `modelId`.
+Without it, the service uses `User.defaultTtsModelKey`; with it, the request
+uses that model only and does not change the saved preference. Before a job is
+created, the service verifies ownership, model existence, model readiness, and
+the current user's Fish credential state.
 
-Final desired behavior: `modelId` is required. During the coordinated frontend
-migration it is temporarily optional and chooses the enabled default Fish
-model, but only if the caller has a valid Fish credential. Remove that fallback
-when the frontend model picker is wired.
+For backwards compatibility, a user with no saved preference still gets the
+legacy enabled-Fish fallback when they have a valid credential. Remove that
+fallback once onboarding makes selection mandatory.
 
 Use stable errors for the frontend:
 
@@ -356,8 +382,9 @@ and generated API types together.
 ## Worker flow after the change
 
 ```text
-User selects a model and starts chapter generation
-  -> Books service checks ownership + model availability + Fish credential state
+User saves a model selection, then starts chapter generation
+  -> Books service loads saved selection (or one-request override)
+  -> checks ownership + model availability + Fish credential state
   -> Audio records modelKey; Job is queued (no secret in Redis/DB payload)
   -> worker claims Job
   -> resolve adapter from Audio.modelKey
@@ -413,9 +440,9 @@ remain normal retryable TTS failures and must not erase a user's credential.
 1. Extract the current `TtsService` into `FishAudioTtsAdapter` without changing
    its stream/R2 behavior.
 2. Add the narrow adapter resolver and persist selected `modelKey` on `Audio`.
-3. Require/check `modelId` on generation, resolve key at worker execution, and
-   remove the server-global Fish API key fallback.
-4. Update OpenAPI, run frontend generation, and wire book-page model selection.
+3. Save/check a selected model on generation, resolve its key at worker
+   execution, and remove the server-global Fish API key fallback.
+4. Update OpenAPI, run frontend generation, and wire the Models-page selector.
 
 ### Phase 5 — first local model
 
@@ -454,6 +481,7 @@ remain normal retryable TTS failures and must not erase a user's credential.
 2. A user with a valid Fish key sees/selects only deployment-enabled Fish models.
 3. Healthy local models are selectable for every authenticated user; unhealthy
    or disabled local models are visibly unavailable and blocked server-side.
-4. Chapter TTS uses the selected model and the correct user's Fish key.
+4. Chapter TTS uses the user's saved default (or an explicit one-request
+   override) and the correct user's Fish key.
 5. No global Fish API key is required in production configuration.
 6. The stored finished audio identifies the model that produced it.

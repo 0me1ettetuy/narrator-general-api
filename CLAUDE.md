@@ -65,23 +65,25 @@ book-detail endpoint exposes chapter audio status and progress.
 adapters for Piper, Kokoro, Qwen3-TTS, and Chatterbox. `TtsAdapterResolverService`
 selects the adapter once per worker job:
 
-- Send `{ "modelId": "local.kokoro-82m" }` to select a ready local model,
-  or `{ "modelId": "fish.s2.1-pro-free" }` for Fish Audio.
-- The selected ID is persisted as `Audio.modelKey`; a retry cannot silently
-  switch providers or voices.
+- Choose a ready model with `PUT /tts/models/selection`. It stores the user's
+  nullable `defaultTtsModelKey` preference. `GET /tts/models` returns it as
+  `selectedModelId`.
+- Chapter-audio requests can omit `modelId` and use that saved preference, or
+  include it for a one-request override. The resolved ID is persisted as
+  `Audio.modelKey`; a retry cannot silently switch providers or voices.
 - Local model health is checked both while queueing and immediately before the
   worker generates audio.
 - Fish keys belong to a user, are AES-256-GCM encrypted in Postgres, and are
   decrypted only in worker memory immediately before a Fish request. Never
   use or add a global Fish API key to the server environment.
 
-`GET /tts/models` returns local model status plus the current user's safe Fish
-credential state (`MISSING`, `VALID`, `INVALID`, or `UNKNOWN`). Fish model
-cards appear only for a valid key. The API never returns the key, even partly.
-Use `PUT /tts/models/providers/fish-audio/credential` to save/validate it and
-`DELETE /tts/models/providers/fish-audio/credential` to remove it. Set the
-deployment secret `TTS_CREDENTIAL_ENCRYPTION_KEY` to the output of
-`openssl rand -base64 32` before users can save credentials.
+`GET /tts/models` returns local model status, `selectedModelId`, and the
+current user's safe Fish credential state (`MISSING`, `VALID`, `INVALID`, or
+`UNKNOWN`). Fish model cards appear only for a valid key. The API never returns
+the key, even partly. Use `PUT /tts/models/providers/fish-audio/credential` to
+save/validate it and `DELETE /tts/models/providers/fish-audio/credential` to
+remove it. Set the deployment secret `TTS_CREDENTIAL_ENCRYPTION_KEY` to the
+output of `openssl rand -base64 32` before users can save credentials.
 
 Local engines are opt-in Compose profiles. Set the matching `*_ENABLED=true`
 and `COMPOSE_PROFILES` value in `.env`; each enabled model also requires its
@@ -104,5 +106,7 @@ hardware requirements, model IDs, and examples.
 - `docs/backend-architecture.md` — module and worker boundaries.
 - `docs/api-contracts-and-errors.md` — OpenAPI/error requirements.
 - `docs/local-tts-docker.md` — local model deployment and selection.
-- `docs/tts-models-and-user-keys-plan.md` — implemented model/key design and
-  remaining Models-page work.
+- `docs/tts-model-catalogue.md` — source of truth, toggles, and steps for
+  adding a local or Fish model.
+- `docs/tts-models-and-user-keys-plan.md` — model/key design and follow-up
+  work.

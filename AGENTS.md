@@ -6,6 +6,8 @@ backend code. For the detailed conventions and checklist, also read:
 - [Backend architecture](docs/backend-architecture.md)
 - [API contracts and errors](docs/api-contracts-and-errors.md)
 - [Backend delivery checklist](docs/backend-delivery-checklist.md)
+- [TTS model catalogue maintenance](docs/tts-model-catalogue.md) when adding,
+  configuring, or changing local/Fish TTS models.
 
 ## Core principles
 

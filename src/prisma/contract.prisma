@@ -6,6 +6,7 @@ model User {
   passwordHash String
   createdAt    DateTime  @default(now())
   updatedAt    DateTime
+  defaultTtsModelKey String?
   sessions     Session[]
   books        Book[]
   ttsProviderCredentials UserTtsProviderCredential[]

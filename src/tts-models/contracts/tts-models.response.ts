@@ -27,6 +27,11 @@ export type FishCredentialResponse = {
 };
 
 export type TtsModelsResponse = {
+  selectedModelId: string | null;
   providers: [FishCredentialResponse];
   groups: TtsModelGroupResponse[];
+};
+
+export type TtsModelSelectionResponse = {
+  selectedModelId: string;
 };

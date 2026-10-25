@@ -4,8 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { API_ERROR_CODES } from '../global-filters/api-error.js';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { temporalNow } from '../prisma/temporal.js';
 import type {
   TtsModelResponse,
+  TtsModelSelectionResponse,
   TtsModelsResponse,
 } from './contracts/tts-models.response.js';
 import { FishCredentialService } from './fish-credential.service.js';
@@ -19,18 +22,24 @@ export type SelectableTtsModel = {
   providerModel: string | null;
 };
 
+type UserModelPreference = {
+  defaultTtsModelKey: string | null;
+};
+
 @Injectable()
 export class TtsModelsService {
   constructor(
+    private readonly prisma: PrismaService,
     private readonly registry: TtsModelRegistryService,
     private readonly availability: TtsModelAvailabilityService,
     private readonly fishCredentials: FishCredentialService,
   ) {}
 
   async listModels(userId: string): Promise<TtsModelsResponse> {
-    const [localModels, fishCredential] = await Promise.all([
+    const [localModels, fishCredential, selectedModelId] = await Promise.all([
       this.getLocalModelResponses(),
       this.fishCredentials.getPublicStatus(userId),
+      this.getSelectedModelId(userId),
     ]);
     const groups: TtsModelsResponse['groups'] = [
       {
@@ -57,22 +66,39 @@ export class TtsModelsService {
     }
 
     return {
+      selectedModelId,
       providers: [fishCredential],
       groups,
     };
+  }
+
+  async selectModel(
+    userId: string,
+    modelId: string,
+  ): Promise<TtsModelSelectionResponse> {
+    const selectedModel = await this.getSelectableModel(userId, modelId);
+
+    await this.prisma.db.orm.public.User.where({ id: userId }).update({
+      defaultTtsModelKey: selectedModel.id,
+      updatedAt: temporalNow(),
+    });
+
+    return { selectedModelId: selectedModel.id };
   }
 
   async getSelectableModel(
     userId: string,
     modelId: string | null,
   ): Promise<SelectableTtsModel> {
-    if (!modelId) {
+    const requestedModelId = modelId ?? (await this.getSelectedModelId(userId));
+
+    if (!requestedModelId) {
       return this.getDefaultFishModel(userId);
     }
 
     const localModel = this.registry
       .getLocalModels()
-      .find((candidate) => candidate.id === modelId);
+      .find((candidate) => candidate.id === requestedModelId);
 
     if (localModel) {
       await this.assertSelectableLocalModel(localModel);
@@ -86,7 +112,7 @@ export class TtsModelsService {
 
     const fishModel = this.registry
       .getFishModels()
-      .find((candidate) => candidate.id === modelId);
+      .find((candidate) => candidate.id === requestedModelId);
 
     if (!fishModel) {
       throw new NotFoundException({
@@ -147,6 +173,14 @@ export class TtsModelsService {
           };
         }),
     );
+  }
+
+  private async getSelectedModelId(userId: string): Promise<string | null> {
+    const user = (await this.prisma.db.orm.public.User.where({
+      id: userId,
+    }).first()) as UserModelPreference | null;
+
+    return user?.defaultTtsModelKey ?? null;
   }
 
   private async getDefaultFishModel(
