@@ -17,6 +17,7 @@ import {
 import { TtsModelsService } from '../tts-models/tts-models.service.js';
 import type {
   ChapterAudioAccessResponse,
+  BatchChapterAudioResponse,
   BookAuthorResponse,
   BookDetailResponse,
   BookSummary,
@@ -267,6 +268,46 @@ export class BooksService {
     };
   }
 
+  async queueSelectedChapterAudio(
+    userId: string,
+    bookId: string,
+    chapterIds: string[],
+  ): Promise<BatchChapterAudioResponse> {
+    const book = await this.getOwnedBook(userId, bookId);
+    const chapters = await this.getSelectedChapters(book.id, chapterIds);
+    const selectedModel = await this.ttsModelsService.getSelectableModel(
+      userId,
+      null,
+    );
+
+    await this.assertAudioModelsAreCompatible(chapters, selectedModel.id);
+
+    const affectedChapterIds: string[] = [];
+    const skippedChapterIds: string[] = [];
+    const jobsToEnqueue: string[] = [];
+
+    for (const chapter of chapters) {
+      const queued = await this.createOrReuseChapterAudioJob(
+        book.id,
+        chapter.id,
+        selectedModel.id,
+      );
+
+      if (queued.shouldEnqueue) {
+        affectedChapterIds.push(chapter.id);
+        jobsToEnqueue.push(queued.job.id);
+      } else {
+        skippedChapterIds.push(chapter.id);
+      }
+    }
+
+    for (const jobId of jobsToEnqueue) {
+      await this.jobsService.enqueueChapterSynthesis(jobId);
+    }
+
+    return { affectedChapterIds, skippedChapterIds };
+  }
+
   async cancelChapterAudio(
     userId: string,
     bookId: string,
@@ -376,6 +417,36 @@ export class BooksService {
     );
 
     return toChapterAudioResponse(cancellation.audio);
+  }
+
+  async cancelSelectedChapterAudio(
+    userId: string,
+    bookId: string,
+    chapterIds: string[],
+  ): Promise<BatchChapterAudioResponse> {
+    const book = await this.getOwnedBook(userId, bookId);
+    const chapters = await this.getSelectedChapters(book.id, chapterIds);
+    const affectedChapterIds: string[] = [];
+    const skippedChapterIds: string[] = [];
+
+    for (const chapter of chapters) {
+      const audio = (await this.prisma.db.orm.public.Audio.where({
+        chapterId: chapter.id,
+      }).first()) as Audio | null;
+
+      if (
+        !audio ||
+        (audio.status !== 'QUEUED' && audio.status !== 'PROCESSING')
+      ) {
+        skippedChapterIds.push(chapter.id);
+        continue;
+      }
+
+      await this.cancelChapterAudio(userId, book.id, chapter.id);
+      affectedChapterIds.push(chapter.id);
+    }
+
+    return { affectedChapterIds, skippedChapterIds };
   }
 
   async deleteChapterAudio(
@@ -707,6 +778,68 @@ export class BooksService {
         shouldEnqueue: true,
       };
     });
+  }
+
+  private async getOwnedBook(userId: string, bookId: string): Promise<Book> {
+    const book = (await this.prisma.db.orm.public.Book.where({
+      id: bookId,
+      userId,
+    }).first()) as Book | null;
+
+    if (!book) {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Book not found',
+      });
+    }
+
+    return book;
+  }
+
+  private async getSelectedChapters(
+    bookId: string,
+    chapterIds: string[],
+  ): Promise<Chapter[]> {
+    const requestedChapterIds = new Set(chapterIds);
+    const chapters = (await this.prisma.db.orm.public.Chapter.where({
+      bookId,
+    }).all()) as Chapter[];
+    const selectedChapters = chapters
+      .filter((chapter) => requestedChapterIds.has(chapter.id))
+      .sort(compareByPosition);
+
+    if (selectedChapters.length !== requestedChapterIds.size) {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Chapter not found',
+      });
+    }
+
+    return selectedChapters;
+  }
+
+  private async assertAudioModelsAreCompatible(
+    chapters: Chapter[],
+    modelId: string,
+  ): Promise<void> {
+    const existingAudio = await Promise.all(
+      chapters.map(async (chapter) =>
+        this.prisma.db.orm.public.Audio.where({
+          chapterId: chapter.id,
+        }).first(),
+      ),
+    );
+
+    if (
+      existingAudio.some(
+        (audio) => audio && (audio as Audio).modelKey !== modelId,
+      )
+    ) {
+      throw new ConflictException({
+        code: API_ERROR_CODES.conflict,
+        message: 'Delete the existing chapter audio before changing its model',
+      });
+    }
   }
 
   private async deleteChapterAudioJobs(

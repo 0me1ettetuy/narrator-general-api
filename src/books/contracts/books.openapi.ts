@@ -115,6 +115,14 @@ export class QueueChapterAudioResponseDto {
   job: ChapterAudioJobResponseDto | null;
 }
 
+export class BatchChapterAudioResponseDto {
+  @ApiProperty({ type: [String], format: 'uuid' })
+  affectedChapterIds: string[];
+
+  @ApiProperty({ type: [String], format: 'uuid' })
+  skippedChapterIds: string[];
+}
+
 export class ChapterAudioAccessResponseDto {
   @ApiProperty({ format: 'uri' })
   playbackUrl: string;

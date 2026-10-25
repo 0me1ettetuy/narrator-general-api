@@ -60,6 +60,11 @@ export type QueueChapterAudioResponse = {
   job: ChapterAudioJobResponse | null;
 };
 
+export type BatchChapterAudioResponse = {
+  affectedChapterIds: string[];
+  skippedChapterIds: string[];
+};
+
 export type ChapterAudioAccessResponse = {
   playbackUrl: string;
   downloadUrl: string;

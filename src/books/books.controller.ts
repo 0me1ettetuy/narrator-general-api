@@ -27,10 +27,12 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard.js';
 import type { JwtPayload } from '../auth/types/jwt.type.js';
 import {
+  BatchChapterAudioResponseDto,
   BookDetailResponseDto,
   BooksListResponseDto,
   ChapterAudioResponseDto,
@@ -40,6 +42,7 @@ import {
   QueueChapterAudioResponseDto,
 } from './contracts/books.openapi.js';
 import type {
+  BatchChapterAudioResponse,
   BookDetailResponse,
   BooksListResponse,
   ChapterAudioResponse,
@@ -48,6 +51,7 @@ import type {
   CreateBookUploadResponse,
   QueueChapterAudioResponse,
 } from './contracts/books.response.js';
+import { BatchChapterAudioDto } from './dto/batch-chapter-audio.dto.js';
 import { BookIdParamsDto } from './dto/book-id-params.dto.js';
 import { BooksListQueryDto } from './dto/books-list-query.dto.js';
 import { ChapterAudioParamsDto } from './dto/chapter-audio-params.dto.js';
@@ -127,6 +131,33 @@ export class BooksController {
     );
   }
 
+  @Post(':bookId/audio')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({ summary: 'Queue or resume audio for selected chapters' })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiBody({ type: BatchChapterAudioDto })
+  @ApiAcceptedResponse({ type: BatchChapterAudioResponseDto })
+  @ApiBadRequestResponse({ description: 'chapterIds must be unique UUIDs' })
+  @ApiConflictResponse({
+    description:
+      'The selected model is unavailable or a chapter uses another model',
+  })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book or selected chapter not found' })
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @UseGuards(JwtAccessGuard)
+  queueSelectedChapterAudio(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+    @Body() dto: BatchChapterAudioDto,
+  ): Promise<BatchChapterAudioResponse> {
+    return this.booksService.queueSelectedChapterAudio(
+      request.user.sub,
+      params.bookId,
+      dto.chapterIds,
+    );
+  }
+
   @Post(':bookId/chapters/:chapterId/audio/cancel')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -149,6 +180,29 @@ export class BooksController {
       request.user.sub,
       params.bookId,
       params.chapterId,
+    );
+  }
+
+  @Post(':bookId/audio/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Stop audio generation for selected chapters' })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiBody({ type: BatchChapterAudioDto })
+  @ApiOkResponse({ type: BatchChapterAudioResponseDto })
+  @ApiBadRequestResponse({ description: 'chapterIds must be unique UUIDs' })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book or selected chapter not found' })
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @UseGuards(JwtAccessGuard)
+  cancelSelectedChapterAudio(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+    @Body() dto: BatchChapterAudioDto,
+  ): Promise<BatchChapterAudioResponse> {
+    return this.booksService.cancelSelectedChapterAudio(
+      request.user.sub,
+      params.bookId,
+      dto.chapterIds,
     );
   }
 
