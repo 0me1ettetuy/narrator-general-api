@@ -18,6 +18,7 @@ import { TtsModelsService } from '../tts-models/tts-models.service.js';
 import type {
   ChapterAudioAccessResponse,
   BatchChapterAudioResponse,
+  BookCoverAccessResponse,
   BookAuthorResponse,
   BookDetailResponse,
   BookSummary,
@@ -624,6 +625,30 @@ export class BooksService {
     };
   }
 
+  async getBookCoverAccess(
+    userId: string,
+    bookId: string,
+  ): Promise<BookCoverAccessResponse> {
+    const book = (await this.prisma.db.orm.public.Book.where({
+      id: bookId,
+      userId,
+    }).first()) as Book | null;
+
+    if (!book || !book.coverObjectKey) {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Book cover not found',
+      });
+    }
+
+    return {
+      coverUrl: await this.storageService.createDownloadUrl(
+        book.coverObjectKey,
+      ),
+      expiresInSeconds: SIGNED_URL_TTL_SECONDS,
+    };
+  }
+
   async getBook(userId: string, bookId: string): Promise<BookDetailResponse> {
     const book = await this.prisma.db.orm.public.Book.where({
       id: bookId,
@@ -862,6 +887,7 @@ function toBookSummary(book: Book): BookSummary {
     sourceOriginalFilename: book.sourceOriginalFilename,
     sourceMimeType: book.sourceMimeType,
     sourceSize: book.sourceSize,
+    hasCover: book.coverObjectKey !== null,
     parseStatus: book.parseStatus,
     chapterCount: book.chapterCount,
     createdAt: book.createdAt,

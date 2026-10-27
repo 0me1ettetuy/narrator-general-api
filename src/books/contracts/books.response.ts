@@ -19,6 +19,7 @@ export type BookSummary = {
   sourceOriginalFilename: string;
   sourceMimeType: string;
   sourceSize: number;
+  hasCover: boolean;
   parseStatus: BookParseStatus;
   chapterCount: number;
   createdAt: Instant;
@@ -68,6 +69,11 @@ export type BatchChapterAudioResponse = {
 export type ChapterAudioAccessResponse = {
   playbackUrl: string;
   downloadUrl: string;
+  expiresInSeconds: number;
+};
+
+export type BookCoverAccessResponse = {
+  coverUrl: string;
   expiresInSeconds: number;
 };
 

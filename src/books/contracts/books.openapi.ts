@@ -20,6 +20,11 @@ export class BookSummaryResponseDto {
   sourceSize: number;
 
   @ApiProperty({
+    description: 'Whether the uploaded EPUB contains a cover image',
+  })
+  hasCover: boolean;
+
+  @ApiProperty({
     enum: ['UPLOADING', 'QUEUED', 'PROCESSING', 'READY', 'FAILED'],
   })
   parseStatus: string;
@@ -129,6 +134,14 @@ export class ChapterAudioAccessResponseDto {
 
   @ApiProperty({ format: 'uri' })
   downloadUrl: string;
+
+  @ApiProperty({ minimum: 1 })
+  expiresInSeconds: number;
+}
+
+export class BookCoverAccessResponseDto {
+  @ApiProperty({ format: 'uri' })
+  coverUrl: string;
 
   @ApiProperty({ minimum: 1 })
   expiresInSeconds: number;

@@ -33,6 +33,7 @@ import { JwtAccessGuard } from '../auth/guards/jwt-access.guard.js';
 import type { JwtPayload } from '../auth/types/jwt.type.js';
 import {
   BatchChapterAudioResponseDto,
+  BookCoverAccessResponseDto,
   BookDetailResponseDto,
   BooksListResponseDto,
   ChapterAudioResponseDto,
@@ -43,6 +44,7 @@ import {
 } from './contracts/books.openapi.js';
 import type {
   BatchChapterAudioResponse,
+  BookCoverAccessResponse,
   BookDetailResponse,
   BooksListResponse,
   ChapterAudioResponse,
@@ -249,6 +251,23 @@ export class BooksController {
       request.user.sub,
       params.bookId,
       params.chapterId,
+    );
+  }
+
+  @Get(':bookId/cover')
+  @ApiOperation({ summary: 'Get a signed URL for an EPUB cover image' })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiOkResponse({ type: BookCoverAccessResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book or book cover not found' })
+  @UseGuards(JwtAccessGuard)
+  getBookCoverAccess(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+  ): Promise<BookCoverAccessResponse> {
+    return this.booksService.getBookCoverAccess(
+      request.user.sub,
+      params.bookId,
     );
   }
 

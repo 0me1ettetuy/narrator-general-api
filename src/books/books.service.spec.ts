@@ -14,6 +14,7 @@ jest.mock('../prisma/prisma.service.js', () => ({
 
 jest.mock('../storage/storage.service.js', () => ({
   StorageService: class StorageService {},
+  SIGNED_URL_TTL_SECONDS: 15 * 60,
 }));
 
 jest.mock('../tts-models/tts-models.service.js', () => ({
@@ -37,7 +38,11 @@ type BooksServiceInternals = {
 };
 
 describe('BooksService', () => {
-  const book = { id: 'book-id', userId: 'user-id' } as Book;
+  const book = {
+    id: 'book-id',
+    userId: 'user-id',
+    coverObjectKey: null,
+  } as Book;
   const firstChapter = {
     id: 'first-chapter-id',
     bookId: book.id,
@@ -66,12 +71,17 @@ describe('BooksService', () => {
   const jobsService = {
     enqueueChapterSynthesis: jest.fn().mockResolvedValue(undefined),
   } as unknown as JobsService;
+  const storage = {
+    createDownloadUrl: jest.fn(),
+  };
+  const storageService = storage as unknown as StorageService;
   const ttsModelsService = {
     getSelectableModel: jest.fn(),
   } as unknown as TtsModelsService;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    book.coverObjectKey = null;
     bookFirst.mockResolvedValue(book);
     chaptersAll.mockResolvedValue([secondChapter, firstChapter]);
     audioFirst.mockResolvedValue(null);
@@ -88,7 +98,7 @@ describe('BooksService', () => {
   it('queues selected chapters in book order through the saved user model', async () => {
     const service = new BooksService(
       prisma,
-      {} as StorageService,
+      storageService,
       jobsService,
       ttsModelsService,
     );
@@ -137,5 +147,29 @@ describe('BooksService', () => {
     expect(jobsService.enqueueChapterSynthesis).toHaveBeenCalledWith(
       'first-job-id',
     );
+  });
+
+  it('returns a signed cover URL for an owned book', async () => {
+    book.coverObjectKey = 'books/user-id/book-id/cover/original.jpg';
+    storage.createDownloadUrl.mockResolvedValue('https://storage.test/cover');
+    const service = new BooksService(
+      prisma,
+      storageService,
+      jobsService,
+      ttsModelsService,
+    );
+
+    await expect(
+      service.getBookCoverAccess('user-id', book.id),
+    ).resolves.toEqual({
+      coverUrl: 'https://storage.test/cover',
+      expiresInSeconds: 15 * 60,
+    });
+
+    expect(db.orm.public.Book.where).toHaveBeenLastCalledWith({
+      id: book.id,
+      userId: 'user-id',
+    });
+    expect(storage.createDownloadUrl).toHaveBeenCalledWith(book.coverObjectKey);
   });
 });

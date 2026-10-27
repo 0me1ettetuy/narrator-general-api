@@ -113,3 +113,5 @@ hardware requirements, model IDs, and examples.
   adding a local or Fish model.
 - `docs/tts-models-and-user-keys-plan.md` — model/key design and follow-up
   work.
+- `docs/chapter-curation-plan.md` — EPUB chapter classification, editing, and
+  narration-selection design.
