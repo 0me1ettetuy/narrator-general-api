@@ -3,6 +3,10 @@ import type {
   AudioProcessingStage,
   AudioStatus,
   BookParseStatus,
+  ChapterClassificationConfidence,
+  ChapterClassificationSource,
+  ChapterOrigin,
+  ChapterRole,
   JobStatus,
 } from '../contracts/books.response.js';
 
@@ -42,6 +46,15 @@ export type Chapter = {
   sourceHref: string | null;
   text: string;
   wordCount: number;
+  role: ChapterRole;
+  includeInDefaultNarration: boolean;
+  classificationSource: ChapterClassificationSource;
+  classificationConfidence: ChapterClassificationConfidence | null;
+  classificationReason: string | null;
+  origin: ChapterOrigin;
+  removedAt: Instant | null;
+  mergedIntoChapterId: string | null;
+  editedAt: Instant | null;
 };
 
 export type Audio = {

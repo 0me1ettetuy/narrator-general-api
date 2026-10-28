@@ -6,9 +6,11 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   Req,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -37,6 +39,10 @@ import {
   BookDetailResponseDto,
   BooksListResponseDto,
   ChapterAudioResponseDto,
+  ChapterDetailResponseDto,
+  ChapterMergeResponseDto,
+  RemovedChaptersResponseDto,
+  ChapterSelectionResponseDto,
   ChapterAudioAccessResponseDto,
   CompleteBookUploadResponseDto,
   CreateBookUploadResponseDto,
@@ -48,6 +54,10 @@ import type {
   BookDetailResponse,
   BooksListResponse,
   ChapterAudioResponse,
+  ChapterDetailResponse,
+  ChapterMergeResponse,
+  RemovedChaptersResponse,
+  ChapterSelectionResponse,
   ChapterAudioAccessResponse,
   CompleteBookUploadResponse,
   CreateBookUploadResponse,
@@ -59,6 +69,15 @@ import { BooksListQueryDto } from './dto/books-list-query.dto.js';
 import { ChapterAudioParamsDto } from './dto/chapter-audio-params.dto.js';
 import { CreateBookUploadDto } from './dto/create-book-upload.dto.js';
 import { QueueChapterAudioDto } from './dto/queue-chapter-audio.dto.js';
+import {
+  CreateChapterDto,
+  MergeChaptersDto,
+  RemoveChapterDto,
+  UpdateChapterDto,
+  UpdateChapterOrderDto,
+  UpdateChapterSelectionDto,
+} from './dto/chapter-curation.dto.js';
+import { ChapterCurationService } from './chapter-curation.service.js';
 import { BooksService } from './books.service.js';
 
 type RequestWithUser = Request & {
@@ -69,7 +88,10 @@ type RequestWithUser = Request & {
 @ApiBearerAuth()
 @Controller('books')
 export class BooksController {
-  constructor(private readonly booksService: BooksService) {}
+  constructor(
+    private readonly booksService: BooksService,
+    private readonly chapterCurationService: ChapterCurationService,
+  ) {}
 
   @Post('uploads')
   @ApiOperation({ summary: 'Create an EPUB upload intent' })
@@ -226,6 +248,211 @@ export class BooksController {
     @Req() request: RequestWithUser,
   ): Promise<void> {
     await this.booksService.deleteChapterAudio(
+      request.user.sub,
+      params.bookId,
+      params.chapterId,
+    );
+  }
+
+  @Post(':bookId/chapters')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Add a user-created chapter to a book outline' })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiBody({ type: CreateChapterDto })
+  @ApiCreatedResponse({ type: ChapterDetailResponseDto })
+  @ApiBadRequestResponse({ description: 'Invalid chapter content' })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book or insertion chapter not found' })
+  @UseGuards(JwtAccessGuard)
+  createChapter(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+    @Body() dto: CreateChapterDto,
+  ): Promise<ChapterDetailResponse> {
+    return this.chapterCurationService.createChapter(
+      request.user.sub,
+      params.bookId,
+      dto,
+    );
+  }
+
+  @Patch(':bookId/chapters/selection')
+  @ApiOperation({
+    summary: 'Set role or default narration inclusion for selected chapters',
+  })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiBody({ type: UpdateChapterSelectionDto })
+  @ApiOkResponse({ type: ChapterSelectionResponseDto })
+  @ApiBadRequestResponse({ description: 'Invalid chapter selection change' })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book or selected chapter not found' })
+  @UseGuards(JwtAccessGuard)
+  updateChapterSelection(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+    @Body() dto: UpdateChapterSelectionDto,
+  ): Promise<ChapterSelectionResponse> {
+    return this.chapterCurationService.updateSelection(
+      request.user.sub,
+      params.bookId,
+      dto,
+    );
+  }
+
+  @Post(':bookId/chapters/merge')
+  @ApiOperation({ summary: 'Merge adjacent chapters into one chapter' })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiBody({ type: MergeChaptersDto })
+  @ApiOkResponse({ type: ChapterMergeResponseDto })
+  @ApiBadRequestResponse({ description: 'Chapters must be adjacent' })
+  @ApiConflictResponse({
+    description: 'Audio must be stopped or deletion confirmed first',
+  })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book or chapter not found' })
+  @UseGuards(JwtAccessGuard)
+  mergeChapters(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+    @Body() dto: MergeChaptersDto,
+  ): Promise<ChapterMergeResponse> {
+    return this.chapterCurationService.mergeChapters(
+      request.user.sub,
+      params.bookId,
+      dto,
+    );
+  }
+
+  @Put(':bookId/chapters/order')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Set the complete active chapter order' })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiBody({ type: UpdateChapterOrderDto })
+  @ApiNoContentResponse({ description: 'The active chapter order was saved' })
+  @ApiBadRequestResponse({
+    description: 'chapterIds must contain every active chapter once',
+  })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book not found' })
+  @UseGuards(JwtAccessGuard)
+  async reorderChapters(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+    @Body() dto: UpdateChapterOrderDto,
+  ): Promise<void> {
+    await this.chapterCurationService.reorderChapters(
+      request.user.sub,
+      params.bookId,
+      dto,
+    );
+  }
+
+  @Get(':bookId/chapters/removed')
+  @ApiOperation({
+    summary: 'List individually removed chapters available to restore',
+  })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiOkResponse({ type: RemovedChaptersResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book not found' })
+  @UseGuards(JwtAccessGuard)
+  listRemovedChapters(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+  ): Promise<RemovedChaptersResponse> {
+    return this.chapterCurationService.listRemovedChapters(
+      request.user.sub,
+      params.bookId,
+    );
+  }
+
+  @Get(':bookId/chapters/:chapterId')
+  @ApiOperation({ summary: 'Get a chapter with its editable text' })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiParam({ name: 'chapterId', format: 'uuid' })
+  @ApiOkResponse({ type: ChapterDetailResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book or active chapter not found' })
+  @UseGuards(JwtAccessGuard)
+  getChapter(
+    @Param() params: ChapterAudioParamsDto,
+    @Req() request: RequestWithUser,
+  ): Promise<ChapterDetailResponse> {
+    return this.chapterCurationService.getChapter(
+      request.user.sub,
+      params.bookId,
+      params.chapterId,
+    );
+  }
+
+  @Patch(':bookId/chapters/:chapterId')
+  @ApiOperation({ summary: 'Edit one active chapter' })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiParam({ name: 'chapterId', format: 'uuid' })
+  @ApiBody({ type: UpdateChapterDto })
+  @ApiOkResponse({ type: ChapterDetailResponseDto })
+  @ApiBadRequestResponse({ description: 'Invalid chapter change' })
+  @ApiConflictResponse({
+    description: 'Audio must be stopped or deletion confirmed first',
+  })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book or active chapter not found' })
+  @UseGuards(JwtAccessGuard)
+  updateChapter(
+    @Param() params: ChapterAudioParamsDto,
+    @Req() request: RequestWithUser,
+    @Body() dto: UpdateChapterDto,
+  ): Promise<ChapterDetailResponse> {
+    return this.chapterCurationService.updateChapter(
+      request.user.sub,
+      params.bookId,
+      params.chapterId,
+      dto,
+    );
+  }
+
+  @Delete(':bookId/chapters/:chapterId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove one chapter from the active outline' })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiParam({ name: 'chapterId', format: 'uuid' })
+  @ApiBody({ type: RemoveChapterDto })
+  @ApiNoContentResponse({ description: 'The chapter was removed' })
+  @ApiConflictResponse({
+    description: 'Audio must be stopped or deletion confirmed first',
+  })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book or active chapter not found' })
+  @UseGuards(JwtAccessGuard)
+  async removeChapter(
+    @Param() params: ChapterAudioParamsDto,
+    @Req() request: RequestWithUser,
+    @Body() dto: RemoveChapterDto,
+  ): Promise<void> {
+    await this.chapterCurationService.removeChapter(
+      request.user.sub,
+      params.bookId,
+      params.chapterId,
+      dto,
+    );
+  }
+
+  @Post(':bookId/chapters/:chapterId/restore')
+  @ApiOperation({ summary: 'Restore a removed non-merged chapter' })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiParam({ name: 'chapterId', format: 'uuid' })
+  @ApiOkResponse({ type: ChapterDetailResponseDto })
+  @ApiConflictResponse({
+    description: 'A merged chapter must be undone as a merge operation',
+  })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book or removed chapter not found' })
+  @UseGuards(JwtAccessGuard)
+  restoreChapter(
+    @Param() params: ChapterAudioParamsDto,
+    @Req() request: RequestWithUser,
+  ): Promise<ChapterDetailResponse> {
+    return this.chapterCurationService.restoreChapter(
       request.user.sub,
       params.bookId,
       params.chapterId,

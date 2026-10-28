@@ -112,6 +112,8 @@ describe('BookParsingService', () => {
           sourceHref: 'chapter-1.xhtml',
           text: 'Chapter text',
           wordCount: 2,
+          semanticTypes: [],
+          isLinear: true,
         },
       ],
     });

@@ -50,6 +50,8 @@ describe('EpubParserService', () => {
           sourceHref: 'text/second.xhtml',
           text: 'Second\n\nchapter',
           wordCount: 2,
+          semanticTypes: [],
+          isLinear: true,
         },
       ],
     });

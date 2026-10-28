@@ -58,6 +58,31 @@ enum BookParseStatus {
   FAILED
 }
 
+enum ChapterRole {
+  MAIN
+  FRONT_MATTER
+  NAVIGATION
+  REFERENCE
+  BACK_MATTER
+  OTHER
+}
+
+enum ChapterClassificationSource {
+  EPUB
+  HEURISTIC
+  USER
+}
+
+enum ChapterClassificationConfidence {
+  HIGH
+  LOW
+}
+
+enum ChapterOrigin {
+  IMPORTED
+  USER
+}
+
 enum AudioStatus {
   QUEUED
   PROCESSING
@@ -148,21 +173,31 @@ model BookAuthor {
 }
 
 model Chapter {
-  id        String   @id @default(uuid())
-  bookId    String
-  position  Int
-  title     String
-  sourceHref String?
-  text      String
-  wordCount Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime
+  id                           String                          @id @default(uuid())
+  bookId                       String
+  position                     Int
+  title                        String
+  sourceHref                   String?
+  text                         String
+  wordCount                    Int
+  role                         ChapterRole                     @default(MAIN)
+  includeInDefaultNarration    Boolean                         @default(true)
+  classificationSource         ChapterClassificationSource    @default(EPUB)
+  classificationConfidence     ChapterClassificationConfidence?
+  classificationReason         String?
+  origin                       ChapterOrigin                   @default(IMPORTED)
+  removedAt                    DateTime?
+  mergedIntoChapterId          String?
+  editedAt                     DateTime?
+  createdAt                    DateTime                        @default(now())
+  updatedAt                    DateTime
 
   book  Book   @relation(fields: [bookId], references: [id])
   audio Audio?
   jobs  Job[]
 
   @@unique([bookId, position])
+  @@index([bookId, removedAt, position])
   @@map("chapter")
 }
 

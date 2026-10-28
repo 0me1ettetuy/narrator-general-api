@@ -9,6 +9,20 @@ export type AudioStatus =
 export type AudioProcessingStage =
   'CHUNKING' | 'GENERATING' | 'MERGING' | 'UPLOADING';
 
+export type ChapterRole =
+  | 'MAIN'
+  | 'FRONT_MATTER'
+  | 'NAVIGATION'
+  | 'REFERENCE'
+  | 'BACK_MATTER'
+  | 'OTHER';
+
+export type ChapterClassificationSource = 'EPUB' | 'HEURISTIC' | 'USER';
+
+export type ChapterClassificationConfidence = 'HIGH' | 'LOW';
+
+export type ChapterOrigin = 'IMPORTED' | 'USER';
+
 export type JobStatus =
   'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
@@ -37,7 +51,30 @@ export type ChapterSummaryResponse = {
   position: number;
   title: string;
   wordCount: number;
+  role: ChapterRole;
+  includeInDefaultNarration: boolean;
+  classificationSource: ChapterClassificationSource;
+  classificationConfidence: ChapterClassificationConfidence | null;
+  classificationReason: string | null;
   audio: ChapterAudioResponse | null;
+};
+
+export type ChapterDetailResponse = ChapterSummaryResponse & {
+  text: string;
+  origin: ChapterOrigin;
+};
+
+export type ChapterMergeResponse = {
+  chapter: ChapterSummaryResponse;
+  removedChapterIds: string[];
+};
+
+export type ChapterSelectionResponse = {
+  updatedChapterIds: string[];
+};
+
+export type RemovedChaptersResponse = {
+  chapters: ChapterSummaryResponse[];
 };
 
 export type ChapterAudioResponse = {

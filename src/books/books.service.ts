@@ -239,6 +239,7 @@ export class BooksService {
     const chapter = await this.prisma.db.orm.public.Chapter.where({
       id: chapterId,
       bookId: book.id,
+      removedAt: null,
     }).first();
 
     if (!chapter) {
@@ -329,6 +330,7 @@ export class BooksService {
     const chapter = await this.prisma.db.orm.public.Chapter.where({
       id: chapterId,
       bookId: book.id,
+      removedAt: null,
     }).first();
 
     if (!chapter) {
@@ -470,6 +472,7 @@ export class BooksService {
     const chapter = await this.prisma.db.orm.public.Chapter.where({
       id: chapterId,
       bookId: book.id,
+      removedAt: null,
     }).first();
 
     if (!chapter) {
@@ -591,6 +594,7 @@ export class BooksService {
     const chapter = await this.prisma.db.orm.public.Chapter.where({
       id: chapterId,
       bookId: book.id,
+      removedAt: null,
     }).first();
 
     if (!chapter) {
@@ -664,7 +668,10 @@ export class BooksService {
 
     const [authors, chapters] = (await Promise.all([
       this.prisma.db.orm.public.BookAuthor.where({ bookId }).all(),
-      this.prisma.db.orm.public.Chapter.where({ bookId }).all(),
+      this.prisma.db.orm.public.Chapter.where({
+        bookId,
+        removedAt: null,
+      }).all(),
     ])) as [BookAuthor[], Chapter[]];
     const sortedChapters = chapters.sort(compareByPosition);
     const audioByChapterId = new Map(
@@ -828,6 +835,7 @@ export class BooksService {
     const requestedChapterIds = new Set(chapterIds);
     const chapters = (await this.prisma.db.orm.public.Chapter.where({
       bookId,
+      removedAt: null,
     }).all()) as Chapter[];
     const selectedChapters = chapters
       .filter((chapter) => requestedChapterIds.has(chapter.id))
@@ -937,6 +945,11 @@ function toChapterSummaryResponse(
     position: chapter.position,
     title: chapter.title,
     wordCount: chapter.wordCount,
+    role: chapter.role,
+    includeInDefaultNarration: chapter.includeInDefaultNarration,
+    classificationSource: chapter.classificationSource,
+    classificationConfidence: chapter.classificationConfidence,
+    classificationReason: chapter.classificationReason,
     audio: audio ? toChapterAudioResponse(audio) : null,
   };
 }

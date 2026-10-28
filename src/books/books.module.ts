@@ -5,13 +5,19 @@ import { StorageModule } from '../storage/storage.module.js';
 import { TtsModelsModule } from '../tts-models/tts-models.module.js';
 import { BooksController } from './books.controller.js';
 import { BookParsingService } from './book-parsing.service.js';
+import { ChapterCurationService } from './chapter-curation.service.js';
 import { BooksService } from './books.service.js';
 import { EpubParserService } from './epub-parser.service.js';
 
 @Module({
   imports: [PrismaModule, StorageModule, JobsModule, TtsModelsModule],
   controllers: [BooksController],
-  providers: [BooksService, EpubParserService, BookParsingService],
+  providers: [
+    BooksService,
+    EpubParserService,
+    BookParsingService,
+    ChapterCurationService,
+  ],
   exports: [EpubParserService, BookParsingService],
 })
 export class BooksModule {}

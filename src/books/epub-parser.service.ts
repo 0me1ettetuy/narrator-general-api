@@ -22,7 +22,7 @@ export class EpubParserService {
       maxInflatedBytes: MAX_EPUB_INFLATED_ENTRY_BYTES,
     });
     const chapters = Array.from(book.iterChapters())
-      .map(toParsedEpubChapter)
+      .map((chapter) => toParsedEpubChapter(book, chapter))
       .filter((chapter): chapter is ParsedEpubChapter => chapter !== null)
       .map((chapter, position) => ({ ...chapter, position }));
 
@@ -71,7 +71,10 @@ function normalizeCoverMimeType(contentType: string): string | null {
   return normalized || null;
 }
 
-function toParsedEpubChapter(chapter: Chapter): ParsedEpubChapter | null {
+function toParsedEpubChapter(
+  book: Book,
+  chapter: Chapter,
+): ParsedEpubChapter | null {
   const text = normalizeText(chapter.text);
 
   if (!text) {
@@ -84,7 +87,25 @@ function toParsedEpubChapter(chapter: Chapter): ParsedEpubChapter | null {
     sourceHref: chapter.href,
     text,
     wordCount: countWords(text),
+    semanticTypes: getChapterSemanticTypes(book, chapter),
+    isLinear: book.spine?.[chapter.start?.spineIndex]?.linear ?? true,
   };
+}
+
+function getChapterSemanticTypes(book: Book, chapter: Chapter): string[] {
+  try {
+    return [
+      ...new Set(
+        book
+          .blocksInRange(chapter.start, chapter.end)
+          .map((block) => block.epubType)
+          .filter((value): value is string => Boolean(value))
+          .flatMap((value) => value.toLowerCase().split(/\s+/u)),
+      ),
+    ];
+  } catch {
+    return [];
+  }
 }
 
 function normalizeText(value: string): string {

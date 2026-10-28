@@ -63,8 +63,64 @@ export class ChapterSummaryResponseDto {
   @ApiProperty({ minimum: 0 })
   wordCount: number;
 
+  @ApiProperty({
+    enum: [
+      'MAIN',
+      'FRONT_MATTER',
+      'NAVIGATION',
+      'REFERENCE',
+      'BACK_MATTER',
+      'OTHER',
+    ],
+  })
+  role: string;
+
+  @ApiProperty({
+    description: 'Whether this chapter is selected by default for narration',
+  })
+  includeInDefaultNarration: boolean;
+
+  @ApiProperty({ enum: ['EPUB', 'HEURISTIC', 'USER'] })
+  classificationSource: string;
+
+  @ApiProperty({ type: String, nullable: true, enum: ['HIGH', 'LOW'] })
+  classificationConfidence: string | null;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Safe code explaining the import suggestion',
+  })
+  classificationReason: string | null;
+
   @ApiProperty({ type: () => ChapterAudioResponseDto, nullable: true })
   audio: ChapterAudioResponseDto | null;
+}
+
+export class ChapterDetailResponseDto extends ChapterSummaryResponseDto {
+  @ApiProperty({ description: 'Plain editable chapter text' })
+  text: string;
+
+  @ApiProperty({ enum: ['IMPORTED', 'USER'] })
+  origin: string;
+}
+
+export class ChapterMergeResponseDto {
+  @ApiProperty({ type: () => ChapterSummaryResponseDto })
+  chapter: ChapterSummaryResponseDto;
+
+  @ApiProperty({ type: [String], format: 'uuid' })
+  removedChapterIds: string[];
+}
+
+export class ChapterSelectionResponseDto {
+  @ApiProperty({ type: [String], format: 'uuid' })
+  updatedChapterIds: string[];
+}
+
+export class RemovedChaptersResponseDto {
+  @ApiProperty({ type: () => [ChapterSummaryResponseDto] })
+  chapters: ChapterSummaryResponseDto[];
 }
 
 export class ChapterAudioResponseDto {

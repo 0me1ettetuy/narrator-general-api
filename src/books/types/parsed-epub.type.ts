@@ -16,4 +16,6 @@ export type ParsedEpubChapter = {
   sourceHref: string;
   text: string;
   wordCount: number;
+  semanticTypes: string[];
+  isLinear: boolean;
 };

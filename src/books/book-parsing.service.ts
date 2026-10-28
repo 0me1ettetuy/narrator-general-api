@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { temporalNow } from '../prisma/temporal.js';
 import { StorageService } from '../storage/storage.service.js';
+import { classifyChapter } from './chapter-classifier.js';
 import { EpubParserService } from './epub-parser.service.js';
 import type { ParsedEpub, ParsedEpubCover } from './types/parsed-epub.type.js';
 
@@ -174,6 +175,8 @@ export class BookParsingService {
       }
 
       for (const chapter of parsedEpub.chapters) {
+        const classification = classifyChapter(chapter);
+
         await transaction.orm.public.Chapter.create({
           id: randomUUID(),
           bookId: job.bookId,
@@ -182,6 +185,12 @@ export class BookParsingService {
           sourceHref: chapter.sourceHref,
           text: chapter.text,
           wordCount: chapter.wordCount,
+          role: classification.role,
+          includeInDefaultNarration: classification.includeInDefaultNarration,
+          classificationSource: classification.source,
+          classificationConfidence: classification.confidence,
+          classificationReason: classification.reason,
+          origin: 'IMPORTED',
           updatedAt: now,
         });
       }
