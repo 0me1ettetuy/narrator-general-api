@@ -154,17 +154,18 @@ FISH_TTS_IDLE_TIMEOUT_MS="300000"
 TTS_CREDENTIAL_ENCRYPTION_KEY="generate-a-real-32-byte-base64-value"
 ```
 
-`COMPOSE_PROFILES` remains the Docker toggle. It starts an optional local-model
-service, while `TTS_LOCAL_*_ENABLED` tells the backend whether that service is
-part of its catalogue. Startup configuration must reject an enabled local model
-without its URL. The Models endpoint will still report `UNAVAILABLE` if a
-properly configured service later stops responding.
+Each `TTS_LOCAL_*_ENABLED` setting is the Docker and backend toggle. Compose
+maps `true` values to its active `true` profile, while false values map to an
+inactive profile; `COMPOSE_PROFILES` therefore includes `true` once (or
+`minio,true` for local storage). Startup configuration must reject an enabled
+local model without its URL. The Models endpoint will still report
+`UNAVAILABLE` if a properly configured service later stops responding.
 
-For a Docker deployment, the local model gets a dedicated Compose profile,
-service, health check, persistent model-cache volume if required, CPU/GPU
-resource documentation, and an internal service URL. A host-run API instead
-uses the published `localhost` URL. Document those as two explicit deployment
-examples; do not guess the address at runtime.
+For a Docker deployment, the local model gets a service with an env-driven
+Compose profile, health check, persistent model-cache volume if required,
+CPU/GPU resource documentation, and an internal service URL. A host-run API
+instead uses the published `localhost` URL. Document those as two explicit
+deployment examples; do not guess the address at runtime.
 
 ## Data model
 

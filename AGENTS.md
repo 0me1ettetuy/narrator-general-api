@@ -1,13 +1,16 @@
 # Narrator backend instructions
 
 This file governs work in `narrator-general-api`. Read it before changing
-backend code. For the detailed conventions and checklist, also read:
+backend code. For the detailed conventions and checklist, start at
+[Backend documentation](docs/README.md), then read:
 
-- [Backend architecture](docs/backend-architecture.md)
-- [API contracts and errors](docs/api-contracts-and-errors.md)
-- [Backend delivery checklist](docs/backend-delivery-checklist.md)
-- [TTS model catalogue maintenance](docs/tts-model-catalogue.md) when adding,
-  configuring, or changing local/Fish TTS models.
+- [Backend architecture](docs/architecture/backend-architecture.md)
+- [API contracts and errors](docs/api/api-contracts-and-errors.md)
+- [Backend delivery checklist](docs/architecture/backend-delivery-checklist.md)
+- [TTS model catalogue maintenance](docs/tts/tts-model-catalogue.md) when
+  adding, configuring, or changing local/Fish TTS models.
+- [Feature catalogue](docs/features/README.md) when identifying existing
+  product behavior or a feature boundary.
 
 ## Core principles
 

@@ -66,7 +66,7 @@ itself is never returned.
 Local models require all of the following:
 
 ```dotenv
-COMPOSE_PROFILES="tts-kokoro"
+# COMPOSE_PROFILES must include true (or minio,true when using MinIO).
 TTS_LOCAL_KOKORO_82M_ENABLED="true"
 TTS_LOCAL_KOKORO_82M_HEALTH_URL="http://localhost:7860/health/ready"
 TTS_LOCAL_KOKORO_82M_URL="http://localhost:7860"
@@ -114,7 +114,7 @@ Use this when adding a new Docker-hosted engine.
 
 1. Add a Compose service/profile, persistent model cache volume if needed, and
    documented resource requirements in `compose.yaml` and
-   `docs/local-tts-docker.md`.
+   `docs/tts/local-tts-docker.md`.
 2. Add its `*_ENABLED`, `*_HEALTH_URL`, and `*_URL` settings to `.env.example`.
 3. Add a `LocalTtsModelDefinition` to `LOCAL_TTS_MODEL_DEFINITIONS`, including
    a stable ID, the settings above, and the correct health strategy.

@@ -88,10 +88,11 @@ save/validate it and `DELETE /tts/models/providers/fish-audio/credential` to
 remove it. Set the deployment secret `TTS_CREDENTIAL_ENCRYPTION_KEY` to the
 output of `openssl rand -base64 32` before users can save credentials.
 
-Local engines are opt-in Compose profiles. Set the matching `*_ENABLED=true`
-and `COMPOSE_PROFILES` value in `.env`; each enabled model also requires its
-health and synthesis URLs. See `docs/local-tts-docker.md` for profiles,
-hardware requirements, model IDs, and examples.
+Local engines are opt-in through their matching `*_ENABLED=true` value in
+`.env`. Keep `COMPOSE_PROFILES=true` (or `minio,true` with MinIO): Compose then
+starts only the models whose own flag is true. Each enabled model also requires
+its health and synthesis URLs. See `docs/tts/local-tts-docker.md` for hardware
+requirements, model IDs, and examples.
 
 ## Guardrails
 
@@ -106,12 +107,15 @@ hardware requirements, model IDs, and examples.
 ## Further reading
 
 - `AGENTS.md` — required backend conventions and delivery checklist.
-- `docs/backend-architecture.md` — module and worker boundaries.
-- `docs/api-contracts-and-errors.md` — OpenAPI/error requirements.
-- `docs/local-tts-docker.md` — local model deployment and selection.
-- `docs/tts-model-catalogue.md` — source of truth, toggles, and steps for
+- `docs/README.md` — documentation index and domain map.
+- `docs/features/README.md` — cross-repository feature catalogue and current
+  feature boundaries.
+- `docs/architecture/backend-architecture.md` — module and worker boundaries.
+- `docs/api/api-contracts-and-errors.md` — OpenAPI/error requirements.
+- `docs/tts/local-tts-docker.md` — local model deployment and selection.
+- `docs/tts/tts-model-catalogue.md` — source of truth, toggles, and steps for
   adding a local or Fish model.
-- `docs/tts-models-and-user-keys-plan.md` — model/key design and follow-up
+- `docs/tts/tts-models-and-user-keys-plan.md` — model/key design and follow-up
   work.
-- `docs/chapter-curation-plan.md` — EPUB chapter classification, editing, and
-  narration-selection design.
+- `docs/books/chapter-curation-plan.md` — EPUB chapter classification, editing,
+  and narration-selection design.

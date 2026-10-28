@@ -1,21 +1,24 @@
-# Local TTS Docker profiles
+# Local TTS Docker toggles
 
-Narrator provides opt-in Docker Compose profiles for four local TTS engines.
-They are disabled by default: no image or model weights download until the
-deployment owner enables a profile.
+Narrator provides opt-in Docker Compose services for four local TTS engines.
+Each model has one `TTS_LOCAL_*_ENABLED` flag. It is the single switch: when
+`true`, Compose starts that container and the backend may offer that model;
+when `false`, Compose skips it and the backend reports it as disabled. All are
+off by default, so no image or model weights download until the deployment
+owner explicitly enables a model.
 
-Each profile has a synthesis adapter in the worker. Once it is `READY`, a user
+Each local service has a synthesis adapter in the worker. Once it is `READY`, a user
 can select it when queuing chapter audio. The worker keeps that selected model
 on the audio record and checks its health again immediately before generation.
 
 ## Available profiles
 
-| Narrator model ID | Compose profile | Published local URL | Hardware | Notes |
+| Narrator model ID | Toggle | Published local URL | Hardware | Notes |
 | --- | --- | --- | --- | --- |
-| `local.piper.en-us-amy` | `tts-piper` | `http://localhost:9500` | CPU | Piper voice weights download on first use. |
-| `local.kokoro-82m` | `tts-kokoro` | `http://localhost:7860` | CPU by default | Kokoro cache persists across restarts. |
-| `local.qwen3-tts-0.6b` | `tts-qwen3-gpu` | `http://localhost:8001` | NVIDIA GPU | Uses the Qwen 0.6B Base checkpoint. |
-| `local.chatterbox-turbo` | `tts-chatterbox-gpu` | `http://localhost:8000` | NVIDIA GPU | Uses the 350M English Turbo variant. |
+| `local.piper.en-us-amy` | `TTS_LOCAL_PIPER_EN_US_AMY_ENABLED` | `http://localhost:9500` | CPU | Piper voice weights download on first use. |
+| `local.kokoro-82m` | `TTS_LOCAL_KOKORO_82M_ENABLED` | `http://localhost:7860` | CPU by default | Kokoro cache persists across restarts. |
+| `local.qwen3-tts-0.6b` | `TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED` | `http://localhost:8001` | NVIDIA GPU | Uses the Qwen 0.6B Base checkpoint. |
+| `local.chatterbox-turbo` | `TTS_LOCAL_CHATTERBOX_TURBO_ENABLED` | `http://localhost:8000` | NVIDIA GPU | Uses the 350M English Turbo variant. |
 
 The services bind to `127.0.0.1`, not every network interface. They are meant
 to be called by the Narrator backend on the same host, never directly by a
@@ -23,28 +26,33 @@ browser or public internet client.
 
 ## Enable one model
 
-In `.env`, add its profile to `COMPOSE_PROFILES` and set its matching backend
-catalogue flag to `true`.
+`COMPOSE_PROFILES` must include `true` once. It already does in the supplied
+`.env` and `.env.example`; keep `minio,true` when using MinIO. Compose maps an
+enabled model to its active `true` profile and a disabled model to an inactive
+`false` profile. Therefore you only change the individual model flag.
 
 Example for Piper:
 
 ```dotenv
-COMPOSE_PROFILES="tts-piper"
 TTS_LOCAL_PIPER_EN_US_AMY_ENABLED="true"
 ```
 
 Example for a GPU host with Qwen:
 
 ```dotenv
-COMPOSE_PROFILES="tts-qwen3-gpu"
 TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED="true"
 ```
 
 Then start Docker as usual:
 
 ```bash
-docker compose up -d
+docker compose up -d --remove-orphans
 ```
+
+Use the same command after changing a toggle. `--remove-orphans` also stops a
+container that was previously enabled and has now been disabled. Restart the
+API and worker afterwards: they read the local-model catalogue from `.env` at
+process startup.
 
 The backend calls each configured health URL. A service returns:
 
@@ -88,9 +96,8 @@ weights; later restarts reuse the cache.
 - Qwen caches Hugging Face weights in `narrator_qwen3_tts_huggingface_cache`.
 - Chatterbox caches model data in `narrator_chatterbox_tts_cache`.
 
-The Qwen and Chatterbox profiles require an NVIDIA driver and NVIDIA Container
-Toolkit configured for Docker. They are intentionally separate profiles so a
-CPU-only host does not try to start them.
+The Qwen and Chatterbox services require an NVIDIA driver and NVIDIA Container
+Toolkit configured for Docker. Leave their flags `false` on a CPU-only host.
 
 ## Image versions
 

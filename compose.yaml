@@ -78,7 +78,9 @@ services:
   piper-tts:
     image: ${TTS_LOCAL_PIPER_IMAGE:-kamilkrawiec/piper-openai-tts:latest}
     container_name: narrator-piper-tts
-    profiles: ['tts-piper']
+    # COMPOSE_PROFILES must include `true`. The model's own *_ENABLED flag
+    # resolves this to either the active `true` profile or inactive `false`.
+    profiles: ['${TTS_LOCAL_PIPER_EN_US_AMY_ENABLED:-false}']
     restart: unless-stopped
     environment:
       PORT: '5000'
@@ -91,7 +93,7 @@ services:
   kokoro-tts:
     image: ${TTS_LOCAL_KOKORO_IMAGE:-hangrylabs/kokorotts:latest}
     container_name: narrator-kokoro-tts
-    profiles: ['tts-kokoro']
+    profiles: ['${TTS_LOCAL_KOKORO_82M_ENABLED:-false}']
     restart: unless-stopped
     ports:
       - '127.0.0.1:${TTS_LOCAL_KOKORO_PUBLISHED_PORT:-7860}:7860'
@@ -101,7 +103,7 @@ services:
   qwen3-tts:
     image: ${TTS_LOCAL_QWEN3_TTS_0_6B_IMAGE:-ghcr.io/malaiwah/qwen3-tts-server:latest}
     container_name: narrator-qwen3-tts
-    profiles: ['tts-qwen3-gpu']
+    profiles: ['${TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED:-false}']
     restart: unless-stopped
     environment:
       QWEN3_TTS_MODEL_ID: Qwen/Qwen3-TTS-12Hz-0.6B-Base
@@ -123,7 +125,7 @@ services:
   chatterbox-tts:
     image: ${TTS_LOCAL_CHATTERBOX_TURBO_IMAGE:-ghcr.io/openttsgroup/chatterbox-open-tts:latest}
     container_name: narrator-chatterbox-tts
-    profiles: ['tts-chatterbox-gpu']
+    profiles: ['${TTS_LOCAL_CHATTERBOX_TURBO_ENABLED:-false}']
     restart: unless-stopped
     environment:
       CHATTERBOX_VARIANT: turbo
