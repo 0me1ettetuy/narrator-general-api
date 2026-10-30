@@ -1,14 +1,15 @@
 // use prisma-next
 
 model User {
-  id           String    @id @default(uuid())
-  email        String    @unique
-  passwordHash String
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime
-  defaultTtsModelKey String?
-  sessions     Session[]
-  books        Book[]
+  id                     String    @id @default(uuid())
+  email                  String    @unique
+  passwordHash           String
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime
+  defaultTtsModelKey     String?
+  sessions               Session[]
+  books                  Book[]
+  fishVoices             UserFishVoice[]
   ttsProviderCredentials UserTtsProviderCredential[]
 
   @@map("user")
@@ -44,6 +45,22 @@ model UserTtsProviderCredential {
   @@unique([userId, provider])
   @@index([userId, provider])
   @@map("user_tts_provider_credential")
+}
+
+model UserFishVoice {
+  id          String   @id @default(uuid())
+  userId      String
+  referenceId String
+  name        String?
+  isSelected  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, referenceId])
+  @@index([userId, isSelected])
+  @@map("user_fish_voice")
 }
 
 enum BookFormat {

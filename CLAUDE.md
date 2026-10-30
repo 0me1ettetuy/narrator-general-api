@@ -79,14 +79,23 @@ selects the adapter once per worker job:
 - Fish keys belong to a user, are AES-256-GCM encrypted in Postgres, and are
   decrypted only in worker memory immediately before a Fish request. Never
   use or add a global Fish API key to the server environment.
+- A user may save multiple non-secret Fish reference voices in `UserFishVoice`
+  and select one. Fish synthesis resolves that selected voice first, then the
+  deployment fallback selected by `FISH_DEFAULT_VOICE` (`sarah` or `adrian`).
+  Both deployment voice IDs live in configuration; do not auto-switch them
+  based on guessed language. The worker snapshots the resolved user voice in
+  `Audio.voice` before generating chunks so retries cannot mix voices.
 
 `GET /tts/models` returns local model status, `selectedModelId`, and the
 current user's safe Fish credential state (`MISSING`, `VALID`, `INVALID`, or
 `UNKNOWN`). Fish model cards appear only for a valid key. The API never returns
 the key, even partly. Use `PUT /tts/models/providers/fish-audio/credential` to
 save/validate it and `DELETE /tts/models/providers/fish-audio/credential` to
-remove it. Set the deployment secret `TTS_CREDENTIAL_ENCRYPTION_KEY` to the
-output of `openssl rand -base64 32` before users can save credentials.
+remove it. `POST /tts/models/providers/fish-audio/voices` saves a voice,
+`PUT /tts/models/providers/fish-audio/voices/selection` selects it, and
+`DELETE /tts/models/providers/fish-audio/voices/:voiceId` removes it. Set the
+deployment secret `TTS_CREDENTIAL_ENCRYPTION_KEY` to the output of
+`openssl rand -base64 32` before users can save credentials.
 
 Local engines are opt-in through their matching `*_ENABLED=true` value in
 `.env`. Keep `COMPOSE_PROFILES=true` (or `minio,true` with MinIO): Compose then

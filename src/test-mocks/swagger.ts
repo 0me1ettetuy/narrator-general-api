@@ -16,6 +16,7 @@ export const ApiNoContentResponse = decorator;
 export const ApiOkResponse = decorator;
 export const ApiOperation = decorator;
 export const ApiProperty = decorator;
+export const ApiPropertyOptional = decorator;
 export const ApiQuery = decorator;
 export const ApiTags = decorator;
 export const ApiUnauthorizedResponse = decorator;

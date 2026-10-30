@@ -49,6 +49,23 @@ export class FishCredentialResponseDto {
 
   @ApiProperty({ format: 'date-time', nullable: true })
   lastValidatedAt: string | null;
+
+  @ApiProperty({ type: () => [FishVoiceResponseDto] })
+  voices: FishVoiceResponseDto[];
+}
+
+export class FishVoiceResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+
+  @ApiProperty({ example: 'bf322df2096a46f18c579d0baa36f41d' })
+  referenceId: string;
+
+  @ApiProperty({ nullable: true, type: String })
+  name: string | null;
+
+  @ApiProperty()
+  selected: boolean;
 }
 
 export class TtsModelsResponseDto {

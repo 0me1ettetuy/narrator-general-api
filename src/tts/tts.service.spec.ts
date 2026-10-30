@@ -23,6 +23,7 @@ describe('TtsService', () => {
   const fetchMock = jest.fn();
   const fishCredentials = {
     getValidApiKey: jest.fn().mockResolvedValue('test-fish-audio-key'),
+    getSelectedVoiceReferenceId: jest.fn().mockResolvedValue('user-voice-id'),
     markInvalid: jest.fn().mockResolvedValue(undefined),
   } as unknown as FishCredentialService;
 
@@ -34,9 +35,7 @@ describe('TtsService', () => {
     global.fetch = fetchMock as unknown as typeof fetch;
     service = new TtsService(
       {
-        get: jest.fn((key: string) =>
-          key === 'FISH_DEFAULT_VOICE_ID' ? 'test-voice-id' : undefined,
-        ),
+        get: jest.fn(),
       } as unknown as ConfigService,
       fishCredentials,
     );
@@ -77,7 +76,7 @@ describe('TtsService', () => {
       mimeType: 'audio/mpeg',
       provider: 'fish-audio',
       model: 's2.1-pro-free',
-      voice: 'test-voice-id',
+      voice: 'user-voice-id',
       generationId: 'request-123',
       byteSize: 0,
     });
@@ -95,7 +94,7 @@ describe('TtsService', () => {
         },
         body: JSON.stringify({
           text: 'Hello world.',
-          reference_id: 'test-voice-id',
+          reference_id: 'user-voice-id',
           format: 'mp3',
         }),
         signal: expect.any(AbortSignal),
@@ -117,6 +116,59 @@ describe('TtsService', () => {
       new TtsSynthesisError('TTS provider request failed with status 401'),
     );
     expect(fishCredentials.markInvalid).toHaveBeenCalledWith('user-id');
+  });
+
+  it('uses the configured default voice when the user has no voice ID', async () => {
+    fishCredentials.getSelectedVoiceReferenceId.mockResolvedValueOnce(null);
+    fetchMock.mockResolvedValue(
+      new Response(new Uint8Array([1]), {
+        status: 200,
+        headers: { 'content-type': 'audio/mpeg' },
+      }),
+    );
+    service = new TtsService(
+      {
+        get: jest.fn((key: string) =>
+          key === 'FISH_DEFAULT_VOICE'
+            ? 'adrian'
+            : key === 'FISH_DEFAULT_VOICE_ADRIAN_ID'
+              ? '6264e995072341a281c45ed71e554566'
+              : undefined,
+        ),
+      } as unknown as ConfigService,
+      fishCredentials,
+    );
+
+    const result = await service.synthesizeStream({
+      text: 'Hello world.',
+      userId: 'user-id',
+    });
+
+    expect(result.voice).toBe('6264e995072341a281c45ed71e554566');
+    await expect(readStream(result.stream)).resolves.toEqual(
+      new Uint8Array([1]),
+    );
+  });
+
+  it('uses a chapter voice snapshot before the current user selection', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(new Uint8Array([1]), {
+        status: 200,
+        headers: { 'content-type': 'audio/mpeg' },
+      }),
+    );
+
+    const result = await service.synthesizeStream({
+      text: 'Hello world.',
+      userId: 'user-id',
+      voiceId: 'chapter-voice-snapshot',
+    });
+
+    expect(result.voice).toBe('chapter-voice-snapshot');
+    expect(fishCredentials.getSelectedVoiceReferenceId).not.toHaveBeenCalled();
+    await expect(readStream(result.stream)).resolves.toEqual(
+      new Uint8Array([1]),
+    );
   });
 
   it('rejects empty input before reading a user credential', async () => {

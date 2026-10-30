@@ -75,6 +75,7 @@ describe('TtsModelsService', () => {
         credentialState: 'MISSING',
         setupRequired: true,
         lastValidatedAt: null,
+        voices: [],
       }),
     } as unknown as FishCredentialService;
     const service = new TtsModelsService(
@@ -92,6 +93,7 @@ describe('TtsModelsService', () => {
           credentialState: 'MISSING',
           setupRequired: true,
           lastValidatedAt: null,
+          voices: [],
         },
       ],
       groups: [
@@ -121,6 +123,7 @@ describe('TtsModelsService', () => {
         credentialState: 'VALID',
         setupRequired: false,
         lastValidatedAt: null,
+        voices: [],
       }),
     } as unknown as FishCredentialService;
     const service = new TtsModelsService(

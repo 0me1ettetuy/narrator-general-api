@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   createCipheriv,
@@ -9,7 +13,10 @@ import {
 import { API_ERROR_CODES } from '../global-filters/api-error.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { temporalNow, type Instant } from '../prisma/temporal.js';
-import type { FishCredentialResponse } from './contracts/tts-models.response.js';
+import type {
+  FishCredentialResponse,
+  FishVoiceResponse,
+} from './contracts/tts-models.response.js';
 import type { FishCredentialState } from './types/tts-model.type.js';
 
 const FISH_AUDIO_PROVIDER = 'FISH_AUDIO';
@@ -28,6 +35,14 @@ type StoredFishCredential = {
   lastValidationError: string | null;
 };
 
+type StoredFishVoice = {
+  id: string;
+  referenceId: string;
+  name: string | null;
+  isSelected: boolean;
+  createdAt: Instant;
+};
+
 type ValidationResult = {
   state: Exclude<FishCredentialState, 'MISSING'>;
   errorCode: string | null;
@@ -41,15 +56,20 @@ export class FishCredentialService {
   ) {}
 
   async getPublicStatus(userId: string): Promise<FishCredentialResponse> {
-    const credential = (await this.findCredential(
-      userId,
-    )) as StoredFishCredential | null;
+    const [credential, voices] = await Promise.all([
+      this.findCredential(userId) as Promise<StoredFishCredential | null>,
+      this.getVoices(userId),
+    ]);
 
     if (!credential) {
-      return this.toPublicStatus('MISSING', null);
+      return this.toPublicStatus('MISSING', null, voices);
     }
 
-    return this.toPublicStatus(credential.state, credential.lastValidatedAt);
+    return this.toPublicStatus(
+      credential.state,
+      credential.lastValidatedAt,
+      voices,
+    );
   }
 
   async saveAndValidate(
@@ -86,7 +106,7 @@ export class FishCredentialService {
       });
     }
 
-    return this.toPublicStatus(validation.state, now);
+    return this.getPublicStatus(userId);
   }
 
   async delete(userId: string): Promise<void> {
@@ -94,6 +114,85 @@ export class FishCredentialService {
       userId,
       provider: FISH_AUDIO_PROVIDER,
     }).deleteAndCount();
+  }
+
+  async addVoice(
+    userId: string,
+    input: { referenceId: string; name?: string },
+  ): Promise<FishVoiceResponse> {
+    const existing = (await this.prisma.db.orm.public.UserFishVoice.where({
+      userId,
+      referenceId: input.referenceId,
+    }).first()) as StoredFishVoice | null;
+
+    if (existing) {
+      throw new ConflictException({
+        code: API_ERROR_CODES.conflict,
+        message: 'Fish voice is already saved',
+      });
+    }
+
+    const voice = (await this.prisma.db.orm.public.UserFishVoice.create({
+      id: randomUUID(),
+      userId,
+      referenceId: input.referenceId,
+      name: input.name ?? null,
+      isSelected: false,
+      updatedAt: temporalNow(),
+    })) as StoredFishVoice;
+
+    return this.toVoiceResponse(voice);
+  }
+
+  async selectVoice(
+    userId: string,
+    voiceId: string,
+  ): Promise<FishVoiceResponse> {
+    return this.prisma.db.transaction(async (transaction) => {
+      const voice = (await transaction.orm.public.UserFishVoice.where({
+        id: voiceId,
+        userId,
+      }).first()) as StoredFishVoice | null;
+
+      if (!voice) {
+        throw this.createVoiceNotFoundException();
+      }
+
+      const now = temporalNow();
+      await transaction.orm.public.UserFishVoice.where({ userId }).update({
+        isSelected: false,
+        updatedAt: now,
+      });
+      const selected = (await transaction.orm.public.UserFishVoice.where({
+        id: voice.id,
+        userId,
+      }).update({
+        isSelected: true,
+        updatedAt: now,
+      })) as StoredFishVoice;
+
+      return this.toVoiceResponse(selected);
+    });
+  }
+
+  async deleteVoice(userId: string, voiceId: string): Promise<void> {
+    const deleted = await this.prisma.db.orm.public.UserFishVoice.where({
+      id: voiceId,
+      userId,
+    }).deleteAndCount();
+
+    if (deleted === 0) {
+      throw this.createVoiceNotFoundException();
+    }
+  }
+
+  async getSelectedVoiceReferenceId(userId: string): Promise<string | null> {
+    const voice = (await this.prisma.db.orm.public.UserFishVoice.where({
+      userId,
+      isSelected: true,
+    }).first()) as StoredFishVoice | null;
+
+    return voice?.referenceId ?? null;
   }
 
   async assertValidCredential(userId: string): Promise<void> {
@@ -156,6 +255,28 @@ export class FishCredentialService {
       userId,
       provider: FISH_AUDIO_PROVIDER,
     }).first();
+  }
+
+  private async getVoices(userId: string): Promise<FishVoiceResponse[]> {
+    const voices = (await this.prisma.db.orm.public.UserFishVoice.where({
+      userId,
+    }).all()) as StoredFishVoice[];
+
+    return voices
+      .sort(
+        (first, second) =>
+          Number(second.isSelected) - Number(first.isSelected) ||
+          first.createdAt.epochMilliseconds -
+            second.createdAt.epochMilliseconds,
+      )
+      .map((voice) => this.toVoiceResponse(voice));
+  }
+
+  private createVoiceNotFoundException(): NotFoundException {
+    return new NotFoundException({
+      code: API_ERROR_CODES.notFound,
+      message: 'Fish voice not found',
+    });
   }
 
   private async validateApiKey(apiKey: string): Promise<ValidationResult> {
@@ -298,12 +419,23 @@ export class FishCredentialService {
   private toPublicStatus(
     credentialState: FishCredentialState,
     lastValidatedAt: Instant | null,
+    voices: FishVoiceResponse[],
   ): FishCredentialResponse {
     return {
       id: 'fish-audio',
       credentialState,
       setupRequired: credentialState !== 'VALID',
       lastValidatedAt,
+      voices,
+    };
+  }
+
+  private toVoiceResponse(voice: StoredFishVoice): FishVoiceResponse {
+    return {
+      id: voice.id,
+      referenceId: voice.referenceId,
+      name: voice.name,
+      selected: voice.isSelected,
     };
   }
 }

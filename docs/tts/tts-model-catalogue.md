@@ -26,6 +26,8 @@ user-specific state:
 - `UserTtsProviderCredential`: the user's encrypted Fish key and its safe
   validation state;
 - `User.defaultTtsModelKey`: the user's nullable saved model preference;
+- `UserFishVoice`: each user's saved Fish reference voices and which one is
+  selected;
 - `Audio.modelKey`: the exact model chosen for that generated audio.
 
 This keeps deployments simple: updating code and `.env` changes the available
@@ -62,6 +64,23 @@ When an authenticated user has no valid Fish key, `GET /tts/models` returns
 the safe provider state (`MISSING`, `INVALID`, or `UNKNOWN`) and omits Fish
 model cards. Once their key is valid, enabled Fish cards are returned. The key
 itself is never returned.
+
+Voice resolution is deliberately independent of the model choice:
+
+```text
+selected UserFishVoice -> configured Sarah/Adrian deployment fallback -> Fish Audio's provider default
+```
+
+Set `FISH_DEFAULT_VOICE` to `sarah` or `adrian`; the service reads the matching
+`FISH_DEFAULT_VOICE_SARAH_ID` or `FISH_DEFAULT_VOICE_ADRIAN_ID`. Narrator does
+not infer the text language and silently switch between the two. The model page
+can add/select/remove user voices with:
+
+```text
+POST   /tts/models/providers/fish-audio/voices             { "referenceId": "...", "name": "..." }
+PUT    /tts/models/providers/fish-audio/voices/selection   { "id": "saved-voice-uuid" }
+DELETE /tts/models/providers/fish-audio/voices/:voiceId
+```
 
 Local models require all of the following:
 
@@ -148,6 +167,11 @@ only affects future audio jobs; queued and completed audio keep their
 `Audio.modelKey`. A legacy Fish fallback remains only for users who have not
 saved a selection yet.
 
+When a Fish worker begins a chapter, it snapshots the selected voice reference
+onto `Audio.voice` before its first chunk. Selecting a different saved voice
+later affects only new audio jobs; it cannot make one in-progress chapter mix
+voices across chunks or retries.
+
 For a Fish adapter, the worker decrypts only the job owner's key immediately
 before the Fish request. For a local adapter, the worker calls the healthy
 local Docker service. Neither key nor model catalogue belongs in BullMQ job
@@ -160,8 +184,8 @@ src/tts-models/
   tts-model-registry.service.ts      static local/Fish definitions + env toggles
   tts-model-availability.service.ts  cached local health checks
   tts-models.service.ts              user-specific GET /tts/models response and selection
-  fish-credential.service.ts         encrypted per-user Fish keys
-  tts-models.controller.ts           models/key HTTP endpoints
+  fish-credential.service.ts         encrypted Fish keys + user voice preference
+  tts-models.controller.ts           models/key/voice HTTP endpoints
 
 src/tts/
   tts-adapter-resolver.service.ts    model ID -> worker adapter

@@ -58,6 +58,7 @@ export class TtsService implements TtsAdapter {
     const configuration = await this.getConfiguration(
       input.userId,
       input.providerModel,
+      input.voiceId,
     );
     const { response, controller, clearTimeout } = await this.requestAudio(
       text,
@@ -157,6 +158,7 @@ export class TtsService implements TtsAdapter {
   private async getConfiguration(
     userId: string,
     providerModel: string | null | undefined,
+    voiceId: string | null | undefined,
   ): Promise<{
     apiKey: string;
     model: string;
@@ -166,10 +168,28 @@ export class TtsService implements TtsAdapter {
       apiKey: await this.fishCredentials.getValidApiKey(userId),
       model: providerModel ?? DEFAULT_FISH_TTS_MODEL,
       voice:
-        this.configService.get<string>('FISH_DEFAULT_VOICE_ID')?.trim() ||
-        this.configService.get<string>('VOICE_ID')?.trim() ||
-        DEFAULT_FISH_TTS_VOICE,
+        voiceId?.trim() ||
+        (
+          await this.fishCredentials.getSelectedVoiceReferenceId(userId)
+        )?.trim() ||
+        this.getDefaultVoiceId(),
     };
+  }
+
+  private getDefaultVoiceId(): string {
+    const voice = this.configService
+      .get<string>('FISH_DEFAULT_VOICE')
+      ?.trim()
+      .toLowerCase();
+    const configuredVoiceKey =
+      voice === 'adrian'
+        ? 'FISH_DEFAULT_VOICE_ADRIAN_ID'
+        : 'FISH_DEFAULT_VOICE_SARAH_ID';
+
+    return (
+      this.configService.get<string>(configuredVoiceKey)?.trim() ||
+      DEFAULT_FISH_TTS_VOICE
+    );
   }
 
   private getPositiveNumberConfig(key: string, fallback: number): number {

@@ -40,6 +40,7 @@ describe('TtsAdapterResolverService', () => {
 
     await expect(resolver.resolve('user-id', null)).resolves.toEqual({
       adapter: fish,
+      source: 'FISH',
       providerModel: 's2.1-pro-free',
     });
     expect(models.getSelectableModel).toHaveBeenCalledWith('user-id', null);
@@ -64,6 +65,10 @@ describe('TtsAdapterResolverService', () => {
 
     await expect(
       resolver.resolve('user-id', 'local.kokoro-82m'),
-    ).resolves.toEqual({ adapter: kokoro, providerModel: null });
+    ).resolves.toEqual({
+      adapter: kokoro,
+      source: 'LOCAL',
+      providerModel: null,
+    });
   });
 });

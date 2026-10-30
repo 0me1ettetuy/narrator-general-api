@@ -355,6 +355,10 @@ deployment key: every user supplies their own key.
   Fish cards appear only after a valid personal key exists.
 - The worker decrypts the owner’s valid key only immediately before a Fish
   synthesis request. An invalid provider response marks the saved key invalid.
+- A user can save multiple Fish reference voice IDs, label them, and select one.
+  The worker uses that selected voice for future Fish requests; otherwise it
+  uses the deployment's selected Sarah or Adrian fallback. The worker snapshots
+  it at chapter-audio start so one in-progress chapter cannot mix voices.
 
 #### Local models
 
@@ -383,6 +387,9 @@ deployment key: every user supplies their own key.
 The UI supports saving and replacing a Fish key, but does not yet render a
 "remove Fish key" button. The backend endpoint already exists for it:
 `DELETE /tts/models/providers/fish-audio/credential`.
+
+The backend supports a user-owned Fish voice list through `POST`/`PUT`/`DELETE`
+voice endpoints; the model-page voice picker still needs frontend work.
 
 ### Contributing commits, checked by actual change
 

@@ -21,9 +21,9 @@ Keep `OPENROUTER_API_KEY` only in the API/worker environment. Never return,
 log, put it in OpenAPI, or expose it to the frontend. The later user-owned key
 plan is recorded in the repository-level `BOOK_PIPELINE_PLAN.md`.
 
-The current adapter reads `VOICE_ID` for the selected Fish voice, plus optional
-`OPENROUTER_TTS_MODEL` and `OPENROUTER_TTS_TIMEOUT_MS` overrides. These are
-server/worker-only values too.
+This historical adapter previously read `VOICE_ID`. The direct Fish adapter
+now resolves the user's selected `UserFishVoice` first and the deployment's selected
+Sarah/Adrian default second; see the [TTS model catalogue](../tts/tts-model-catalogue.md).
 
 ## Current model choice for evaluation
 

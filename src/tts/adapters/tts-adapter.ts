@@ -7,6 +7,7 @@ export type TtsSynthesisInput = {
   text: string;
   userId?: string;
   providerModel?: string | null;
+  voiceId?: string | null;
 };
 
 export type TtsSynthesisStream = {

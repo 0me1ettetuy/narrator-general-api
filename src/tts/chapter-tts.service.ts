@@ -5,6 +5,7 @@ import { JobsService } from '../jobs/jobs.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { temporalNow } from '../prisma/temporal.js';
 import { StorageService } from '../storage/storage.service.js';
+import { FishCredentialService } from '../tts-models/fish-credential.service.js';
 import { AudioChunkService } from './audio-chunk.service.js';
 import { TtsAdapterResolverService } from './tts-adapter-resolver.service.js';
 
@@ -34,6 +35,7 @@ type PersistedAudio = {
   id: string;
   chapterId: string;
   modelKey: string | null;
+  voice: string | null;
   status:
     'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED' | 'CANCELLED' | 'DELETING';
 };
@@ -53,6 +55,7 @@ export type ClaimedChapterTtsJob = {
   audioId: string;
   userId: string;
   modelKey: string | null;
+  voice: string | null;
   maxAttempts: number;
 };
 
@@ -63,6 +66,7 @@ export class ChapterTtsService {
     private readonly storageService: StorageService,
     private readonly audioChunkService: AudioChunkService,
     private readonly ttsAdapterResolver: TtsAdapterResolverService,
+    private readonly fishCredentials: FishCredentialService,
     private readonly jobsService: JobsService,
   ) {}
 
@@ -87,6 +91,10 @@ export class ChapterTtsService {
       claimedJob.userId,
       claimedJob.modelKey,
     );
+    const voiceId = await this.getVoiceSnapshot(
+      claimedJob,
+      resolvedTtsAdapter.source,
+    );
     let completedChunks = 0;
 
     for (const chunk of chunks) {
@@ -110,6 +118,7 @@ export class ChapterTtsService {
         text: chunk.text,
         userId: claimedJob.userId,
         providerModel: resolvedTtsAdapter.providerModel,
+        voiceId,
       });
 
       // A provider request already in flight cannot be recalled. Do not
@@ -300,6 +309,7 @@ export class ChapterTtsService {
         audioId: audio.id,
         userId: book.userId,
         modelKey: audio.modelKey,
+        voice: audio.voice,
         maxAttempts: job.maxAttempts,
       };
     });
@@ -356,6 +366,33 @@ export class ChapterTtsService {
       (first, second) =>
         first.position - second.position || first.id.localeCompare(second.id),
     );
+  }
+
+  private async getVoiceSnapshot(
+    job: ClaimedChapterTtsJob,
+    source: 'LOCAL' | 'FISH',
+  ): Promise<string | null> {
+    if (source !== 'FISH' || job.voice) {
+      return job.voice;
+    }
+
+    const voiceId = await this.fishCredentials.getSelectedVoiceReferenceId(
+      job.userId,
+    );
+
+    if (!voiceId) {
+      return null;
+    }
+
+    await this.prisma.db.orm.public.Audio.where({
+      id: job.audioId,
+      status: 'PROCESSING',
+    }).update({
+      voice: voiceId,
+      updatedAt: temporalNow(),
+    });
+
+    return voiceId;
   }
 
   private async hasStoredPart(chunk: PersistedAudioChunk): Promise<boolean> {

@@ -21,6 +21,7 @@ type LocalTtsAdapterId = (typeof LOCAL_TTS_ADAPTER_IDS)[number];
 
 export type ResolvedTtsAdapter = {
   adapter: TtsAdapter;
+  source: SelectableTtsModel['source'];
   providerModel: string | null;
 };
 
@@ -60,6 +61,7 @@ export class TtsAdapterResolverService {
     if (model.source === 'FISH') {
       return {
         adapter: this.fishAudioTtsAdapter,
+        source: model.source,
         providerModel: model.providerModel,
       };
     }
@@ -72,6 +74,7 @@ export class TtsAdapterResolverService {
 
     return {
       adapter,
+      source: model.source,
       providerModel: null,
     };
   }

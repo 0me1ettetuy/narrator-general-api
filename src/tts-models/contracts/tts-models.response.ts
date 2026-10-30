@@ -24,6 +24,14 @@ export type FishCredentialResponse = {
   credentialState: 'MISSING' | 'VALID' | 'INVALID' | 'UNKNOWN';
   setupRequired: boolean;
   lastValidatedAt: Instant | null;
+  voices: FishVoiceResponse[];
+};
+
+export type FishVoiceResponse = {
+  id: string;
+  referenceId: string;
+  name: string | null;
+  selected: boolean;
 };
 
 export type TtsModelsResponse = {
