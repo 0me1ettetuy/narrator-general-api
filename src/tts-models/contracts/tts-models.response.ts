@@ -30,7 +30,9 @@ export type FishCredentialResponse = {
 export type FishVoiceResponse = {
   id: string;
   referenceId: string;
-  name: string | null;
+  name: string;
+  source: 'DEFAULT' | 'CUSTOM';
+  enabled: boolean;
   selected: boolean;
 };
 

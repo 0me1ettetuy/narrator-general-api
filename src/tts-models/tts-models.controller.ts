@@ -20,6 +20,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -45,6 +46,7 @@ import { FishVoiceIdParamsDto } from './dto/fish-voice-id-params.dto.js';
 import { SelectFishVoiceDto } from './dto/select-fish-voice.dto.js';
 import { SelectTtsModelDto } from './dto/select-tts-model.dto.js';
 import { FishCredentialService } from './fish-credential.service.js';
+import { FishVoiceService } from './fish-voice.service.js';
 import { TtsModelsService } from './tts-models.service.js';
 
 type RequestWithUser = Request & {
@@ -58,6 +60,7 @@ export class TtsModelsController {
   constructor(
     private readonly ttsModelsService: TtsModelsService,
     private readonly fishCredentials: FishCredentialService,
+    private readonly fishVoices: FishVoiceService,
   ) {}
 
   @Get()
@@ -126,13 +129,13 @@ export class TtsModelsController {
     @Req() request: RequestWithUser,
     @Body() dto: AddFishVoiceDto,
   ): Promise<FishVoiceResponse> {
-    return this.fishCredentials.addVoice(request.user.sub, dto);
+    return this.fishVoices.addVoice(request.user.sub, dto);
   }
 
   @Put('providers/fish-audio/voices/selection')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Select one saved Fish Audio voice for future generation',
+    summary: 'Select a Fish Audio voice for future generation',
   })
   @ApiBody({ type: SelectFishVoiceDto })
   @ApiOkResponse({ type: FishVoiceResponseDto })
@@ -142,12 +145,13 @@ export class TtsModelsController {
     @Req() request: RequestWithUser,
     @Body() dto: SelectFishVoiceDto,
   ): Promise<FishVoiceResponse> {
-    return this.fishCredentials.selectVoice(request.user.sub, dto.id);
+    return this.fishVoices.selectVoice(request.user.sub, dto.id);
   }
 
   @Delete('providers/fish-audio/voices/:voiceId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Remove one saved Fish Audio voice' })
+  @ApiOperation({ summary: 'Remove one custom Fish Audio voice' })
+  @ApiParam({ name: 'voiceId', format: 'uuid' })
   @ApiNoContentResponse({ description: 'Fish Audio voice was removed' })
   @ApiUnauthorizedResponse({ description: 'Invalid access token' })
   @ApiNotFoundResponse({ description: 'Fish Audio voice does not exist' })
@@ -156,6 +160,6 @@ export class TtsModelsController {
     @Req() request: RequestWithUser,
     @Param() params: FishVoiceIdParamsDto,
   ): Promise<void> {
-    return this.fishCredentials.deleteVoice(request.user.sub, params.voiceId);
+    return this.fishVoices.deleteVoice(request.user.sub, params.voiceId);
   }
 }

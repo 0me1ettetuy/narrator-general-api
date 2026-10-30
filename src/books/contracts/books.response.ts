@@ -80,6 +80,7 @@ export type RemovedChaptersResponse = {
 export type ChapterAudioResponse = {
   id: string;
   modelId: string | null;
+  voice: string | null;
   status: AudioStatus;
   processingStage: AudioProcessingStage | null;
   totalChunks: number;

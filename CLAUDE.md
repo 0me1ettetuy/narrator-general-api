@@ -79,12 +79,14 @@ selects the adapter once per worker job:
 - Fish keys belong to a user, are AES-256-GCM encrypted in Postgres, and are
   decrypted only in worker memory immediately before a Fish request. Never
   use or add a global Fish API key to the server environment.
-- A user may save multiple non-secret Fish reference voices in `UserFishVoice`
-  and select one. Fish synthesis resolves that selected voice first, then the
-  deployment fallback selected by `FISH_DEFAULT_VOICE` (`sarah` or `adrian`).
-  Both deployment voice IDs live in configuration; do not auto-switch them
-  based on guessed language. The worker snapshots the resolved user voice in
-  `Audio.voice` before generating chunks so retries cannot mix voices.
+- `FishVoice` is the durable shared catalogue. A row is either a shared
+  `DEFAULT` voice or a user-owned `CUSTOM` voice; `User.selectedFishVoiceId`
+  points to either. On startup, `FISH_DEFAULT_VOICES` safely upserts shared
+  defaults and disables—never deletes—entries removed from configuration. Fish
+  synthesis resolves the user's selected enabled voice first, then the first
+  enabled configured default. Do not auto-switch based on guessed language.
+  The queue snapshots the resolved reference ID in `Audio.voice`, so retries
+  and existing generation jobs cannot mix voices after a catalogue change.
 
 `GET /tts/models` returns local model status, `selectedModelId`, and the
 current user's safe Fish credential state (`MISSING`, `VALID`, `INVALID`, or

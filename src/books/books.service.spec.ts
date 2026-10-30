@@ -1,6 +1,7 @@
 import type { JobsService } from '../jobs/jobs.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { StorageService } from '../storage/storage.service.js';
+import type { FishVoiceService } from '../tts-models/fish-voice.service.js';
 import type { TtsModelsService } from '../tts-models/tts-models.service.js';
 import type { Audio, Book, Chapter, ProcessingJob } from './types/book.type.js';
 
@@ -20,6 +21,9 @@ jest.mock('../storage/storage.service.js', () => ({
 jest.mock('../tts-models/tts-models.service.js', () => ({
   TtsModelsService: class TtsModelsService {},
 }));
+jest.mock('../tts-models/fish-voice.service.js', () => ({
+  FishVoiceService: class FishVoiceService {},
+}));
 
 import { BooksService } from './books.service.js';
 
@@ -34,6 +38,7 @@ type BooksServiceInternals = {
     bookId: string,
     chapterId: string,
     modelId: string | null,
+    voiceId: string | null,
   ) => Promise<ChapterAudioQueue>;
 };
 
@@ -78,6 +83,9 @@ describe('BooksService', () => {
   const ttsModelsService = {
     getSelectableModel: jest.fn(),
   } as unknown as TtsModelsService;
+  const fishVoices = {
+    resolveVoiceReferenceId: jest.fn(),
+  } as unknown as FishVoiceService;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -101,6 +109,7 @@ describe('BooksService', () => {
       storageService,
       jobsService,
       ttsModelsService,
+      fishVoices,
     );
     const createAudioJob = jest
       .spyOn(
@@ -137,12 +146,14 @@ describe('BooksService', () => {
       book.id,
       firstChapter.id,
       'local.piper.en-us-amy',
+      null,
     );
     expect(createAudioJob).toHaveBeenNthCalledWith(
       2,
       book.id,
       secondChapter.id,
       'local.piper.en-us-amy',
+      null,
     );
     expect(jobsService.enqueueChapterSynthesis).toHaveBeenCalledWith(
       'first-job-id',
@@ -157,6 +168,7 @@ describe('BooksService', () => {
       storageService,
       jobsService,
       ttsModelsService,
+      fishVoices,
     );
 
     await expect(

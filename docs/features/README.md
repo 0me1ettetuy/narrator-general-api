@@ -359,6 +359,10 @@ deployment key: every user supplies their own key.
   The worker uses that selected voice for future Fish requests; otherwise it
   uses the deployment's selected Sarah or Adrian fallback. The worker snapshots
   it at chapter-audio start so one in-progress chapter cannot mix voices.
+- Voices are durable `UserFishVoice` rows with a unique `(userId, referenceId)`
+  pair. `GET /tts/models` returns the caller's list as `providers[0].voices`,
+  including each internal ID, reference ID, optional label, and `selected`
+  state. Voice rows cannot be selected or deleted by another user.
 
 #### Local models
 
@@ -388,15 +392,22 @@ The UI supports saving and replacing a Fish key, but does not yet render a
 "remove Fish key" button. The backend endpoint already exists for it:
 `DELETE /tts/models/providers/fish-audio/credential`.
 
-The backend supports a user-owned Fish voice list through `POST`/`PUT`/`DELETE`
-voice endpoints; the model-page voice picker still needs frontend work.
+The backend supports a user-owned Fish voice list; the model-page voice picker
+still needs frontend work:
+
+```text
+POST   /tts/models/providers/fish-audio/voices
+PUT    /tts/models/providers/fish-audio/voices/selection
+DELETE /tts/models/providers/fish-audio/voices/:voiceId
+```
 
 ### Contributing commits, checked by actual change
 
 - Backend: `260d9ae` added the registry, local health status, Compose services,
   and models endpoint; `2749fe2` added adapter resolution and four local
   adapters; `941dcc5` added encrypted per-user Fish credentials; `d2b796f`
-  added persisted default selection and model snapshot validation.
+  added persisted default selection and model snapshot validation; `5904932`
+  added the per-user Fish voice library, selection, and chapter voice snapshot.
 - Frontend: `5e96fa2` added the Models route, local/Fish groups, credential
   form, disabled-card states, and selection UI.
 - The individual env-driven Compose toggle behavior is a current working-tree

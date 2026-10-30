@@ -575,6 +575,7 @@ function toChapterSummaryResponse(
       ? {
           id: audio.id,
           modelId: audio.modelKey,
+          voice: audio.voice,
           status: audio.status,
           processingStage: audio.processingStage,
           totalChunks: audio.totalChunks,

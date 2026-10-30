@@ -135,6 +135,13 @@ export class ChapterAudioResponseDto {
   modelId: string | null;
 
   @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'The provider voice ID snapshotted when this audio was queued',
+  })
+  voice: string | null;
+
+  @ApiProperty({
     enum: ['QUEUED', 'PROCESSING', 'READY', 'FAILED', 'CANCELLED', 'DELETING'],
   })
   status: string;

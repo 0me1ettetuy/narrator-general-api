@@ -14,6 +14,7 @@ import {
   SIGNED_URL_TTL_SECONDS,
   StorageService,
 } from '../storage/storage.service.js';
+import { FishVoiceService } from '../tts-models/fish-voice.service.js';
 import { TtsModelsService } from '../tts-models/tts-models.service.js';
 import type {
   ChapterAudioAccessResponse,
@@ -68,6 +69,7 @@ export class BooksService {
     private readonly storageService: StorageService,
     private readonly jobsService: JobsService,
     private readonly ttsModelsService: TtsModelsService,
+    private readonly fishVoices: FishVoiceService,
   ) {}
 
   async createUpload(
@@ -253,11 +255,13 @@ export class BooksService {
       userId,
       modelId,
     );
+    const voiceId = await this.getVoiceSnapshot(userId, selectedModel.source);
 
     const queued = await this.createOrReuseChapterAudioJob(
       book.id,
       chapter.id,
       selectedModel.id,
+      voiceId,
     );
 
     if (queued.shouldEnqueue) {
@@ -281,6 +285,7 @@ export class BooksService {
       userId,
       null,
     );
+    const voiceId = await this.getVoiceSnapshot(userId, selectedModel.source);
 
     await this.assertAudioModelsAreCompatible(chapters, selectedModel.id);
 
@@ -293,6 +298,7 @@ export class BooksService {
         book.id,
         chapter.id,
         selectedModel.id,
+        voiceId,
       );
 
       if (queued.shouldEnqueue) {
@@ -704,6 +710,7 @@ export class BooksService {
     bookId: string,
     chapterId: string,
     modelId: string | null,
+    voiceId: string | null,
   ): Promise<{
     audio: Audio;
     job: ProcessingJob;
@@ -754,6 +761,7 @@ export class BooksService {
           id: randomUUID(),
           chapterId,
           modelKey: modelId,
+          voice: voiceId,
           updatedAt: now,
         }));
       const queuedJob =
@@ -790,6 +798,7 @@ export class BooksService {
             processingStage: null,
             error: null,
             completedAt: null,
+            ...(queuedAudio.voice ? {} : { voice: voiceId }),
             updatedAt: now,
           },
         );
@@ -810,6 +819,15 @@ export class BooksService {
         shouldEnqueue: true,
       };
     });
+  }
+
+  private async getVoiceSnapshot(
+    userId: string,
+    source: 'LOCAL' | 'FISH',
+  ): Promise<string | null> {
+    return source === 'FISH'
+      ? this.fishVoices.resolveVoiceReferenceId(userId)
+      : null;
   }
 
   private async getOwnedBook(userId: string, bookId: string): Promise<Book> {
@@ -958,6 +976,7 @@ function toChapterAudioResponse(audio: Audio): ChapterAudioResponse {
   return {
     id: audio.id,
     modelId: audio.modelKey,
+    voice: audio.voice,
     status: audio.status,
     processingStage: audio.processingStage,
     totalChunks: audio.totalChunks,

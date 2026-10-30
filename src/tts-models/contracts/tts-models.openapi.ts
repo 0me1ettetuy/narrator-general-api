@@ -61,8 +61,17 @@ export class FishVoiceResponseDto {
   @ApiProperty({ example: 'bf322df2096a46f18c579d0baa36f41d' })
   referenceId: string;
 
-  @ApiProperty({ nullable: true, type: String })
-  name: string | null;
+  @ApiProperty({ example: 'Sarah' })
+  name: string;
+
+  @ApiProperty({ enum: ['DEFAULT', 'CUSTOM'] })
+  source: string;
+
+  @ApiProperty({
+    description:
+      'Whether this voice can be selected for a new generation. Disabled defaults remain visible for history and selection recovery.',
+  })
+  enabled: boolean;
 
   @ApiProperty()
   selected: boolean;

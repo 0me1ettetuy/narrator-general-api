@@ -30,10 +30,10 @@ Implemented in the backend:
   availability and decrypts only the owning user's key when it must call Fish.
 - `User.defaultTtsModelKey`, `PUT /tts/models/selection`, and a Models-page
   picker persist a user's default model for future generation.
-- `UserFishVoice`, plus authenticated add/select/remove endpoints, persists
-  multiple user-owned Fish reference voices. Fish synthesis resolves the one
-  selected by that user before the deployment fallback selected by
-  `FISH_DEFAULT_VOICE`.
+- `FishVoice` is a shared durable catalogue: `DEFAULT` rows are synced from
+  `FISH_DEFAULT_VOICES`, while `CUSTOM` rows belong to one user.
+  `User.selectedFishVoiceId` selects either kind. The sync disables removed
+  defaults instead of deleting them; existing audio remains reproducible.
 
 Still to build: an optional per-chapter model override in the book UI, plus
 the later voice/reference-selection and multiple-audio-version work.
@@ -118,13 +118,13 @@ requirement for showing/selecting models.
 
 ### 4. Voice selection is separate from model selection
 
-Users can save multiple Fish reference IDs in `UserFishVoice`; they are not
-secrets and are returned only to their authenticated owner as
-`providers[0].voices`. Fish requests resolve the selected value first, then the
-deployment's
-the configured Sarah/Adrian deployment fallback, then Fish Audio's own default
-if neither is configured. `FISH_DEFAULT_VOICE` selects `sarah` or `adrian`,
-and Narrator must not guess a preferred voice from the chapter language.
+Users can save multiple Fish reference IDs as `CUSTOM` `FishVoice` rows; they
+are not secrets and are returned only to their authenticated owner alongside
+shared `DEFAULT` rows as `providers[0].voices`. The user's
+`selectedFishVoiceId` selects either source. Fish requests resolve that
+selected enabled value first, then the first enabled deployment default, then
+Fish Audio's own default if neither is configured. Narrator must not guess a
+preferred voice from the chapter language.
 
 ```text
 POST   /tts/models/providers/fish-audio/voices             { "referenceId": "...", "name": "..." }
@@ -164,11 +164,12 @@ TTS_LOCAL_PIPER_EN_US_AMY_URL="http://localhost:9100"
 TTS_LOCAL_KOKORO_82M_ENABLED="false"
 TTS_LOCAL_KOKORO_82M_URL="http://localhost:9200"
 
-# Voice fallback, not a credential. Set to "adrian" to change the deployment
-# default for users who have no saved voice.
-FISH_DEFAULT_VOICE="sarah"
-FISH_DEFAULT_VOICE_SARAH_ID="bf322df2096a46f18c579d0baa36f41d"
-FISH_DEFAULT_VOICE_ADRIAN_ID="6264e995072341a281c45ed71e554566"
+# Ordered voice fallback list, not credentials. The first item is used when a
+# user has no saved voice.
+FISH_DEFAULT_VOICES='[
+  {"id":"bf322df2096a46f18c579d0baa36f41d","name":"Sarah"},
+  {"id":"6264e995072341a281c45ed71e554566","name":"Adrian"}
+]'
 FISH_TTS_IDLE_TIMEOUT_MS="300000"
 
 # 32-byte base64 secret used only to encrypt credentials stored in Postgres.

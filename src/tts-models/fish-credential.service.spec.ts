@@ -1,6 +1,7 @@
 import type { ConfigService } from '@nestjs/config';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import { temporalNow, type Instant } from '../prisma/temporal.js';
+import type { FishVoiceService } from './fish-voice.service.js';
 
 jest.mock('../prisma/prisma.service.js', () => ({
   PrismaService: class PrismaService {},
@@ -91,6 +92,9 @@ describe('FishCredentialService', () => {
     },
   };
   const encryptionKey = Buffer.alloc(32, 7).toString('base64');
+  const fishVoices = {
+    getVoices: jest.fn().mockResolvedValue([]),
+  } as unknown as FishVoiceService;
 
   let service: FishCredentialService;
 
@@ -125,6 +129,7 @@ describe('FishCredentialService', () => {
           key === 'TTS_CREDENTIAL_ENCRYPTION_KEY' ? encryptionKey : undefined,
         ),
       } as unknown as ConfigService,
+      fishVoices,
     );
   });
 
@@ -197,67 +202,26 @@ describe('FishCredentialService', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('stores, lists, selects, and removes multiple user-owned voices', async () => {
-    const first = await service.addVoice('user-id', {
-      referenceId: 'voice-one',
-      name: 'First voice',
-    });
-    const second = await service.addVoice('user-id', {
-      referenceId: 'voice-two',
-    });
-
-    expect(first).toMatchObject({
-      referenceId: 'voice-one',
-      name: 'First voice',
-      selected: false,
-    });
-    await expect(service.getSelectedVoiceReferenceId('user-id')).resolves.toBe(
-      null,
-    );
-
-    await expect(service.selectVoice('user-id', second.id)).resolves.toEqual({
-      id: second.id,
-      referenceId: 'voice-two',
-      name: null,
-      selected: true,
-    });
-    await expect(service.getSelectedVoiceReferenceId('user-id')).resolves.toBe(
-      'voice-two',
-    );
-
-    const status = await service.getPublicStatus('user-id');
-    expect(status.voices).toEqual([
+  it('returns the voice catalogue supplied by the voice service', async () => {
+    jest.mocked(fishVoices.getVoices).mockResolvedValueOnce([
       {
-        id: second.id,
-        referenceId: 'voice-two',
-        name: null,
+        id: 'default-voice-id',
+        referenceId: 'sarah-reference-id',
+        name: 'Sarah',
+        source: 'DEFAULT',
+        enabled: true,
         selected: true,
-      },
-      {
-        id: first.id,
-        referenceId: 'voice-one',
-        name: 'First voice',
-        selected: false,
       },
     ]);
 
-    await service.deleteVoice('user-id', second.id);
-    await expect(service.getSelectedVoiceReferenceId('user-id')).resolves.toBe(
-      null,
-    );
-  });
-
-  it('does not allow a user to select another user’s saved voice', async () => {
-    const voice = await service.addVoice('owner-id', {
-      referenceId: 'owner-voice',
-    });
-
-    await expect(
-      service.selectVoice('other-user-id', voice.id),
-    ).rejects.toMatchObject({
-      response: expect.objectContaining({
-        code: 'NOT_FOUND',
-      }),
+    await expect(service.getPublicStatus('user-id')).resolves.toMatchObject({
+      voices: [
+        {
+          id: 'default-voice-id',
+          source: 'DEFAULT',
+          selected: true,
+        },
+      ],
     });
   });
 });

@@ -5,7 +5,7 @@ import { JobsService } from '../jobs/jobs.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { temporalNow } from '../prisma/temporal.js';
 import { StorageService } from '../storage/storage.service.js';
-import { FishCredentialService } from '../tts-models/fish-credential.service.js';
+import { FishVoiceService } from '../tts-models/fish-voice.service.js';
 import { AudioChunkService } from './audio-chunk.service.js';
 import { TtsAdapterResolverService } from './tts-adapter-resolver.service.js';
 
@@ -66,7 +66,7 @@ export class ChapterTtsService {
     private readonly storageService: StorageService,
     private readonly audioChunkService: AudioChunkService,
     private readonly ttsAdapterResolver: TtsAdapterResolverService,
-    private readonly fishCredentials: FishCredentialService,
+    private readonly fishVoices: FishVoiceService,
     private readonly jobsService: JobsService,
   ) {}
 
@@ -376,9 +376,7 @@ export class ChapterTtsService {
       return job.voice;
     }
 
-    const voiceId = await this.fishCredentials.getSelectedVoiceReferenceId(
-      job.userId,
-    );
+    const voiceId = await this.fishVoices.resolveVoiceReferenceId(job.userId);
 
     if (!voiceId) {
       return null;

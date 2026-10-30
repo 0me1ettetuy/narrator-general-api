@@ -3,7 +3,8 @@ import { IsUUID } from 'class-validator';
 
 export class SelectFishVoiceDto {
   @ApiProperty({
-    description: 'ID of one of the authenticated user’s saved Fish voices.',
+    description:
+      'ID of an enabled shared default voice or one of the authenticated user’s custom Fish voices.',
     format: 'uuid',
   })
   @IsUUID()

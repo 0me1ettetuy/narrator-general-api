@@ -61,6 +61,7 @@ export type Audio = {
   id: string;
   chapterId: string;
   modelKey: string | null;
+  voice: string | null;
   status: AudioStatus;
   processingStage: AudioProcessingStage | null;
   totalChunks: number;

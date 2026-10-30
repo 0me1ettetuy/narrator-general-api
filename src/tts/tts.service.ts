@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FishCredentialService } from '../tts-models/fish-credential.service.js';
+import { FishVoiceService } from '../tts-models/fish-voice.service.js';
 import { DEFAULT_TTS_SEGMENT_MAX_CHARACTERS } from './chapter-segmenter.js';
 import {
   type TtsAdapter,
@@ -24,6 +25,7 @@ const FISH_AUDIO_TTS_URL = 'https://api.fish.audio/v1/tts';
 const DEFAULT_FISH_TTS_MODEL = 's2.1-pro-free';
 const DEFAULT_FISH_TTS_VOICE = 'default';
 const DEFAULT_TTS_IDLE_TIMEOUT_MS = 300_000;
+
 @Injectable()
 export class TtsService implements TtsAdapter {
   private readonly idleTimeoutMs: number;
@@ -31,6 +33,7 @@ export class TtsService implements TtsAdapter {
   constructor(
     private readonly configService: ConfigService,
     private readonly fishCredentials: FishCredentialService,
+    private readonly fishVoices: FishVoiceService,
   ) {
     this.idleTimeoutMs = this.getPositiveNumberConfig(
       'FISH_TTS_IDLE_TIMEOUT_MS',
@@ -169,27 +172,9 @@ export class TtsService implements TtsAdapter {
       model: providerModel ?? DEFAULT_FISH_TTS_MODEL,
       voice:
         voiceId?.trim() ||
-        (
-          await this.fishCredentials.getSelectedVoiceReferenceId(userId)
-        )?.trim() ||
-        this.getDefaultVoiceId(),
+        (await this.fishVoices.resolveVoiceReferenceId(userId))?.trim() ||
+        DEFAULT_FISH_TTS_VOICE,
     };
-  }
-
-  private getDefaultVoiceId(): string {
-    const voice = this.configService
-      .get<string>('FISH_DEFAULT_VOICE')
-      ?.trim()
-      .toLowerCase();
-    const configuredVoiceKey =
-      voice === 'adrian'
-        ? 'FISH_DEFAULT_VOICE_ADRIAN_ID'
-        : 'FISH_DEFAULT_VOICE_SARAH_ID';
-
-    return (
-      this.configService.get<string>(configuredVoiceKey)?.trim() ||
-      DEFAULT_FISH_TTS_VOICE
-    );
   }
 
   private getPositiveNumberConfig(key: string, fallback: number): number {

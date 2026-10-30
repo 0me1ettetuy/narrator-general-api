@@ -7,9 +7,12 @@ model User {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime
   defaultTtsModelKey     String?
+  selectedFishVoiceId    String?
   sessions               Session[]
   books                  Book[]
-  fishVoices             UserFishVoice[]
+  legacyFishVoices       UserFishVoice[]
+  customFishVoices       FishVoice[] @relation("FishVoiceOwner")
+  selectedFishVoice      FishVoice?  @relation("SelectedFishVoice", fields: [selectedFishVoiceId], references: [id])
   ttsProviderCredentials UserTtsProviderCredential[]
 
   @@map("user")
@@ -61,6 +64,26 @@ model UserFishVoice {
   @@unique([userId, referenceId])
   @@index([userId, isSelected])
   @@map("user_fish_voice")
+}
+
+model FishVoice {
+  id              String          @id @default(uuid())
+  catalogueKey    String          @unique
+  referenceId     String
+  name            String
+  source          FishVoiceSource
+  ownerUserId     String?
+  isEnabled       Boolean         @default(true)
+  defaultOrder    Int?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime
+
+  owner           User?           @relation("FishVoiceOwner", fields: [ownerUserId], references: [id])
+  selectedByUsers User[]          @relation("SelectedFishVoice")
+
+  @@index([source, isEnabled, defaultOrder])
+  @@index([ownerUserId, isEnabled])
+  @@map("fish_voice")
 }
 
 enum BookFormat {
@@ -131,6 +154,11 @@ enum TtsCredentialState {
   VALID
   INVALID
   UNKNOWN
+}
+
+enum FishVoiceSource {
+  DEFAULT
+  CUSTOM
 }
 
 enum JobType {

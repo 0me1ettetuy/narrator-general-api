@@ -1,9 +1,13 @@
 import { ConfigService } from '@nestjs/config';
 import { Readable } from 'node:stream';
 import type { FishCredentialService } from '../tts-models/fish-credential.service.js';
+import type { FishVoiceService } from '../tts-models/fish-voice.service.js';
 
 jest.mock('../tts-models/fish-credential.service.js', () => ({
   FishCredentialService: class FishCredentialService {},
+}));
+jest.mock('../tts-models/fish-voice.service.js', () => ({
+  FishVoiceService: class FishVoiceService {},
 }));
 
 import { TtsService, TtsSynthesisError } from './tts.service.js';
@@ -23,9 +27,11 @@ describe('TtsService', () => {
   const fetchMock = jest.fn();
   const fishCredentials = {
     getValidApiKey: jest.fn().mockResolvedValue('test-fish-audio-key'),
-    getSelectedVoiceReferenceId: jest.fn().mockResolvedValue('user-voice-id'),
     markInvalid: jest.fn().mockResolvedValue(undefined),
   } as unknown as FishCredentialService;
+  const fishVoices = {
+    resolveVoiceReferenceId: jest.fn().mockResolvedValue('user-voice-id'),
+  } as unknown as FishVoiceService;
 
   let service: TtsService;
 
@@ -38,6 +44,7 @@ describe('TtsService', () => {
         get: jest.fn(),
       } as unknown as ConfigService,
       fishCredentials,
+      fishVoices,
     );
   });
 
@@ -119,7 +126,7 @@ describe('TtsService', () => {
   });
 
   it('uses the configured default voice when the user has no voice ID', async () => {
-    fishCredentials.getSelectedVoiceReferenceId.mockResolvedValueOnce(null);
+    fishVoices.resolveVoiceReferenceId.mockResolvedValueOnce('sarah-voice-id');
     fetchMock.mockResolvedValue(
       new Response(new Uint8Array([1]), {
         status: 200,
@@ -128,15 +135,10 @@ describe('TtsService', () => {
     );
     service = new TtsService(
       {
-        get: jest.fn((key: string) =>
-          key === 'FISH_DEFAULT_VOICE'
-            ? 'adrian'
-            : key === 'FISH_DEFAULT_VOICE_ADRIAN_ID'
-              ? '6264e995072341a281c45ed71e554566'
-              : undefined,
-        ),
+        get: jest.fn(),
       } as unknown as ConfigService,
       fishCredentials,
+      fishVoices,
     );
 
     const result = await service.synthesizeStream({
@@ -144,7 +146,7 @@ describe('TtsService', () => {
       userId: 'user-id',
     });
 
-    expect(result.voice).toBe('6264e995072341a281c45ed71e554566');
+    expect(result.voice).toBe('sarah-voice-id');
     await expect(readStream(result.stream)).resolves.toEqual(
       new Uint8Array([1]),
     );
@@ -165,7 +167,34 @@ describe('TtsService', () => {
     });
 
     expect(result.voice).toBe('chapter-voice-snapshot');
-    expect(fishCredentials.getSelectedVoiceReferenceId).not.toHaveBeenCalled();
+    expect(fishVoices.resolveVoiceReferenceId).not.toHaveBeenCalled();
+    await expect(readStream(result.stream)).resolves.toEqual(
+      new Uint8Array([1]),
+    );
+  });
+
+  it('uses the Fish provider default when no voice is configured', async () => {
+    fishVoices.resolveVoiceReferenceId.mockResolvedValueOnce(null);
+    fetchMock.mockResolvedValue(
+      new Response(new Uint8Array([1]), {
+        status: 200,
+        headers: { 'content-type': 'audio/mpeg' },
+      }),
+    );
+    service = new TtsService(
+      {
+        get: jest.fn(),
+      } as unknown as ConfigService,
+      fishCredentials,
+      fishVoices,
+    );
+
+    const result = await service.synthesizeStream({
+      text: 'Hello world.',
+      userId: 'user-id',
+    });
+
+    expect(result.voice).toBe('default');
     await expect(readStream(result.stream)).resolves.toEqual(
       new Uint8Array([1]),
     );

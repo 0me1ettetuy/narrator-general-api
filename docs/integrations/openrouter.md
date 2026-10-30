@@ -22,8 +22,8 @@ log, put it in OpenAPI, or expose it to the frontend. The later user-owned key
 plan is recorded in the repository-level `BOOK_PIPELINE_PLAN.md`.
 
 This historical adapter previously read `VOICE_ID`. The direct Fish adapter
-now resolves the user's selected `UserFishVoice` first and the deployment's selected
-Sarah/Adrian default second; see the [TTS model catalogue](../tts/tts-model-catalogue.md).
+now resolves the user's selected `FishVoice` first and then the first enabled
+configured deployment fallback voice; see the [TTS model catalogue](../tts/tts-model-catalogue.md).
 
 ## Current model choice for evaluation
 

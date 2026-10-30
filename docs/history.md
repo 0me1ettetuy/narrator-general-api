@@ -5,7 +5,7 @@ milestones and backed by a complete chronological commit index. It documents
 what entered the repository, rather than the intent suggested by a commit
 subject alone.
 
-**Scope:** 26 August–28 October 2026, through commit `eecea24`.
+**Scope:** 26 August–30 October 2026, through commit `5904932`.
 
 Uncommitted work is deliberately not recorded here. Add a short milestone and
 one row to the index when a future change is committed.
@@ -83,6 +83,18 @@ one row to the index when a future change is committed.
 - Reorganized documentation by domain and added model-specific Docker toggles
   so each local engine starts only when its own `*_ENABLED=true` value is set.
 
+### 30 October — user-owned Fish voice library
+
+- Replaced the single user voice setting with durable `UserFishVoice` rows, so
+  a user can save several Fish reference IDs with optional personal labels.
+- Added authenticated add, select, and delete endpoints. The model-list
+  response now returns the caller's saved voices and selected state; ownership
+  checks prevent a user from selecting or deleting another user's voice.
+- Kept the Sarah/Adrian deployment fallback for users without a selection.
+  When Fish chapter generation begins, the worker snapshots the selected voice
+  to `Audio.voice`, so a later selection change cannot mix voices in one
+  in-progress chapter or its retries.
+
 ## Complete commit index
 
 | Date | Commit | Recorded change |
@@ -135,4 +147,5 @@ one row to the index when a future change is committed.
 | 2026-10-27 | `c1efad6` | Added chapter curation API groundwork and design documentation. |
 | 2026-10-28 | `d50f899` | Implemented persisted chapter classification and curation actions. |
 | 2026-10-28 | `eecea24` | Added per-model local-TTS toggles and reorganized docs. |
+| 2026-10-30 | `5904932` | Added a multi-voice Fish library, selection API, and per-chapter voice snapshot. |
 

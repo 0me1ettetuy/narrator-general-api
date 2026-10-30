@@ -26,8 +26,8 @@ user-specific state:
 - `UserTtsProviderCredential`: the user's encrypted Fish key and its safe
   validation state;
 - `User.defaultTtsModelKey`: the user's nullable saved model preference;
-- `UserFishVoice`: each user's saved Fish reference voices and which one is
-  selected;
+- `FishVoice`: one durable catalogue for shared `DEFAULT` voices and
+  user-owned `CUSTOM` voices. `User.selectedFishVoiceId` selects either source;
 - `Audio.modelKey`: the exact model chosen for that generated audio.
 
 This keeps deployments simple: updating code and `.env` changes the available
@@ -68,13 +68,15 @@ itself is never returned.
 Voice resolution is deliberately independent of the model choice:
 
 ```text
-selected UserFishVoice -> configured Sarah/Adrian deployment fallback -> Fish Audio's provider default
+selected enabled FishVoice -> first enabled configured default -> Fish Audio's provider default
 ```
 
-Set `FISH_DEFAULT_VOICE` to `sarah` or `adrian`; the service reads the matching
-`FISH_DEFAULT_VOICE_SARAH_ID` or `FISH_DEFAULT_VOICE_ADRIAN_ID`. Narrator does
-not infer the text language and silently switch between the two. The model page
-can add/select/remove user voices with:
+Set `FISH_DEFAULT_VOICES` to an ordered JSON array of `{ id, name }` objects.
+At API/worker startup, the backend upserts those `DEFAULT` rows and uses the
+first one as the fallback when a user has no selection. Removing an item from
+the environment disables its database row instead of deleting it, preserving
+old audio and selections. Narrator does not infer the text language and silently
+switch voices. The model page can add/select/remove custom voices with:
 
 ```text
 POST   /tts/models/providers/fish-audio/voices             { "referenceId": "...", "name": "..." }
