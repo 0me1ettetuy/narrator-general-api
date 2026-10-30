@@ -3,8 +3,8 @@
 This is the cross-repository catalogue of implemented Narrator capabilities.
 It was audited against the complete Git histories and the current source at:
 
-- backend: `d50f899` (`narrator-general-api` `main`);
-- frontend: `48b969f` (`narrator-fe` `main`).
+- backend: `a818529` (`narrator-general-api` `main`);
+- frontend: `9a37991` (`narrator-fe` `main`).
 
 It groups commits that build one capability, rather than treating each commit
 message as a feature description. Current code wins whenever a commit title,
@@ -12,16 +12,16 @@ plan, or older UI differs from the final implementation.
 
 ## At a glance
 
-| Capability | Where a user sees it | What it provides |
-| --- | --- | --- |
-| Account and session | Public header, register/login pages, sidebar | Secure sign-up, sign-in, session restore, logout, protected workspace |
-| Library and EPUB upload | `/library` | Direct EPUB upload, parse status, book cards, cover images |
-| Parsed book view | `/library/:bookId` | Metadata, ordered chapter cards, selection, status and progress |
-| Chapter audio | Book page | Generate, continue, stop, delete, play and download a chapter MP3 |
-| Voice models | `/models` | Per-user Fish key, local model health/status, selected default model |
-| Chapter curation | Book page → **Review chapters** | Parser suggestions plus manual edit, tag, add, merge, remove, restore, and reorder |
-| Preferences and navigation | Headers and sidebar | Responsive private/public navigation, breadcrumbs, light/dark theme, English/Russian |
-| Self-hosted deployment | Deployment configuration | R2, S3, or MinIO storage; optional local TTS engines |
+| Capability                 | Where a user sees it                         | What it provides                                                                                      |
+| -------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Account and session        | Public header, register/login pages, sidebar | Secure sign-up, sign-in, session restore, logout, protected workspace                                 |
+| Library and EPUB upload    | `/library`                                   | Direct EPUB upload, parse status, book cards, cover images                                            |
+| Parsed book view           | `/library/:bookId`                           | Metadata, ordered chapter cards, selection, status and progress                                       |
+| Chapter audio              | Book page                                    | Generate, continue, stop, delete, play and download a chapter MP3                                     |
+| Voice models               | `/models`                                    | Per-user Fish key, local model health/status, selected model, and default/custom Fish voice selection |
+| Chapter curation           | Book page → **Review chapters**              | Parser suggestions plus manual edit, tag, add, merge, remove, restore, and reorder                    |
+| Preferences and navigation | Headers and sidebar                          | Responsive private/public navigation, breadcrumbs, light/dark theme, English/Russian                  |
+| Self-hosted deployment     | Deployment configuration                     | R2, S3, or MinIO storage; optional local TTS engines                                                  |
 
 ## 1. Account, session, and protected workspace
 
@@ -327,8 +327,9 @@ front matter or references in its outline while excluding them from the common
 ### What it is
 
 The **Models** page offers a dynamic local-model group and a Fish Audio group.
-Users choose one default model for future generation. Fish is not a shared
-deployment key: every user supplies their own key.
+Users choose one default model and, for Fish generation, one voice for future
+generation. Fish is not a shared deployment key: every user supplies their own
+key.
 
 ### How to use it in the UI
 
@@ -339,6 +340,9 @@ deployment key: every user supplies their own key.
    validates it before Fish model cards are displayed.
 4. Choose a ready card. The selected card becomes the default for future
    audio generation.
+5. When Fish is configured, choose a supplied **Default** voice or one of your
+   own **Custom** voices. A custom voice can be added with its Fish reference
+   ID and a personal label, then removed when no longer needed.
 
 ### What happens underneath
 
@@ -355,14 +359,22 @@ deployment key: every user supplies their own key.
   Fish cards appear only after a valid personal key exists.
 - The worker decrypts the owner’s valid key only immediately before a Fish
   synthesis request. An invalid provider response marks the saved key invalid.
-- A user can save multiple Fish reference voice IDs, label them, and select one.
-  The worker uses that selected voice for future Fish requests; otherwise it
-  uses the deployment's selected Sarah or Adrian fallback. The worker snapshots
-  it at chapter-audio start so one in-progress chapter cannot mix voices.
-- Voices are durable `UserFishVoice` rows with a unique `(userId, referenceId)`
-  pair. `GET /tts/models` returns the caller's list as `providers[0].voices`,
-  including each internal ID, reference ID, optional label, and `selected`
-  state. Voice rows cannot be selected or deleted by another user.
+- Deployment defaults come from ordered `FISH_DEFAULT_VOICES` JSON in `.env`.
+  On backend startup, this list safely creates or updates shared `DEFAULT`
+  catalogue rows. Removing an entry from configuration disables its row rather
+  than deleting it, which protects historic audio and existing selections.
+- `FishVoice` is one catalogue table: global `DEFAULT` rows are shared by all
+  users; `CUSTOM` rows have an owner. `User.selectedFishVoiceId` points to an
+  enabled default or to that user's custom voice, so defaults are not copied
+  once per user.
+- `GET /tts/models` returns enabled/disabled voices as
+  `providers[0].voices`, with source (`DEFAULT`/`CUSTOM`), name, reference ID,
+  and selected state. Users can select a shared default but may only delete
+  their own custom row. A deleted selected custom voice clears the preference;
+  new Fish jobs then fall back to the first enabled configured default.
+- The queue resolves and snapshots the selected reference ID in `Audio.voice`
+  at chapter-audio creation. Later selection/catalogue changes cannot mix
+  voices in an in-progress chapter or its retries.
 
 #### Local models
 
@@ -392,14 +404,9 @@ The UI supports saving and replacing a Fish key, but does not yet render a
 "remove Fish key" button. The backend endpoint already exists for it:
 `DELETE /tts/models/providers/fish-audio/credential`.
 
-The backend supports a user-owned Fish voice list; the model-page voice picker
-still needs frontend work:
-
-```text
-POST   /tts/models/providers/fish-audio/voices
-PUT    /tts/models/providers/fish-audio/voices/selection
-DELETE /tts/models/providers/fish-audio/voices/:voiceId
-```
+The Models page renders supplied default voices alongside the user's custom
+voices. Defaults are selectable but not removable; custom entries show their
+label and may be removed by their owner.
 
 ### Contributing commits, checked by actual change
 
@@ -407,9 +414,12 @@ DELETE /tts/models/providers/fish-audio/voices/:voiceId
   and models endpoint; `2749fe2` added adapter resolution and four local
   adapters; `941dcc5` added encrypted per-user Fish credentials; `d2b796f`
   added persisted default selection and model snapshot validation; `5904932`
-  added the per-user Fish voice library, selection, and chapter voice snapshot.
+  added the initial per-user Fish voice library; `a818529` replaced it with
+  the safely synchronized shared default/custom catalogue and env-driven
+  fallback.
 - Frontend: `5e96fa2` added the Models route, local/Fish groups, credential
-  form, disabled-card states, and selection UI.
+  form, disabled-card states, and model selection UI; `9a37991` added the
+  Fish default/custom voice picker and the chapter-audio voice label.
 - The individual env-driven Compose toggle behavior is a current working-tree
   configuration change, documented here before its own commit.
 
@@ -570,7 +580,9 @@ planned or only partially surfaced.
   channel exists yet.
 - **Fish credentials:** a user adds/replaces their key on the Models page. The
   backend supports removal, but the frontend does not yet show a remove-key
-  control. The key is not requested automatically on login.
+  control. The key is not requested automatically on login. Default Fish
+  voices are configured by the deployment; users can select but cannot edit or
+  delete them.
 - **Local models:** Docker definitions and adapters exist, but a local model is
   usable only when its operator enabled it and its real health check succeeds.
   A listed card alone does not mean the model is installed or ready.
