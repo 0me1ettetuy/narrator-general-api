@@ -11,6 +11,8 @@ backend code. For the detailed conventions and checklist, start at
   adding, configuring, or changing local/Fish TTS models.
 - [Feature catalogue](docs/features/README.md) when identifying existing
   product behavior or a feature boundary.
+- [Change history](docs/history.md) when tracing when and how an existing
+  capability entered the backend.
 
 ## Core principles
 

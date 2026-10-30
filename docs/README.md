@@ -9,6 +9,8 @@ work.
 
 - [Feature catalogue](features/README.md) — implemented user-facing and
   developer-facing capabilities across backend and frontend.
+- [Change history](history.md) — chronological milestones and complete
+  committed-change index for this repository.
 - [Architecture](architecture/README.md) — module boundaries and delivery
   checklist.
 - [API](api/README.md) — REST, OpenAPI, validation, error, and browser-request

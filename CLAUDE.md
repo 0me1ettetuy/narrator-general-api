@@ -110,6 +110,8 @@ requirements, model IDs, and examples.
 - `docs/README.md` — documentation index and domain map.
 - `docs/features/README.md` — cross-repository feature catalogue and current
   feature boundaries.
+- `docs/history.md` — chronological backend milestones and full committed
+  change index.
 - `docs/architecture/backend-architecture.md` — module and worker boundaries.
 - `docs/api/api-contracts-and-errors.md` — OpenAPI/error requirements.
 - `docs/tts/local-tts-docker.md` — local model deployment and selection.
