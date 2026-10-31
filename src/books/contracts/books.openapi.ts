@@ -26,6 +26,9 @@ export class BookSummaryResponseDto {
   @ApiProperty({ minimum: 0 })
   sourceSize: number;
 
+  @ApiProperty({ type: () => [BookAuthorResponseDto] })
+  authors: BookAuthorResponseDto[];
+
   @ApiProperty({
     description: 'Whether the uploaded EPUB contains a cover image',
   })

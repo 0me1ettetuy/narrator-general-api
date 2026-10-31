@@ -5,8 +5,8 @@ milestones and backed by a complete chronological commit index. It documents
 what entered the repository, rather than the intent suggested by a commit
 subject alone.
 
-**Scope:** 26 August–31 October 2026, through the current local cover-management
-change.
+**Scope:** 26 August–31 October 2026, through the current local book-list
+author metadata change.
 
 Uncommitted work is deliberately not recorded here. Add a short milestone and
 one row to the index when a future change is committed.
@@ -125,6 +125,14 @@ one row to the index when a future change is committed.
 - Books without an EPUB cover use a deterministic custom-cover key on first
   upload; later replacements reuse that same object.
 
+### 31 October — author metadata on library results
+
+- The paginated books response now includes its ordered EPUB author metadata,
+  allowing library cards to present authors without fetching every book detail.
+- The service uses one bounded author query for the IDs on the current page,
+  then groups those rows in memory. This avoids an N+1 query per book while
+  keeping pagination unchanged.
+
 ## Complete commit index
 
 | Date       | Commit    | Recorded change                                                                                                                           |
@@ -182,4 +190,5 @@ one row to the index when a future change is committed.
 | 2026-10-30 | `a818529` | Replaced the user-only voice list with a safely synchronized default/custom Fish voice catalogue and `FISH_DEFAULT_VOICES` configuration. |
 | 2026-10-31 | `fb36b48` | Persisted EPUB language metadata and made Qwen/Piper/Kokoro narration language-aware.                                                     |
 | 2026-10-31 | `041ced4` | Added metadata-missing EPUB language detection from parsed chapter text.                                                                  |
-| 2026-10-31 | `current` | Added direct replacement uploads for private book covers using the existing object key.                                                   |
+| 2026-10-31 | `e6602e0` | Added direct replacement uploads for private book covers using the existing object key.                                                   |
+| 2026-10-31 | `current` | Added ordered author metadata to paginated book-list results with one bounded secondary query.                                            |

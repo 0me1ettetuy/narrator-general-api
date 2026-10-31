@@ -34,6 +34,7 @@ export type BookSummary = {
   sourceOriginalFilename: string;
   sourceMimeType: string;
   sourceSize: number;
+  authors: BookAuthorResponse[];
   hasCover: boolean;
   parseStatus: BookParseStatus;
   chapterCount: number;

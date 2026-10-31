@@ -216,9 +216,24 @@ export class BooksService {
       .limit(limit + 1)
       .all()) as Book[];
     const hasNextPage = books.length > limit;
+    const pageBooks = books.slice(0, limit);
+    const authors = pageBooks.length
+      ? ((await this.prisma.db.orm.public.BookAuthor.where((author) =>
+          author.bookId.in(pageBooks.map((book) => book.id)),
+        ).all()) as BookAuthor[])
+      : [];
+    const authorsByBookId = new Map<string, BookAuthor[]>();
+
+    for (const author of authors) {
+      const bookAuthors = authorsByBookId.get(author.bookId) ?? [];
+      bookAuthors.push(author);
+      authorsByBookId.set(author.bookId, bookAuthors);
+    }
 
     return {
-      books: books.slice(0, limit).map(toBookSummary),
+      books: pageBooks.map((book) =>
+        toBookSummary(book, authorsByBookId.get(book.id) ?? []),
+      ),
       nextOffset: hasNextPage ? offset + limit : null,
     };
   }
@@ -972,7 +987,7 @@ export class BooksService {
   }
 }
 
-function toBookSummary(book: Book): BookSummary {
+function toBookSummary(book: Book, authors: BookAuthor[] = []): BookSummary {
   return {
     id: book.id,
     title: book.title,
@@ -981,6 +996,7 @@ function toBookSummary(book: Book): BookSummary {
     sourceOriginalFilename: book.sourceOriginalFilename,
     sourceMimeType: book.sourceMimeType,
     sourceSize: book.sourceSize,
+    authors: authors.sort(compareByPosition).map(toBookAuthorResponse),
     hasCover: book.coverObjectKey !== null,
     parseStatus: book.parseStatus,
     chapterCount: book.chapterCount,

@@ -3,7 +3,13 @@ import type { PrismaService } from '../prisma/prisma.service.js';
 import type { StorageService } from '../storage/storage.service.js';
 import type { FishVoiceService } from '../tts-models/fish-voice.service.js';
 import type { TtsModelsService } from '../tts-models/tts-models.service.js';
-import type { Audio, Book, Chapter, ProcessingJob } from './types/book.type.js';
+import type {
+  Audio,
+  Book,
+  BookAuthor,
+  Chapter,
+  ProcessingJob,
+} from './types/book.type.js';
 
 jest.mock('../jobs/jobs.service.js', () => ({
   JobsService: class JobsService {},
@@ -61,6 +67,7 @@ describe('BooksService', () => {
   } as Chapter;
   const bookFirst = jest.fn();
   const chaptersAll = jest.fn();
+  const authorsAll = jest.fn();
   const audioFirst = jest.fn();
   const bookUpdate = jest.fn().mockResolvedValue(undefined);
   const db = {
@@ -68,6 +75,7 @@ describe('BooksService', () => {
       public: {
         Audio: { where: jest.fn() },
         Book: { where: jest.fn() },
+        BookAuthor: { where: jest.fn() },
         Chapter: { where: jest.fn() },
       },
     },
@@ -102,12 +110,98 @@ describe('BooksService', () => {
       update: bookUpdate,
     });
     db.orm.public.Chapter.where.mockReturnValue({ all: chaptersAll });
+    db.orm.public.BookAuthor.where.mockReturnValue({ all: authorsAll });
     db.orm.public.Audio.where.mockReturnValue({ first: audioFirst });
     jest.mocked(ttsModelsService.getSelectableModel).mockResolvedValue({
       id: 'local.piper.en-us-amy',
       source: 'LOCAL',
       providerModel: null,
     });
+  });
+
+  it('lists each book with its authors using one bounded author query', async () => {
+    const firstListedBook = {
+      ...book,
+      id: 'first-book-id',
+      title: 'First book',
+      language: 'en',
+      sourceFormat: 'EPUB',
+      sourceOriginalFilename: 'first.epub',
+      sourceMimeType: 'application/epub+zip',
+      sourceSize: 100,
+      chapterCount: 2,
+      createdAt: '2026-10-31T00:00:00.000Z',
+      updatedAt: '2026-10-31T00:00:00.000Z',
+    } as Book;
+    const secondListedBook = {
+      ...firstListedBook,
+      id: 'second-book-id',
+      title: 'Second book',
+      sourceOriginalFilename: 'second.epub',
+    } as Book;
+    const orderBy = jest.fn();
+    const offset = jest.fn();
+    const limit = jest.fn();
+    const all = jest
+      .fn()
+      .mockResolvedValue([firstListedBook, secondListedBook]);
+
+    orderBy.mockReturnValue({ offset });
+    offset.mockReturnValue({ limit });
+    limit.mockReturnValue({ all });
+    authorsAll.mockResolvedValue([
+      {
+        id: 'second-author',
+        bookId: firstListedBook.id,
+        name: 'Second author',
+        position: 2,
+      },
+      {
+        id: 'first-author',
+        bookId: firstListedBook.id,
+        name: 'First author',
+        position: 1,
+      },
+    ] as BookAuthor[]);
+    db.orm.public.Book.where.mockImplementation((criteria) => {
+      if (criteria.userId === 'user-id' && !('id' in criteria)) {
+        return { orderBy };
+      }
+
+      return { first: bookFirst, update: bookUpdate };
+    });
+
+    const service = new BooksService(
+      prisma,
+      storageService,
+      jobsService,
+      ttsModelsService,
+      fishVoices,
+    );
+
+    await expect(service.listBooks('user-id', {})).resolves.toMatchObject({
+      books: [
+        {
+          id: firstListedBook.id,
+          authors: [
+            { id: 'first-author', name: 'First author', position: 1 },
+            { id: 'second-author', name: 'Second author', position: 2 },
+          ],
+        },
+        { id: secondListedBook.id, authors: [] },
+      ],
+      nextOffset: null,
+    });
+
+    const authorWhere = db.orm.public.BookAuthor.where.mock.calls[0]?.[0];
+    const bookIdIn = jest.fn();
+
+    expect(authorWhere).toEqual(expect.any(Function));
+    authorWhere({ bookId: { in: bookIdIn } });
+    expect(bookIdIn).toHaveBeenCalledWith([
+      firstListedBook.id,
+      secondListedBook.id,
+    ]);
   });
 
   it('queues selected chapters in book order through the saved user model', async () => {
