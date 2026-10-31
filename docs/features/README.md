@@ -180,7 +180,10 @@ It also extracts a supported embedded cover image when the EPUB provides one.
   do not become chapter cards.
 - If the EPUB has a GIF, JPEG, PNG, or WebP cover of at most 10 MiB, it appears
   on library cards and at the top of the book page. A missing/unsupported cover
-  simply leaves the normal book presentation in place.
+  simply leaves the normal book presentation in place until the owner adds one.
+- On a ready book, the owner can upload a GIF, JPEG, PNG, or WebP image up to
+  10 MiB to replace the cover. The replacement overwrites the same private
+  object; it does not create an accumulating copy for every edit.
 
 ### What happens underneath
 
@@ -201,6 +204,9 @@ It also extracts a supported embedded cover image when the EPUB provides one.
 - Cover bytes are saved beside the source under a book-specific storage key;
   the database holds only key, MIME type, and byte size. Authenticated users
   receive a 15-minute signed cover URL rather than a public object URL.
+- A cover replacement uses a signed direct PUT URL for that stored key. The API
+  verifies storage metadata on confirmation, then updates the book timestamp so
+  book-detail and library clients refresh their cached signed URL.
 
 ### Contributing commits, checked by actual change
 

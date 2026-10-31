@@ -5,7 +5,8 @@ milestones and backed by a complete chronological commit index. It documents
 what entered the repository, rather than the intent suggested by a commit
 subject alone.
 
-**Scope:** 26 August–31 October 2026, through commit `fb36b48`.
+**Scope:** 26 August–31 October 2026, through the current local cover-management
+change.
 
 Uncommitted work is deliberately not recorded here. Add a short milestone and
 one row to the index when a future change is committed.
@@ -113,6 +114,17 @@ one row to the index when a future change is committed.
   parser now uses `franc` on cleaned chapter text and stores its normalized
   primary language tag as a fallback.
 
+### 31 October — replaceable book covers
+
+- Added authenticated cover-upload intent and confirmation endpoints for ready
+  books. The browser uploads the replacement image directly to private
+  S3-compatible storage rather than sending its bytes through Nest.
+- A replacement overwrites the existing book cover object key. The API checks
+  the final object MIME type and size before persisting its metadata and a new
+  `updatedAt` value, allowing clients to invalidate their signed-cover cache.
+- Books without an EPUB cover use a deterministic custom-cover key on first
+  upload; later replacements reuse that same object.
+
 ## Complete commit index
 
 | Date       | Commit    | Recorded change                                                                                                                           |
@@ -168,5 +180,6 @@ one row to the index when a future change is committed.
 | 2026-10-30 | `affc5bc` | Added the backend change-history document and linked it from project guidance.                                                            |
 | 2026-10-30 | `5904932` | Added a multi-voice Fish library, selection API, and per-chapter voice snapshot.                                                          |
 | 2026-10-30 | `a818529` | Replaced the user-only voice list with a safely synchronized default/custom Fish voice catalogue and `FISH_DEFAULT_VOICES` configuration. |
-| 2026-10-31 | `fb36b48` | Persisted EPUB language metadata and made Qwen/Piper/Kokoro narration language-aware.                                                       |
-| 2026-10-31 | `041ced4` | Added metadata-missing EPUB language detection from parsed chapter text.                                                                     |
+| 2026-10-31 | `fb36b48` | Persisted EPUB language metadata and made Qwen/Piper/Kokoro narration language-aware.                                                     |
+| 2026-10-31 | `041ced4` | Added metadata-missing EPUB language detection from parsed chapter text.                                                                  |
+| 2026-10-31 | `current` | Added direct replacement uploads for private book covers using the existing object key.                                                   |

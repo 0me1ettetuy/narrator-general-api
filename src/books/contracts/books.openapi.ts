@@ -217,6 +217,11 @@ export class BookCoverAccessResponseDto {
   expiresInSeconds: number;
 }
 
+export class CreateBookCoverUploadResponseDto {
+  @ApiProperty({ format: 'uri' })
+  uploadUrl: string;
+}
+
 export class BooksListResponseDto {
   @ApiProperty({ type: () => [BookSummaryResponseDto] })
   books: BookSummaryResponseDto[];

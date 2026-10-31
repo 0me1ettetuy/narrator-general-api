@@ -116,6 +116,10 @@ export type BookCoverAccessResponse = {
   expiresInSeconds: number;
 };
 
+export type CreateBookCoverUploadResponse = {
+  uploadUrl: string;
+};
+
 export type BooksListResponse = {
   books: BookSummary[];
   nextOffset: number | null;

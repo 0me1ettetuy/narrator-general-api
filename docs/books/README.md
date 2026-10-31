@@ -7,3 +7,7 @@
 
 The implemented cross-repository book/upload/audio behavior is summarized in
 the [feature catalogue](../features/README.md).
+
+Ready-book owners can replace an extracted cover through a signed direct upload
+that overwrites the existing private storage object. The API details and user
+flow are documented in the cover section of that catalogue.

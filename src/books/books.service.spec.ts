@@ -47,6 +47,7 @@ describe('BooksService', () => {
     id: 'book-id',
     userId: 'user-id',
     coverObjectKey: null,
+    parseStatus: 'READY',
   } as Book;
   const firstChapter = {
     id: 'first-chapter-id',
@@ -61,6 +62,7 @@ describe('BooksService', () => {
   const bookFirst = jest.fn();
   const chaptersAll = jest.fn();
   const audioFirst = jest.fn();
+  const bookUpdate = jest.fn().mockResolvedValue(undefined);
   const db = {
     orm: {
       public: {
@@ -78,6 +80,8 @@ describe('BooksService', () => {
   } as unknown as JobsService;
   const storage = {
     createDownloadUrl: jest.fn(),
+    createUploadUrl: jest.fn(),
+    getObjectMetadata: jest.fn(),
   };
   const storageService = storage as unknown as StorageService;
   const ttsModelsService = {
@@ -93,7 +97,10 @@ describe('BooksService', () => {
     bookFirst.mockResolvedValue(book);
     chaptersAll.mockResolvedValue([secondChapter, firstChapter]);
     audioFirst.mockResolvedValue(null);
-    db.orm.public.Book.where.mockReturnValue({ first: bookFirst });
+    db.orm.public.Book.where.mockReturnValue({
+      first: bookFirst,
+      update: bookUpdate,
+    });
     db.orm.public.Chapter.where.mockReturnValue({ all: chaptersAll });
     db.orm.public.Audio.where.mockReturnValue({ first: audioFirst });
     jest.mocked(ttsModelsService.getSelectableModel).mockResolvedValue({
@@ -183,5 +190,61 @@ describe('BooksService', () => {
       userId: 'user-id',
     });
     expect(storage.createDownloadUrl).toHaveBeenCalledWith(book.coverObjectKey);
+  });
+
+  it('creates a signed upload URL for the existing cover object', async () => {
+    book.coverObjectKey = 'books/user-id/book-id/cover/original.png';
+    storage.createUploadUrl.mockResolvedValue('https://storage.test/upload');
+    const service = new BooksService(
+      prisma,
+      storageService,
+      jobsService,
+      ttsModelsService,
+      fishVoices,
+    );
+
+    await expect(
+      service.createBookCoverUpload('user-id', book.id, {
+        mimeType: 'image/png',
+        size: 123,
+      }),
+    ).resolves.toEqual({ uploadUrl: 'https://storage.test/upload' });
+
+    expect(storage.createUploadUrl).toHaveBeenCalledWith(
+      book.coverObjectKey,
+      'image/png',
+    );
+  });
+
+  it('confirms an uploaded cover after verifying its storage metadata', async () => {
+    book.coverObjectKey = 'books/user-id/book-id/cover/original.png';
+    storage.getObjectMetadata.mockResolvedValue({
+      contentLength: 123,
+      contentType: 'image/png',
+      eTag: 'etag',
+    });
+    const service = new BooksService(
+      prisma,
+      storageService,
+      jobsService,
+      ttsModelsService,
+      fishVoices,
+    );
+
+    await expect(
+      service.completeBookCoverUpload('user-id', book.id, {
+        mimeType: 'image/png',
+        size: 123,
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(storage.getObjectMetadata).toHaveBeenCalledWith(book.coverObjectKey);
+    expect(bookUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        coverObjectKey: book.coverObjectKey,
+        coverMimeType: 'image/png',
+        coverSize: 123,
+      }),
+    );
   });
 });

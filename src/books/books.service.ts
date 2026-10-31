@@ -28,10 +28,12 @@ import type {
   ChapterAudioResponse,
   ChapterSummaryResponse,
   CompleteBookUploadResponse,
+  CreateBookCoverUploadResponse,
   CreateBookUploadResponse,
   QueueChapterAudioResponse,
 } from './contracts/books.response.js';
 import type { BooksListQueryDto } from './dto/books-list-query.dto.js';
+import type { CreateBookCoverUploadDto } from './dto/create-book-cover-upload.dto.js';
 import {
   EPUB_MIME_TYPE,
   type CreateBookUploadDto,
@@ -47,6 +49,7 @@ import type {
 const DEFAULT_PAGE_SIZE = 20;
 const PARSE_BOOK_IDEMPOTENCY_KEY_PREFIX = 'parse-book';
 const SYNTHESIZE_CHAPTER_IDEMPOTENCY_KEY_PREFIX = 'synthesize-chapter';
+const DEFAULT_BOOK_COVER_OBJECT_KEY = 'cover/custom';
 
 type StoredAudio = Audio & {
   objectKey: string | null;
@@ -659,6 +662,54 @@ export class BooksService {
     };
   }
 
+  async createBookCoverUpload(
+    userId: string,
+    bookId: string,
+    dto: CreateBookCoverUploadDto,
+  ): Promise<CreateBookCoverUploadResponse> {
+    const book = await this.getBookReadyForCoverUpdate(userId, bookId);
+    const objectKey = book.coverObjectKey ?? getDefaultBookCoverObjectKey(book);
+
+    return {
+      uploadUrl: await this.storageService.createUploadUrl(
+        objectKey,
+        dto.mimeType,
+      ),
+    };
+  }
+
+  async completeBookCoverUpload(
+    userId: string,
+    bookId: string,
+    dto: CreateBookCoverUploadDto,
+  ): Promise<void> {
+    const book = await this.getBookReadyForCoverUpdate(userId, bookId);
+    const objectKey = book.coverObjectKey ?? getDefaultBookCoverObjectKey(book);
+    const object = await this.storageService.getObjectMetadata(objectKey);
+
+    if (
+      !object ||
+      object.contentLength !== dto.size ||
+      object.contentType !== dto.mimeType
+    ) {
+      throw new BadRequestException({
+        code: API_ERROR_CODES.validationFailed,
+        message: 'Uploaded cover does not match the requested upload metadata',
+      });
+    }
+
+    await this.prisma.db.orm.public.Book.where({
+      id: book.id,
+      userId,
+      parseStatus: 'READY',
+    }).update({
+      coverObjectKey: objectKey,
+      coverMimeType: dto.mimeType,
+      coverSize: dto.size,
+      updatedAt: temporalNow(),
+    });
+  }
+
   async getBook(userId: string, bookId: string): Promise<BookDetailResponse> {
     const book = await this.prisma.db.orm.public.Book.where({
       id: bookId,
@@ -846,6 +897,22 @@ export class BooksService {
     return book;
   }
 
+  private async getBookReadyForCoverUpdate(
+    userId: string,
+    bookId: string,
+  ): Promise<Book> {
+    const book = await this.getOwnedBook(userId, bookId);
+
+    if (book.parseStatus !== 'READY') {
+      throw new ConflictException({
+        code: API_ERROR_CODES.conflict,
+        message: 'Book must finish parsing before its cover can be changed',
+      });
+    }
+
+    return book;
+  }
+
   private async getSelectedChapters(
     bookId: string,
     chapterIds: string[],
@@ -926,6 +993,10 @@ function toBookTitle(filename: string): string {
   const title = filename.replace(/\.epub$/i, '').trim();
 
   return title || 'Untitled book';
+}
+
+function getDefaultBookCoverObjectKey(book: Book): string {
+  return `books/${book.userId}/${book.id}/${DEFAULT_BOOK_COVER_OBJECT_KEY}`;
 }
 
 function getParseBookIdempotencyKey(bookId: string): string {

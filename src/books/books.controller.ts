@@ -45,6 +45,7 @@ import {
   ChapterSelectionResponseDto,
   ChapterAudioAccessResponseDto,
   CompleteBookUploadResponseDto,
+  CreateBookCoverUploadResponseDto,
   CreateBookUploadResponseDto,
   QueueChapterAudioResponseDto,
 } from './contracts/books.openapi.js';
@@ -60,6 +61,7 @@ import type {
   ChapterSelectionResponse,
   ChapterAudioAccessResponse,
   CompleteBookUploadResponse,
+  CreateBookCoverUploadResponse,
   CreateBookUploadResponse,
   QueueChapterAudioResponse,
 } from './contracts/books.response.js';
@@ -68,6 +70,7 @@ import { BookIdParamsDto } from './dto/book-id-params.dto.js';
 import { BooksListQueryDto } from './dto/books-list-query.dto.js';
 import { ChapterAudioParamsDto } from './dto/chapter-audio-params.dto.js';
 import { CreateBookUploadDto } from './dto/create-book-upload.dto.js';
+import { CreateBookCoverUploadDto } from './dto/create-book-cover-upload.dto.js';
 import { QueueChapterAudioDto } from './dto/queue-chapter-audio.dto.js';
 import {
   CreateChapterDto,
@@ -126,6 +129,55 @@ export class BooksController {
     @Req() request: RequestWithUser,
   ): Promise<CompleteBookUploadResponse> {
     return this.booksService.completeUpload(request.user.sub, params.bookId);
+  }
+
+  @Post(':bookId/cover/upload')
+  @ApiOperation({
+    summary: 'Create a signed upload URL to replace a book cover',
+  })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiBody({ type: CreateBookCoverUploadDto })
+  @ApiCreatedResponse({ type: CreateBookCoverUploadResponseDto })
+  @ApiBadRequestResponse({ description: 'Invalid cover image metadata' })
+  @ApiConflictResponse({ description: 'Book is not ready for a cover update' })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book not found' })
+  @UseGuards(JwtAccessGuard)
+  createBookCoverUpload(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+    @Body() dto: CreateBookCoverUploadDto,
+  ): Promise<CreateBookCoverUploadResponse> {
+    return this.booksService.createBookCoverUpload(
+      request.user.sub,
+      params.bookId,
+      dto,
+    );
+  }
+
+  @Post(':bookId/cover/upload-complete')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Confirm a replaced book cover upload' })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiBody({ type: CreateBookCoverUploadDto })
+  @ApiNoContentResponse({ description: 'Book cover was replaced' })
+  @ApiBadRequestResponse({
+    description: 'Uploaded cover does not match its metadata',
+  })
+  @ApiConflictResponse({ description: 'Book is not ready for a cover update' })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book not found' })
+  @UseGuards(JwtAccessGuard)
+  async completeBookCoverUpload(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+    @Body() dto: CreateBookCoverUploadDto,
+  ): Promise<void> {
+    await this.booksService.completeBookCoverUpload(
+      request.user.sub,
+      params.bookId,
+      dto,
+    );
   }
 
   @Post(':bookId/chapters/:chapterId/audio')
