@@ -150,6 +150,26 @@ Use this when adding a new Docker-hosted engine.
 Do not call a model container from the frontend. The browser calls Narrator,
 and the worker calls the selected local adapter.
 
+## Book language and local voices
+
+The parser saves declared EPUB BCP 47 metadata on `Book.language`. The worker
+passes that value with each chapter text segment, and each adapter interprets
+it only when its own provider supports it:
+
+- Qwen translates its supported primary tags (`en`, `ru`, `zh`, and so on) to
+  Qwen language names. Missing or unsupported metadata sends `Auto`.
+- Piper uses its configured English/missing-language default (the supplied
+  default is `en_US-hfc_male-medium`) and `ru_RU-denis-medium` for Russian.
+  Its wrapper downloads a requested voice to the persistent Piper volume when
+  first used.
+- Kokoro-82M uses `am_michael` for English/missing metadata. It rejects
+  Russian rather than narrating it with an English voice because the bundled
+  model has no Russian voice.
+
+Do not add provider-specific language/voice conditionals to the shared
+OpenAI-compatible adapter. Keep each rule in its narrow concrete adapter and
+add an adapter test before changing the mapping.
+
 ## Request and worker flow
 
 ```text

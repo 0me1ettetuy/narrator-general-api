@@ -49,10 +49,10 @@ task unless explicitly requested.
 1. The API creates a book upload intent and returns a signed object-storage URL.
 2. The browser uploads the EPUB directly to storage, then confirms the upload.
 3. The API stores a parsing job in Postgres and queues it in BullMQ.
-4. The worker parses ordered chapters, extracts a supported EPUB cover when
-   available, saves its bytes to `books/{userId}/{bookId}/cover/` in object
-   storage, and saves cleaned chapter text plus private cover metadata in
-   Postgres.
+4. The worker parses ordered chapters, extracts declared EPUB language
+   metadata and a supported cover when available, saves cover bytes to
+   `books/{userId}/{bookId}/cover/` in object storage, and saves cleaned
+   chapter text, language, and private cover metadata in Postgres.
 5. `POST /books/:bookId/chapters/:chapterId/audio` creates/resumes one durable
    chapter-audio job and returns `202`.
 6. The worker segments chapter text, stores completed temporary MP3 parts in
@@ -76,6 +76,10 @@ selects the adapter once per worker job:
   `Audio.modelKey`; a retry cannot silently switch providers or voices.
 - Local model health is checked both while queueing and immediately before the
   worker generates audio.
+- The worker passes `Book.language` to its adapter. Qwen maps supported BCP 47
+  primary tags to its provider language names (otherwise `Auto`); Piper picks
+  an English/Russian voice from the tag; Kokoro rejects Russian because its
+  bundled model has no Russian voice. See `docs/tts/local-tts-docker.md`.
 - Fish keys belong to a user, are AES-256-GCM encrypted in Postgres, and are
   decrypted only in worker memory immediately before a Fish request. Never
   use or add a global Fish API key to the server environment.

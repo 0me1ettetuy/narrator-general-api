@@ -5,7 +5,7 @@ milestones and backed by a complete chronological commit index. It documents
 what entered the repository, rather than the intent suggested by a commit
 subject alone.
 
-**Scope:** 26 August–30 October 2026, through commit `a818529`.
+**Scope:** 26 August–31 October 2026, through commit `fb36b48`.
 
 Uncommitted work is deliberately not recorded here. Add a short milestone and
 one row to the index when a future change is committed.
@@ -99,6 +99,17 @@ one row to the index when a future change is committed.
   so later preference or catalogue changes cannot mix voices in an active job
   or its retries.
 
+### 31 October — EPUB language metadata and language-aware local narration
+
+- EPUB parsing now preserves declared BCP 47 book language metadata, persists
+  it on `Book`, and exposes it through the book API for the book page.
+- The worker passes that language to TTS adapters. Qwen maps BCP 47 values to
+  its language names (or `Auto`); Piper selects a male English/Russian voice;
+  Kokoro uses a male English voice and explicitly rejects Russian because the
+  bundled model has no Russian voice.
+- Added the additive nullable database migration, adapter/parser tests, and
+  deployment documentation for the language/voice behavior.
+
 ## Complete commit index
 
 | Date       | Commit    | Recorded change                                                                                                                           |
@@ -154,3 +165,4 @@ one row to the index when a future change is committed.
 | 2026-10-30 | `affc5bc` | Added the backend change-history document and linked it from project guidance.                                                            |
 | 2026-10-30 | `5904932` | Added a multi-voice Fish library, selection API, and per-chapter voice snapshot.                                                          |
 | 2026-10-30 | `a818529` | Replaced the user-only voice list with a safely synchronized default/custom Fish voice catalogue and `FISH_DEFAULT_VOICES` configuration. |
+| 2026-10-31 | `fb36b48` | Persisted EPUB language metadata and made Qwen/Piper/Kokoro narration language-aware.                                                       |

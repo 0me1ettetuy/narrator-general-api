@@ -126,7 +126,8 @@ as `Russian` and `English`; unknown or absent metadata uses Qwen's `Auto`
 mode. Piper, Kokoro, and Chatterbox do not receive this Qwen-only field.
 
 Piper selects a voice from the EPUB language: `en*` (or missing metadata) uses
-the default male `en_US-hfc_male-medium`; `ru*` uses the default male
+the configured default (the supplied default is male `en_US-hfc_male-medium`);
+`ru*` uses the default male
 `ru_RU-denis-medium`. Piper downloads a requested voice into its persistent
 Docker volume on first use. Kokoro's bundled model uses the default male
 `am_michael` for English; it intentionally rejects Russian because Kokoro-82M

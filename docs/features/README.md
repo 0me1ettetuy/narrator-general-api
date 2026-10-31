@@ -3,8 +3,8 @@
 This is the cross-repository catalogue of implemented Narrator capabilities.
 It was audited against the complete Git histories and the current source at:
 
-- backend: `a818529` (`narrator-general-api` `main`);
-- frontend: `9a37991` (`narrator-fe` `main`).
+- backend: `fb36b48` (`narrator-general-api` `main`);
+- frontend: `ae3399e` (`narrator-fe` `main`).
 
 It groups commits that build one capability, rather than treating each commit
 message as a feature description. Current code wins whenever a commit title,
@@ -16,7 +16,7 @@ plan, or older UI differs from the final implementation.
 | -------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | Account and session        | Public header, register/login pages, sidebar | Secure sign-up, sign-in, session restore, logout, protected workspace                                 |
 | Library and EPUB upload    | `/library`                                   | Direct EPUB upload, parse status, book cards, cover images                                            |
-| Parsed book view           | `/library/:bookId`                           | Metadata, ordered chapter cards, selection, status and progress                                       |
+| Parsed book view           | `/library/:bookId`                           | Metadata (including declared language), ordered chapter cards, selection, status and progress         |
 | Chapter audio              | Book page                                    | Generate, continue, stop, delete, play and download a chapter MP3                                     |
 | Voice models               | `/models`                                    | Per-user Fish key, local model health/status, selected model, and default/custom Fish voice selection |
 | Chapter curation           | Book page → **Review chapters**              | Parser suggestions plus manual edit, tag, add, merge, remove, restore, and reorder                    |
@@ -132,7 +132,8 @@ background. It currently supports EPUB only.
    **Ready**, or **Failed** status. While parsing is active, the library
    refetches the book list every three seconds.
 4. Select a book card to open its book page. The card/page shows the filename,
-   parsed title/authors, file size, chapter count, and, when available, cover.
+   parsed title/authors/language, file size, chapter count, and, when available,
+   cover.
 
 ### What happens underneath
 
@@ -174,7 +175,8 @@ It also extracts a supported embedded cover image when the EPUB provides one.
 - A queued or processing card means the source file is already stored, but the
   library outline is not ready yet.
 - A ready card exposes a title from EPUB metadata when present, authors, and
-  non-empty chapters. Blank EPUB spine entries do not become chapter cards.
+  non-empty chapters. Its detail page also shows a declared EPUB BCP 47
+  language when present. Blank EPUB spine entries do not become chapter cards.
 - If the EPUB has a GIF, JPEG, PNG, or WebP cover of at most 10 MiB, it appears
   on library cards and at the top of the book page. A missing/unsupported cover
   simply leaves the normal book presentation in place.
@@ -188,10 +190,11 @@ It also extracts a supported embedded cover image when the EPUB provides one.
   accepted source file capped at 50 MiB. The EPUB parser limits an inflated
   entry to 16 MiB, normalizes whitespace, and retains a source href and word
   count for each non-empty chapter.
-- Parsing persists authors and chapters in Postgres in a transaction, then
-  transitions the `Book` and its durable `Job` from processing to ready/
-  completed. Errors are retried up to three attempts and ultimately leave safe
-  failed statuses rather than an HTTP request hanging.
+- Parsing persists title, authors, declared BCP 47 language, and chapters in
+  Postgres in a transaction, then transitions the `Book` and its durable `Job`
+  from processing to ready/completed. Errors are retried up to three attempts
+  and ultimately leave safe failed statuses rather than an HTTP request
+  hanging.
 - Cover bytes are saved beside the source under a book-specific storage key;
   the database holds only key, MIME type, and byte size. Authenticated users
   receive a 15-minute signed cover URL rather than a public object URL.
@@ -200,9 +203,9 @@ It also extracts a supported embedded cover image when the EPUB provides one.
 
 - Backend: `5734d2e` added the EPUB parser service; `4400fbe` made parsing a
   durable worker workflow; `05cf283` added cover extraction/storage and the
-  signed cover endpoint.
+  signed cover endpoint; `fb36b48` added persisted language metadata.
 - Frontend: `7ff3f12` added cover retrieval and rendering to both library and
-  book pages.
+  book pages; `ae3399e` displays declared language on the book detail page.
 
 ## 5. Chapter audio generation
 
@@ -334,8 +337,9 @@ key.
 ### How to use it in the UI
 
 1. Open **Models** in the private sidebar.
-2. Local cards show `READY`, `UNAVAILABLE`, or `DISABLED`. Only ready cards
-   have a selectable button.
+2. Local cards show `READY`, `UNAVAILABLE`, or `DISABLED`. During the current
+   rollout, only tested Piper is selectable; other local cards remain visible
+   but are marked **Coming soon** until their end-to-end adapter tests pass.
 3. To use Fish Audio, enter a personal key in the Fish setup card. The form
    validates it before Fish model cards are displayed.
 4. Choose a ready card. The selected card becomes the default for future
@@ -378,7 +382,7 @@ key.
 
 #### Local models
 
-- The catalogue currently has Piper (Amy), Kokoro-82M, Qwen3-TTS 0.6B, and
+- The catalogue currently has Piper, Kokoro-82M, Qwen3-TTS 0.6B, and
   Chatterbox Turbo. Each has a narrow adapter and a health check strategy.
 - Local cards are evaluated dynamically: disabled by env → `DISABLED`; enabled
   but failed/mismatched health endpoint → `UNAVAILABLE`; healthy → `READY` and
@@ -388,6 +392,12 @@ key.
   with an enabled flag, and the backend exposes the same enabled models. See
   [`docs/tts/local-tts-docker.md`](../tts/local-tts-docker.md) for hardware and exact
   configuration. Qwen and Chatterbox require NVIDIA Docker support.
+- Adapter behavior is deliberately model-specific: Qwen maps the book's BCP 47
+  tag to a Qwen language name (or `Auto`); Piper selects its configured English
+  default (the supplied value is male `en_US-hfc_male-medium`) or Russian
+  `ru_RU-denis-medium`; Kokoro uses `am_michael` for English and rejects
+  Russian because Kokoro-82M has no built-in Russian voice. The resolved voice
+  is recorded on the audio after its first generated part.
 
 #### Selection snapshot
 
@@ -416,12 +426,12 @@ label and may be removed by their owner.
   added persisted default selection and model snapshot validation; `5904932`
   added the initial per-user Fish voice library; `a818529` replaced it with
   the safely synchronized shared default/custom catalogue and env-driven
-  fallback.
+  fallback; `fb36b48` added book-language propagation and local voice choice.
 - Frontend: `5e96fa2` added the Models route, local/Fish groups, credential
   form, disabled-card states, and model selection UI; `9a37991` added the
-  Fish default/custom voice picker and the chapter-audio voice label.
-- The individual env-driven Compose toggle behavior is a current working-tree
-  configuration change, documented here before its own commit.
+  Fish default/custom voice picker and the chapter-audio voice label;
+  `ae3399e` added the temporary local-model rollout guard and refined voice
+  presentation.
 
 ## 8. Chapter curation and outline repair
 
@@ -534,8 +544,8 @@ storage; Postgres stores metadata and object keys.
 - Backend: `58ec241` introduced database Compose setup; `aafe455` introduced
   the storage adapter; `dc3b0e1` generalized R2-specific environment naming to
   provider-neutral storage settings; `23e00a5` added MinIO Docker setup.
-- `260d9ae` and the later current working-tree configuration update supply the
-  optional local TTS Docker behavior described above.
+- `260d9ae`, `eecea24`, and `fb36b48` supply the optional local TTS Docker,
+  model-toggle, and language-aware voice behavior described above.
 
 ## 10. Typed frontend/backend contract and product foundations
 
@@ -585,7 +595,9 @@ planned or only partially surfaced.
   delete them.
 - **Local models:** Docker definitions and adapters exist, but a local model is
   usable only when its operator enabled it and its real health check succeeds.
-  A listed card alone does not mean the model is installed or ready.
+  A listed card alone does not mean the model is installed or ready. Until
+  each adapter passes an end-to-end check, the frontend exposes only Piper;
+  Kokoro-82M cannot narrate Russian with its built-in voices.
 - **Curation:** parser classification suggests roles; it never automatically
   merges or deletes short chapters. Users make those decisions explicitly.
 - **Progress detail:** chunk progress is durable, but the book page currently
