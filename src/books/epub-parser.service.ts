@@ -1,4 +1,5 @@
 import { parse, type Book, type Chapter, type Cover } from '@abfcode/spine';
+import { franc } from 'franc';
 import { Injectable } from '@nestjs/common';
 import type {
   ParsedEpub,
@@ -32,11 +33,28 @@ export class EpubParserService {
 
     return {
       title: normalizeText(book.metadata.title) || null,
-      language: normalizeText(book.metadata.language) || null,
+      language:
+        normalizeText(book.metadata.language) || detectLanguage(chapters),
       authors: uniqueNonEmpty(book.metadata.authors.map(normalizeText)),
       cover: readCover(book),
       chapters,
     };
+  }
+}
+
+function detectLanguage(chapters: ParsedEpubChapter[]): string | null {
+  const detectedLanguage = franc(
+    chapters.map((chapter) => chapter.text).join('\n'),
+  );
+
+  if (detectedLanguage === 'und') {
+    return null;
+  }
+
+  try {
+    return new Intl.Locale(detectedLanguage).language || null;
+  } catch {
+    return null;
   }
 }
 

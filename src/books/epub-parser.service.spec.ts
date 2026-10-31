@@ -1,12 +1,16 @@
 import { parse } from '@abfcode/spine';
+import { franc } from 'franc';
 import { EpubParserService } from './epub-parser.service.js';
 
 describe('EpubParserService', () => {
   const parser = new EpubParserService();
   const parseMock = jest.mocked(parse);
+  const francMock = jest.mocked(franc);
 
   beforeEach(() => {
     parseMock.mockReset();
+    francMock.mockReset();
+    francMock.mockReturnValue('und');
   });
 
   it('returns normalized, ordered readable chapters and book metadata', () => {
@@ -76,6 +80,25 @@ describe('EpubParserService', () => {
     expect(() => parser.parse(new Uint8Array([1]))).toThrow(
       'EPUB contains no readable chapters',
     );
+  });
+
+  it('detects the language from chapter text when EPUB metadata is missing', () => {
+    francMock.mockReturnValue('eng');
+    parseMock.mockReturnValue({
+      metadata: { title: 'Book', authors: [] },
+      cover: () => undefined,
+      iterChapters: function* () {
+        yield {
+          index: 0,
+          title: 'Chapter',
+          href: 'text/chapter.xhtml',
+          text: `The wind moved through the empty street while the city slept.
+            Every window reflected a little piece of the moonlight.`,
+        };
+      },
+    } as never);
+
+    expect(parser.parse(new Uint8Array([1])).language).toBe('en');
   });
 
   it('keeps parsing when the optional cover cannot be read safely', () => {

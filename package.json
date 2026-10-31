@@ -57,6 +57,7 @@
     "cookie-parser": "^1.4.7",
     "csrf-csrf": "^4.0.3",
     "dotenv": "^17.4.2",
+    "franc": "^6.2.0",
     "helmet": "^8.3.0",
     "ioredis": "^6.0.0",
     "passport": "^0.7.0",
@@ -106,6 +107,7 @@
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1",
       "^@abfcode/spine$": "<rootDir>/test-mocks/spine.ts",
+      "^franc$": "<rootDir>/test-mocks/franc.ts",
       "^@nestjs/bullmq$": "<rootDir>/test-mocks/bullmq.ts",
       "^@nestjs/config$": "<rootDir>/test-mocks/config.ts",
       "^@nestjs/swagger$": "<rootDir>/test-mocks/swagger.ts",
