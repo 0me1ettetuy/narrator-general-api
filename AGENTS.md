@@ -7,6 +7,8 @@ backend code. For the detailed conventions and checklist, start at
 - [Backend architecture](docs/architecture/backend-architecture.md)
 - [API contracts and errors](docs/api/api-contracts-and-errors.md)
 - [Backend delivery checklist](docs/architecture/backend-delivery-checklist.md)
+- [Container deployment](docs/architecture/container-deployment.md) when
+  changing Docker, Compose, deployment environment, or runtime services.
 - [TTS model catalogue maintenance](docs/tts/tts-model-catalogue.md) when
   adding, configuring, or changing local/Fish TTS models.
 - [Feature catalogue](docs/features/README.md) when identifying existing

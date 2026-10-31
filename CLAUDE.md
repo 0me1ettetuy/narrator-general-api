@@ -30,6 +30,11 @@ Start local infrastructure with:
 docker compose up -d db redis
 ```
 
+For the production-style full backend stack, see
+[container deployment](docs/architecture/container-deployment.md). It runs
+Postgres, Redis, API, worker, and enabled optional services with
+`docker compose up -d --build`.
+
 Do not leave development servers, workers, or Compose services running after a
 task unless explicitly requested.
 

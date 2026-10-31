@@ -8,10 +8,25 @@ subject alone.
 **Scope:** 26 August–31 October 2026, through the current local book-list
 author metadata change.
 
-Uncommitted work is deliberately not recorded here. Add a short milestone and
-one row to the index when a future change is committed.
+Uncommitted work is recorded separately below without a commit ID. Move it to
+the complete index when the change is committed.
 
 ## Milestones
+
+### Working tree — production-style container runtime (pending commit)
+
+- Added a reusable multi-stage backend image that contains the compiled Nest
+  API, standalone worker entry point, runtime dependencies, and ffmpeg for
+  chapter-audio merging.
+- Expanded default Compose startup from infrastructure-only to Postgres, Redis,
+  one-off schema update, API, and worker. API/worker wait for the database
+  schema update to complete; MinIO and local TTS engines remain opt-in
+  profiles.
+- Added a public/internal MinIO endpoint split. Signed URLs retain the
+  browser-reachable endpoint while API/worker storage operations use the
+  Docker-network endpoint.
+- Pinned the repository package-manager declaration to pnpm 10.29.2 so local
+  and Docker dependency installation use the same toolchain.
 
 ### 26–31 August — Nest foundation and persistence
 

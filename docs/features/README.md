@@ -541,13 +541,14 @@ storage; Postgres stores metadata and object keys.
 
 ### What happens underneath
 
-- One AWS S3 client creates signed upload, playback, and attachment download
-  URLs; it uses path-style addressing only for MinIO. It can stream puts/gets
-  and batch-delete temporary objects.
-- Docker Compose includes Postgres and Redis by default. MinIO and local TTS
-  services are optional profiles. The API and the separate worker remain host
-  processes in the current setup; if later containerized, local health/synthesis
-  URLs must use Docker service names rather than `localhost`.
+- The storage adapter uses one S3 client for API/worker object operations and a
+  second client only for signed browser URLs. They normally share an endpoint;
+  MinIO can use `STORAGE_INTERNAL_ENDPOINT=http://minio:9000` internally while
+  signed URLs keep the browser-reachable `STORAGE_ENDPOINT`.
+- Docker Compose includes Postgres, Redis, a one-off schema-update service,
+  the compiled API, and the compiled separate worker by default. MinIO and
+  local TTS services remain optional profiles. Compose supplies local-model
+  service names to API/worker rather than relying on `localhost`.
 
 ### Contributing commits, checked by actual change
 

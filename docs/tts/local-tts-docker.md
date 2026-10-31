@@ -21,8 +21,10 @@ on the audio record and checks its health again immediately before generation.
 | `local.chatterbox-turbo` | `TTS_LOCAL_CHATTERBOX_TURBO_ENABLED` | `http://localhost:8000` | NVIDIA GPU | Uses the 350M English Turbo variant. |
 
 The services bind to `127.0.0.1`, not every network interface. They are meant
-to be called by the Narrator backend on the same host, never directly by a
-browser or public internet client.
+to be called by the Narrator backend only, never directly by a browser or
+public internet client. Host-run API/worker development uses these published
+localhost ports; the default Compose API/worker use the service names on the
+internal Docker network.
 
 ## Enable one model
 
@@ -50,9 +52,10 @@ docker compose up -d --remove-orphans
 ```
 
 Use the same command after changing a toggle. `--remove-orphans` also stops a
-container that was previously enabled and has now been disabled. Restart the
-API and worker afterwards: they read the local-model catalogue from `.env` at
-process startup.
+container that was previously enabled and has now been disabled. In the default
+Compose runtime, the changed service configuration recreates API/worker, so
+they read the updated catalogue at startup. Restart host-run API/worker
+watchers manually instead.
 
 The backend calls each configured health URL. A service returns:
 
@@ -143,7 +146,8 @@ time-to-first-audio becomes important.
 
 ## Backend in a container
 
-The sample health URLs use `localhost` because development currently runs the
-Nest backend on the host. If the Nest API is later added to Compose, replace
-them with Docker service URLs, such as `http://piper-tts:5000/v1/audio/models`.
-Do not rely on Docker to guess the correct address.
+The sample health URLs in `.env.example` use `localhost` for host-run API and
+worker development. Default Compose now overrides the API/worker environment
+with the correct internal service URLs, such as
+`http://piper-tts:5000/v1/audio/models`. Do not manually replace the public
+published URLs in `.env` merely to run the default Compose stack.

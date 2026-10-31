@@ -32,25 +32,34 @@ export type StorageObjectMetadata = {
 @Injectable()
 export class StorageService {
   private readonly client: S3Client;
+  private readonly signedUrlClient: S3Client;
   private readonly bucket: string;
 
   constructor(private readonly configService: ConfigService) {
     const provider = this.getStorageProvider();
     this.bucket = this.getRequiredConfig('STORAGE_BUCKET');
-    this.client = new S3Client({
+    const clientOptions = {
       region: this.getRequiredConfig('STORAGE_REGION'),
-      endpoint: this.getEndpoint(provider),
       forcePathStyle: provider === 'minio',
       credentials: {
         accessKeyId: this.getRequiredConfig('STORAGE_ACCESS_KEY_ID'),
         secretAccessKey: this.getRequiredConfig('STORAGE_SECRET_ACCESS_KEY'),
       },
+    };
+
+    this.client = new S3Client({
+      ...clientOptions,
+      endpoint: this.getInternalEndpoint(provider),
+    });
+    this.signedUrlClient = new S3Client({
+      ...clientOptions,
+      endpoint: this.getPublicEndpoint(provider),
     });
   }
 
   createUploadUrl(objectKey: string, contentType: string): Promise<string> {
     return getSignedUrl(
-      this.client,
+      this.signedUrlClient,
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: objectKey,
@@ -65,7 +74,7 @@ export class StorageService {
     options: CreateDownloadUrlOptions = {},
   ): Promise<string> {
     return getSignedUrl(
-      this.client,
+      this.signedUrlClient,
       new GetObjectCommand({
         Bucket: this.bucket,
         Key: objectKey,
@@ -233,7 +242,7 @@ export class StorageService {
     );
   }
 
-  private getEndpoint(provider: StorageProvider): string | undefined {
+  private getPublicEndpoint(provider: StorageProvider): string | undefined {
     const endpoint = this.configService.get<string>('STORAGE_ENDPOINT');
 
     if (endpoint) {
@@ -245,5 +254,12 @@ export class StorageService {
     }
 
     throw new Error('STORAGE_ENDPOINT is required for R2 and MinIO');
+  }
+
+  private getInternalEndpoint(provider: StorageProvider): string | undefined {
+    return (
+      this.configService.get<string>('STORAGE_INTERNAL_ENDPOINT') ||
+      this.getPublicEndpoint(provider)
+    );
   }
 }

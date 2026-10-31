@@ -2,6 +2,7 @@
   "name": "narrator-general-api",
   "type": "module",
   "version": "0.0.1",
+  "packageManager": "pnpm@10.29.2",
   "description": "",
   "author": "",
   "private": true,

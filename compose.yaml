@@ -51,13 +51,23 @@ services:
     volumes:
       - narrator_minio_data:/data
 
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget --quiet --output-document=/dev/null http://localhost:9000/minio/health/live',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   minio-init:
     image: amazon/aws-cli:2.31.23
     container_name: narrator-minio-init
     profiles: ['minio']
     depends_on:
       minio:
-        condition: service_started
+        condition: service_healthy
     restart: 'no'
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-}
@@ -74,6 +84,77 @@ services:
         done
         aws --endpoint-url http://minio:9000 s3api head-bucket --bucket "$$STORAGE_BUCKET" 2>/dev/null || \
           aws --endpoint-url http://minio:9000 s3api create-bucket --bucket "$$STORAGE_BUCKET"
+
+  migrate:
+    build:
+      context: .
+    image: narrator-api:local
+    container_name: narrator-migrate
+    env_file: .env
+    restart: 'no'
+    command:
+      [
+        '/bin/sh',
+        '-ec',
+        './node_modules/.bin/prisma db update --no-interactive --confirm "$$POSTGRES_DB"',
+      ]
+    environment: &application-environment
+      DATABASE_URL: postgresql://${POSTGRES_USER:? Set POSTGRES_USER}:${POSTGRES_PASSWORD:? Set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:? Set POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      STORAGE_INTERNAL_ENDPOINT: ${STORAGE_INTERNAL_ENDPOINT:-}
+      TTS_LOCAL_PIPER_EN_US_AMY_HEALTH_URL: http://piper-tts:5000/v1/audio/models
+      TTS_LOCAL_PIPER_EN_US_AMY_URL: http://piper-tts:5000
+      TTS_LOCAL_KOKORO_82M_HEALTH_URL: http://kokoro-tts:7860/health/ready
+      TTS_LOCAL_KOKORO_82M_URL: http://kokoro-tts:7860
+      TTS_LOCAL_QWEN3_TTS_0_6B_HEALTH_URL: http://qwen3-tts:8001/health
+      TTS_LOCAL_QWEN3_TTS_0_6B_URL: http://qwen3-tts:8001
+      TTS_LOCAL_CHATTERBOX_TURBO_HEALTH_URL: http://chatterbox-tts:8000/healthz
+      TTS_LOCAL_CHATTERBOX_TURBO_URL: http://chatterbox-tts:8000
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+    image: narrator-api:local
+    container_name: narrator-api
+    env_file: .env
+    restart: unless-stopped
+    command: ['node', 'dist/main']
+    environment:
+      <<: *application-environment
+      PORT: '3000'
+    ports:
+      - '${API_PUBLISHED_PORT:-3000}:3000'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(\"http://127.0.0.1:3000/openapi-json\").then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  worker:
+    image: narrator-api:local
+    container_name: narrator-worker
+    env_file: .env
+    restart: unless-stopped
+    command: ['node', 'dist/worker.js']
+    environment: *application-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
 
   piper-tts:
     image: ${TTS_LOCAL_PIPER_IMAGE:-kamilkrawiec/piper-openai-tts:latest}
@@ -156,3 +237,7 @@ volumes:
   narrator_qwen3_tts_huggingface_cache:
   narrator_chatterbox_tts_cache:
   narrator_chatterbox_tts_voices:
+
+networks:
+  default:
+    name: narrator-network
