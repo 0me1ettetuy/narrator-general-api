@@ -120,10 +120,12 @@ response directly to temporary object storage rather than buffering it all in
 memory. See their wrapper documentation for provider-specific voices and
 language limitations.
 
-For Qwen only, Narrator passes the EPUB book language to its `language` field.
-EPUB BCP 47 values such as `ru-RU` and `en` are translated to Qwen names such
-as `Russian` and `English`; unknown or absent metadata uses Qwen's `Auto`
-mode. Piper, Kokoro, and Chatterbox do not receive this Qwen-only field.
+For Qwen only, Narrator passes the book language to its `language` field. The
+parser prefers declared EPUB BCP 47 metadata and falls back to chapter-text
+detection when that metadata is empty. Values such as `ru-RU` and `en` are
+translated to Qwen names such as `Russian` and `English`; unknown or absent
+language uses Qwen's `Auto` mode. Piper, Kokoro, and Chatterbox do not receive
+this Qwen-only field.
 
 Piper selects a voice from the EPUB language: `en*` (or missing metadata) uses
 the configured default (the supplied default is male `en_US-hfc_male-medium`);

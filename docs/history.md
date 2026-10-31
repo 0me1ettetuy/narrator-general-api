@@ -109,6 +109,9 @@ one row to the index when a future change is committed.
   bundled model has no Russian voice.
 - Added the additive nullable database migration, adapter/parser tests, and
   deployment documentation for the language/voice behavior.
+- EPUB metadata remains the primary language source. When it is empty, the
+  parser now uses `franc` on cleaned chapter text and stores its normalized
+  primary language tag as a fallback.
 
 ## Complete commit index
 
@@ -166,3 +169,4 @@ one row to the index when a future change is committed.
 | 2026-10-30 | `5904932` | Added a multi-voice Fish library, selection API, and per-chapter voice snapshot.                                                          |
 | 2026-10-30 | `a818529` | Replaced the user-only voice list with a safely synchronized default/custom Fish voice catalogue and `FISH_DEFAULT_VOICES` configuration. |
 | 2026-10-31 | `fb36b48` | Persisted EPUB language metadata and made Qwen/Piper/Kokoro narration language-aware.                                                       |
+| 2026-10-31 | `041ced4` | Added metadata-missing EPUB language detection from parsed chapter text.                                                                     |

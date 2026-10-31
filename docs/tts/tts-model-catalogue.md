@@ -152,9 +152,11 @@ and the worker calls the selected local adapter.
 
 ## Book language and local voices
 
-The parser saves declared EPUB BCP 47 metadata on `Book.language`. The worker
-passes that value with each chapter text segment, and each adapter interprets
-it only when its own provider supports it:
+The parser saves the declared EPUB language on `Book.language`. If that field
+is missing, it detects the primary language from cleaned chapter text with
+`franc` and stores a BCP 47 primary tag instead. The worker passes that value
+with each chapter text segment, and each adapter interprets it only when its
+own provider supports it:
 
 - Qwen translates its supported primary tags (`en`, `ru`, `zh`, and so on) to
   Qwen language names. Missing or unsupported metadata sends `Auto`.

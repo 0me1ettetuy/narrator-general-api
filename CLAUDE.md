@@ -49,8 +49,9 @@ task unless explicitly requested.
 1. The API creates a book upload intent and returns a signed object-storage URL.
 2. The browser uploads the EPUB directly to storage, then confirms the upload.
 3. The API stores a parsing job in Postgres and queues it in BullMQ.
-4. The worker parses ordered chapters, extracts declared EPUB language
-   metadata and a supported cover when available, saves cover bytes to
+4. The worker parses ordered chapters, uses declared EPUB language metadata
+   or detects a fallback language from chapter text, and extracts a supported
+   cover when available. It saves cover bytes to
    `books/{userId}/{bookId}/cover/` in object storage, and saves cleaned
    chapter text, language, and private cover metadata in Postgres.
 5. `POST /books/:bookId/chapters/:chapterId/audio` creates/resumes one durable

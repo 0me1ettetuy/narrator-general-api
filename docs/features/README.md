@@ -175,8 +175,9 @@ It also extracts a supported embedded cover image when the EPUB provides one.
 - A queued or processing card means the source file is already stored, but the
   library outline is not ready yet.
 - A ready card exposes a title from EPUB metadata when present, authors, and
-  non-empty chapters. Its detail page also shows a declared EPUB BCP 47
-  language when present. Blank EPUB spine entries do not become chapter cards.
+  non-empty chapters. Its detail page also shows the EPUB's declared language
+  or a chapter-text fallback when metadata is missing. Blank EPUB spine entries
+  do not become chapter cards.
 - If the EPUB has a GIF, JPEG, PNG, or WebP cover of at most 10 MiB, it appears
   on library cards and at the top of the book page. A missing/unsupported cover
   simply leaves the normal book presentation in place.
@@ -190,11 +191,13 @@ It also extracts a supported embedded cover image when the EPUB provides one.
   accepted source file capped at 50 MiB. The EPUB parser limits an inflated
   entry to 16 MiB, normalizes whitespace, and retains a source href and word
   count for each non-empty chapter.
-- Parsing persists title, authors, declared BCP 47 language, and chapters in
-  Postgres in a transaction, then transitions the `Book` and its durable `Job`
-  from processing to ready/completed. Errors are retried up to three attempts
-  and ultimately leave safe failed statuses rather than an HTTP request
-  hanging.
+- Parsing persists title, authors, language, and chapters in Postgres in a
+  transaction, then transitions the `Book` and its durable `Job` from
+  processing to ready/completed. The declared EPUB language remains the source
+  of truth; when it is empty, `franc` detects a primary language from the
+  cleaned chapter text and converts its ISO 639-3 result to a BCP 47 primary
+  tag. Errors are retried up to three attempts and ultimately leave safe failed
+  statuses rather than an HTTP request hanging.
 - Cover bytes are saved beside the source under a book-specific storage key;
   the database holds only key, MIME type, and byte size. Authenticated users
   receive a 15-minute signed cover URL rather than a public object URL.
@@ -203,7 +206,8 @@ It also extracts a supported embedded cover image when the EPUB provides one.
 
 - Backend: `5734d2e` added the EPUB parser service; `4400fbe` made parsing a
   durable worker workflow; `05cf283` added cover extraction/storage and the
-  signed cover endpoint; `fb36b48` added persisted language metadata.
+  signed cover endpoint; `fb36b48` added persisted language metadata; `041ced4`
+  added metadata-missing language detection.
 - Frontend: `7ff3f12` added cover retrieval and rendering to both library and
   book pages; `ae3399e` displays declared language on the book detail page.
 
