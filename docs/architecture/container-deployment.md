@@ -50,8 +50,19 @@ The commented MinIO section in `.env.example` sets
 
 ## Development
 
-For host-run API/worker watchers, start only infrastructure instead of the
-full Compose application:
+For watcher containers, use the dedicated development Compose definition:
+
+```bash
+docker compose -f compose.dev.yaml up -d --build
+```
+
+It loads the same `.env`, infrastructure, persistent data volumes, MinIO
+selection, and local-TTS profiles as the normal Compose definition. Its only
+runtime difference is that API and worker mount the local source directory and
+run `pnpm start:dev` / `pnpm worker:dev`. Saving backend code restarts the
+matching Nest process inside its still-running container.
+
+For host-run API/worker watchers instead, start only infrastructure:
 
 ```bash
 docker compose up -d db redis
@@ -59,5 +70,10 @@ pnpm start:dev
 pnpm worker:dev
 ```
 
-Add `minio` or a local TTS profile through `.env` when needed. After a schema
-change during a running development session, run `pnpm exec prisma db update`.
+Add MinIO or a local TTS profile through `.env` when needed. The development
+Compose stack performs a schema update on startup; after a schema change in an
+already-running session, run:
+
+```bash
+docker compose -f compose.dev.yaml exec api pnpm exec prisma db update
+```

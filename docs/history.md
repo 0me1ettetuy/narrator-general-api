@@ -13,7 +13,7 @@ the complete index when the change is committed.
 
 ## Milestones
 
-### Working tree — production-style container runtime (pending commit)
+### 31 October — production-style container runtime
 
 - Added a reusable multi-stage backend image that contains the compiled Nest
   API, standalone worker entry point, runtime dependencies, and ffmpeg for
@@ -27,6 +27,16 @@ the complete index when the change is committed.
   Docker-network endpoint.
 - Pinned the repository package-manager declaration to pnpm 10.29.2 so local
   and Docker dependency installation use the same toolchain.
+
+### Working tree — Docker watcher development mode (pending commit)
+
+- Added a standalone `compose.dev.yaml` command that extends the shared
+  infrastructure/service definitions while running API and worker as Nest
+  source watchers in development containers.
+- Added a Docker development image stage with ffmpeg, a source bind mount, and
+  an isolated container `node_modules` volume. It retains the same `.env`,
+  database/Redis volumes, MinIO behavior, and optional local-TTS profiles as
+  the default stack.
 
 ### 26–31 August — Nest foundation and persistence
 
@@ -207,3 +217,4 @@ the complete index when the change is committed.
 | 2026-10-31 | `041ced4` | Added metadata-missing EPUB language detection from parsed chapter text.                                                                  |
 | 2026-10-31 | `e6602e0` | Added direct replacement uploads for private book covers using the existing object key.                                                   |
 | 2026-10-31 | `current` | Added ordered author metadata to paginated book-list results with one bounded secondary query.                                            |
+| 2026-10-31 | `149deee` | Added the production-style backend image/Compose runtime, automatic schema update, and deployment documentation.                          |

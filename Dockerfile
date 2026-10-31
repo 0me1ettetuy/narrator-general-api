@@ -13,6 +13,18 @@ FROM dependencies AS build
 COPY . .
 RUN pnpm build
 
+FROM dependencies AS development
+
+WORKDIR /app
+
+# The worker invokes ffmpeg while source watchers run inside development
+# containers too.
+RUN apt-get update \
+  && apt-get install --yes --no-install-recommends ca-certificates ffmpeg \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY . .
+
 FROM node:24-bookworm-slim AS runtime
 
 WORKDIR /app

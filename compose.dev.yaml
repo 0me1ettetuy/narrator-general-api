@@ -1,0 +1,101 @@
+name: narrator-general-api-${NODE_ENV:-development}
+
+# Run this file alone for contributor development:
+#   docker compose -f compose.dev.yaml up -d --build
+#
+# It reuses the complete infrastructure definition from compose.yaml, but API
+# and worker run Nest watchers against the bind-mounted source tree.
+services:
+  db:
+    extends:
+      file: compose.yaml
+      service: db
+
+  redis:
+    extends:
+      file: compose.yaml
+      service: redis
+
+  minio:
+    extends:
+      file: compose.yaml
+      service: minio
+
+  minio-init:
+    extends:
+      file: compose.yaml
+      service: minio-init
+
+  piper-tts:
+    extends:
+      file: compose.yaml
+      service: piper-tts
+
+  kokoro-tts:
+    extends:
+      file: compose.yaml
+      service: kokoro-tts
+
+  qwen3-tts:
+    extends:
+      file: compose.yaml
+      service: qwen3-tts
+
+  chatterbox-tts:
+    extends:
+      file: compose.yaml
+      service: chatterbox-tts
+
+  migrate:
+    extends:
+      file: compose.yaml
+      service: migrate
+    build:
+      context: .
+      target: development
+    image: narrator-api-dev:local
+    volumes:
+      - .:/app
+      - narrator_api_node_modules:/app/node_modules
+
+  api:
+    extends:
+      file: compose.yaml
+      service: api
+    build:
+      context: .
+      target: development
+    image: narrator-api-dev:local
+    command: ['pnpm', 'start:dev']
+    volumes:
+      - .:/app
+      - narrator_api_node_modules:/app/node_modules
+
+  worker:
+    extends:
+      file: compose.yaml
+      service: worker
+    build:
+      context: .
+      target: development
+    image: narrator-api-dev:local
+    command: ['pnpm', 'worker:dev']
+    volumes:
+      - .:/app
+      - narrator_api_node_modules:/app/node_modules
+
+volumes:
+  narrator_postgres_data:
+  narrator_redis_data:
+  narrator_minio_data:
+  narrator_piper_tts_data:
+  narrator_kokoro_tts_data:
+  narrator_qwen3_tts_data:
+  narrator_qwen3_tts_huggingface_cache:
+  narrator_chatterbox_tts_cache:
+  narrator_chatterbox_tts_voices:
+  narrator_api_node_modules:
+
+networks:
+  default:
+    name: narrator-network

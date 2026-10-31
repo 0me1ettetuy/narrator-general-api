@@ -35,6 +35,12 @@ For the production-style full backend stack, see
 Postgres, Redis, API, worker, and enabled optional services with
 `docker compose up -d --build`.
 
+For API/worker watchers inside Docker, run the standalone development setup:
+
+```bash
+docker compose -f compose.dev.yaml up -d --build
+```
+
 Do not leave development servers, workers, or Compose services running after a
 task unless explicitly requested.
 
