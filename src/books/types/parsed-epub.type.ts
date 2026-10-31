@@ -1,5 +1,6 @@
 export type ParsedEpub = {
   title: string | null;
+  language: string | null;
   authors: string[];
   cover: ParsedEpubCover | null;
   chapters: ParsedEpubChapter[];

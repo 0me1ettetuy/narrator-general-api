@@ -29,6 +29,7 @@ export type JobStatus =
 export type BookSummary = {
   id: string;
   title: string;
+  language: string | null;
   sourceFormat: 'EPUB';
   sourceOriginalFilename: string;
   sourceMimeType: string;

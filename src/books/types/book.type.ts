@@ -14,6 +14,7 @@ export type Book = {
   id: string;
   userId: string;
   title: string;
+  language: string | null;
   sourceFormat: 'EPUB';
   sourceObjectKey: string;
   sourceOriginalFilename: string;

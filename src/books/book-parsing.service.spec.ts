@@ -100,6 +100,7 @@ describe('BookParsingService', () => {
     db.orm.public.Chapter.create = chapterCreate;
     jest.mocked(epubParserService.parse).mockReturnValue({
       title: 'Parsed title',
+      language: 'en-US',
       authors: [],
       cover: {
         bytes: new Uint8Array([4, 5, 6]),
@@ -145,6 +146,7 @@ describe('BookParsingService', () => {
         coverObjectKey: 'books/user-id/book-id/cover/original.png',
         coverMimeType: 'image/png',
         coverSize: 3,
+        language: 'en-US',
         parseStatus: 'READY',
       }),
     );

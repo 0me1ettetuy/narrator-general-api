@@ -24,6 +24,7 @@ type PersistedJob = {
 type PersistedBook = {
   id: string;
   userId: string;
+  language: string | null;
 };
 
 type PersistedChapter = {
@@ -54,6 +55,7 @@ export type ClaimedChapterTtsJob = {
   chapterId: string;
   audioId: string;
   userId: string;
+  language: string | null;
   modelKey: string | null;
   voice: string | null;
   maxAttempts: number;
@@ -116,6 +118,7 @@ export class ChapterTtsService {
 
       const result = await resolvedTtsAdapter.adapter.synthesizeStream({
         text: chunk.text,
+        language: claimedJob.language,
         userId: claimedJob.userId,
         providerModel: resolvedTtsAdapter.providerModel,
         voiceId,
@@ -308,6 +311,7 @@ export class ChapterTtsService {
         chapterId: chapter.id,
         audioId: audio.id,
         userId: book.userId,
+        language: book.language,
         modelKey: audio.modelKey,
         voice: audio.voice,
         maxAttempts: job.maxAttempts,

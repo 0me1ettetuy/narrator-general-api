@@ -7,6 +7,13 @@ export class BookSummaryResponseDto {
   @ApiProperty()
   title: string;
 
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Primary BCP 47 language declared by the EPUB metadata',
+  })
+  language: string | null;
+
   @ApiProperty({ enum: ['EPUB'] })
   sourceFormat: 'EPUB';
 

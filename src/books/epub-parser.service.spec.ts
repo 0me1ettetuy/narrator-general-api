@@ -13,6 +13,7 @@ describe('EpubParserService', () => {
     parseMock.mockReturnValue({
       metadata: {
         title: '  A Book  ',
+        language: ' ru ',
         authors: [' Author One ', 'Author One', 'Author Two'],
       },
       cover: () => ({
@@ -38,6 +39,7 @@ describe('EpubParserService', () => {
 
     expect(parser.parse(new Uint8Array([1]))).toEqual({
       title: 'A Book',
+      language: 'ru',
       authors: ['Author One', 'Author Two'],
       cover: {
         bytes: new Uint8Array([1, 2, 3]),

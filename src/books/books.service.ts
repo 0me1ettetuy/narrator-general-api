@@ -909,6 +909,7 @@ function toBookSummary(book: Book): BookSummary {
   return {
     id: book.id,
     title: book.title,
+    language: book.language,
     sourceFormat: book.sourceFormat,
     sourceOriginalFilename: book.sourceOriginalFilename,
     sourceMimeType: book.sourceMimeType,

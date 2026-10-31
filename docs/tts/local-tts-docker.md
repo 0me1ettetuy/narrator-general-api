@@ -120,6 +120,18 @@ response directly to temporary object storage rather than buffering it all in
 memory. See their wrapper documentation for provider-specific voices and
 language limitations.
 
+For Qwen only, Narrator passes the EPUB book language to its `language` field.
+EPUB BCP 47 values such as `ru-RU` and `en` are translated to Qwen names such
+as `Russian` and `English`; unknown or absent metadata uses Qwen's `Auto`
+mode. Piper, Kokoro, and Chatterbox do not receive this Qwen-only field.
+
+Piper selects a voice from the EPUB language: `en*` (or missing metadata) uses
+the default male `en_US-hfc_male-medium`; `ru*` uses the default male
+`ru_RU-denis-medium`. Piper downloads a requested voice into its persistent
+Docker volume on first use. Kokoro's bundled model uses the default male
+`am_michael` for English; it intentionally rejects Russian because Kokoro-82M
+has no built-in Russian voice.
+
 The Piper and Kokoro compatibility wrappers finish synthesis before they begin
 their HTTP response. That keeps Narrator's worker memory bounded, but it is not
 live inference streaming inside those model containers. Kokoro's native

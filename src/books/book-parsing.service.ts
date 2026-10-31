@@ -206,6 +206,7 @@ export class BookParsingService {
 
       await transaction.orm.public.Book.where({ id: book.id }).update({
         title: parsedEpub.title ?? book.title,
+        language: parsedEpub.language,
         coverObjectKey: cover?.objectKey ?? null,
         coverMimeType: cover?.mimeType ?? null,
         coverSize: cover?.size ?? null,

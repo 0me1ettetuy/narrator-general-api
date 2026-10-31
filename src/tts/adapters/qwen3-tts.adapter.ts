@@ -1,6 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OpenAiCompatibleLocalTtsAdapter } from './openai-compatible-local-tts.adapter.js';
+import type { TtsSynthesisInput } from './tts-adapter.js';
+
+const QWEN_LANGUAGE_NAMES: Readonly<Record<string, string>> = {
+  zh: 'Chinese',
+  en: 'English',
+  fr: 'French',
+  de: 'German',
+  it: 'Italian',
+  ja: 'Japanese',
+  ko: 'Korean',
+  pt: 'Portuguese',
+  ru: 'Russian',
+  es: 'Spanish',
+};
 
 @Injectable()
 export class Qwen3TtsAdapter extends OpenAiCompatibleLocalTtsAdapter {
@@ -15,4 +29,20 @@ export class Qwen3TtsAdapter extends OpenAiCompatibleLocalTtsAdapter {
   constructor(configService: ConfigService) {
     super(configService);
   }
+
+  protected override getProviderRequestFields(
+    input: TtsSynthesisInput,
+  ): Record<string, string> {
+    return {
+      language: toQwenLanguage(input.language),
+    };
+  }
+}
+
+function toQwenLanguage(language: string | null | undefined): string {
+  const primaryLanguage = language?.trim().toLowerCase().split(/[-_]/, 1)[0];
+
+  return primaryLanguage
+    ? (QWEN_LANGUAGE_NAMES[primaryLanguage] ?? 'Auto')
+    : 'Auto';
 }

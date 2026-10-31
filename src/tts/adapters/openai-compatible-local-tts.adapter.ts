@@ -46,6 +46,7 @@ export abstract class OpenAiCompatibleLocalTtsAdapter implements TtsAdapter {
       DEFAULT_LOCAL_TTS_IDLE_TIMEOUT_MS,
     );
     const timeout = startIdleTimeout(controller, idleTimeoutMs);
+    const voice = this.getVoice(input);
 
     try {
       const response = await fetch(this.getSynthesisUrl(), {
@@ -54,8 +55,9 @@ export abstract class OpenAiCompatibleLocalTtsAdapter implements TtsAdapter {
         body: JSON.stringify({
           model: this.configuration.model,
           input: text,
-          voice: this.getVoice(),
+          voice,
           response_format: 'mp3',
+          ...this.getProviderRequestFields(input),
         }),
         signal: controller.signal,
       });
@@ -75,7 +77,7 @@ export abstract class OpenAiCompatibleLocalTtsAdapter implements TtsAdapter {
         mimeType: 'audio/mpeg',
         provider: this.configuration.provider,
         model: this.configuration.model,
-        voice: this.getVoice(),
+        voice,
         generationId: response.headers.get('x-request-id'),
       };
     } catch (error) {
@@ -119,7 +121,19 @@ export abstract class OpenAiCompatibleLocalTtsAdapter implements TtsAdapter {
     }
   }
 
-  private getVoice(): string {
+  /**
+   * Local engines share the OpenAI-compatible base payload but may expose
+   * additional, provider-specific fields. Keep those fields in the concrete
+   * adapter so a Qwen option cannot accidentally be sent to Piper, Kokoro, or
+   * Chatterbox.
+   */
+  protected getProviderRequestFields(
+    _input: TtsSynthesisInput,
+  ): Record<string, string> {
+    return {};
+  }
+
+  protected getVoice(_input: TtsSynthesisInput): string {
     return (
       this.configService
         .get<string>(this.configuration.voiceConfigKey)

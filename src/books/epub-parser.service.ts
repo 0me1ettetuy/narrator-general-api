@@ -32,6 +32,7 @@ export class EpubParserService {
 
     return {
       title: normalizeText(book.metadata.title) || null,
+      language: normalizeText(book.metadata.language) || null,
       authors: uniqueNonEmpty(book.metadata.authors.map(normalizeText)),
       cover: readCover(book),
       chapters,
@@ -108,14 +109,16 @@ function getChapterSemanticTypes(book: Book, chapter: Chapter): string[] {
   }
 }
 
-function normalizeText(value: string): string {
-  return value
-    .replace(/\r\n?/gu, '\n')
-    .replace(/\u00a0/gu, ' ')
-    .replace(/[^\S\n]+/gu, ' ')
-    .replace(/ *\n */gu, '\n')
-    .replace(/\n{3,}/gu, '\n\n')
-    .trim();
+function normalizeText(value: string | undefined): string {
+  return (
+    value
+      ?.replace(/\r\n?/gu, '\n')
+      .replace(/\u00a0/gu, ' ')
+      .replace(/[^\S\n]+/gu, ' ')
+      .replace(/ *\n */gu, '\n')
+      .replace(/\n{3,}/gu, '\n\n')
+      .trim() ?? ''
+  );
 }
 
 function uniqueNonEmpty(values: string[]): string[] {

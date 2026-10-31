@@ -25,7 +25,7 @@ describe('OpenAiCompatibleLocalTtsAdapter', () => {
     global.fetch = originalFetch;
   });
 
-  it('sends a Piper-compatible MP3 request and exposes its response stream', async () => {
+  it('selects the default English male Piper voice and exposes its response stream', async () => {
     const audio = new Uint8Array([1, 2, 3]);
     fetchMock.mockResolvedValue(
       new Response(audio, {
@@ -41,7 +41,7 @@ describe('OpenAiCompatibleLocalTtsAdapter', () => {
       get: jest.fn((key: string) => {
         const values: Record<string, string> = {
           TTS_LOCAL_PIPER_EN_US_AMY_URL: 'http://localhost:9500',
-          TTS_LOCAL_PIPER_EN_US_AMY_VOICE: 'en_US-amy-low',
+          TTS_LOCAL_PIPER_EN_US_AMY_VOICE: 'en_US-hfc_male-medium',
         };
 
         return values[key];
@@ -56,9 +56,9 @@ describe('OpenAiCompatibleLocalTtsAdapter', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'en_US-amy-low',
+          model: 'piper',
           input: 'Hello world.',
-          voice: 'en_US-amy-low',
+          voice: 'en_US-hfc_male-medium',
           response_format: 'mp3',
         }),
         signal: expect.any(AbortSignal),
@@ -73,10 +73,43 @@ describe('OpenAiCompatibleLocalTtsAdapter', () => {
       byteSize: result.getByteSize(),
     }).toEqual({
       provider: 'local-piper',
-      model: 'en_US-amy-low',
-      voice: 'en_US-amy-low',
+      model: 'piper',
+      voice: 'en_US-hfc_male-medium',
       generationId: 'local-request-123',
       byteSize: audio.byteLength,
     });
+  });
+
+  it('selects the Russian male Piper voice from EPUB language metadata', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(new Uint8Array([1, 2, 3]), {
+        status: 200,
+        headers: { 'content-type': 'audio/mpeg' },
+      }),
+    );
+    const adapter = new PiperTtsAdapter({
+      get: jest.fn((key: string) => {
+        const values: Record<string, string> = {
+          TTS_LOCAL_PIPER_EN_US_AMY_URL: 'http://localhost:9500',
+        };
+
+        return values[key];
+      }),
+    } as unknown as ConfigService);
+
+    const result = await adapter.synthesizeStream({
+      text: 'Привет, мир.',
+      language: 'ru-RU',
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:9500/v1/audio/speech',
+      expect.objectContaining({
+        body: expect.stringContaining('"voice":"ru_RU-denis-medium"'),
+      }),
+    );
+    await expect(readStream(result.stream)).resolves.toEqual(
+      new Uint8Array([1, 2, 3]),
+    );
   });
 });

@@ -179,6 +179,7 @@ model Book {
   id                     String          @id @default(uuid())
   userId                 String
   title                  String
+  language               String?
   sourceFormat           BookFormat
   sourceObjectKey        String          @unique
   sourceOriginalFilename String
