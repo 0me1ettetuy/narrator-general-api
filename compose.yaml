@@ -38,6 +38,7 @@ services:
     build:
       context: ./docker/minio
     image: narrator-minio:local
+    pull_policy: build
     container_name: narrator-minio
     profiles: ['minio']
     restart: unless-stopped
@@ -89,6 +90,7 @@ services:
     build:
       context: .
     image: narrator-api:local
+    pull_policy: build
     container_name: narrator-migrate
     env_file: .env
     restart: 'no'
@@ -118,6 +120,7 @@ services:
     build:
       context: .
     image: narrator-api:local
+    pull_policy: build
     container_name: narrator-api
     env_file: .env
     restart: unless-stopped
@@ -145,6 +148,7 @@ services:
 
   worker:
     image: narrator-api:local
+    pull_policy: never
     container_name: narrator-worker
     env_file: .env
     restart: unless-stopped
