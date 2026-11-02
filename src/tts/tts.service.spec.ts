@@ -197,4 +197,70 @@ describe('TtsService', () => {
 
     expect(fishCredentials.getValidApiKey).not.toHaveBeenCalled();
   });
+
+  describe('when Fish throttles or fails temporarily', () => {
+    const audioResponse = () =>
+      new Response(new Uint8Array([1]), {
+        status: 200,
+        headers: { 'content-type': 'audio/mpeg' },
+      });
+
+    beforeEach(() => {
+      jest.useFakeTimers({
+        doNotFake: ['nextTick', 'setImmediate', 'queueMicrotask'],
+      });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('waits for the Retry-After delay before retrying a 429', async () => {
+      fetchMock
+        .mockResolvedValueOnce(
+          new Response('{}', { status: 429, headers: { 'retry-after': '3' } }),
+        )
+        .mockResolvedValueOnce(audioResponse());
+
+      const result = service.synthesizeStream({
+        text: 'Hello world.',
+        userId: 'user-id',
+      });
+      await jest.advanceTimersByTimeAsync(2_999);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+
+      await jest.advanceTimersByTimeAsync(1);
+      await expect(result).resolves.toMatchObject({ provider: 'fish-audio' });
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('backs off on server errors and gives up after four retries', async () => {
+      fetchMock.mockImplementation(() =>
+        Promise.resolve(new Response('{}', { status: 503 })),
+      );
+
+      const result = service.synthesizeStream({
+        text: 'Hello world.',
+        userId: 'user-id',
+      });
+      const rejection = expect(result).rejects.toEqual(
+        new TtsSynthesisError('TTS provider request failed with status 503'),
+      );
+      await jest.advanceTimersByTimeAsync(2_000 + 4_000 + 8_000 + 16_000);
+
+      await rejection;
+      expect(fetchMock).toHaveBeenCalledTimes(5);
+    });
+
+    it('does not retry other client errors', async () => {
+      fetchMock.mockResolvedValue(new Response('{}', { status: 400 }));
+
+      await expect(
+        service.synthesizeStream({ text: 'Hello world.', userId: 'user-id' }),
+      ).rejects.toEqual(
+        new TtsSynthesisError('TTS provider request failed with status 400'),
+      );
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+  });
 });

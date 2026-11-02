@@ -289,7 +289,10 @@ export class BooksService {
     );
 
     if (queued.shouldEnqueue) {
-      await this.jobsService.enqueueChapterSynthesis(queued.job.id);
+      await this.jobsService.enqueueChapterSynthesis(
+        queued.job.id,
+        selectedModel.source,
+      );
     }
 
     return {
@@ -334,7 +337,10 @@ export class BooksService {
     }
 
     for (const jobId of jobsToEnqueue) {
-      await this.jobsService.enqueueChapterSynthesis(jobId);
+      await this.jobsService.enqueueChapterSynthesis(
+        jobId,
+        selectedModel.source,
+      );
     }
 
     return { affectedChapterIds, skippedChapterIds };

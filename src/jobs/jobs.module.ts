@@ -5,6 +5,7 @@ import {
   AUDIO_MERGE_QUEUE,
   BOOK_PARSING_QUEUE,
   CHAPTER_TTS_QUEUE,
+  FISH_CHAPTER_TTS_QUEUE,
   JOB_MAX_ATTEMPTS,
 } from './jobs.constants.js';
 import { JobsService } from './jobs.service.js';
@@ -26,6 +27,10 @@ import { JobsService } from './jobs.service.js';
     }),
     BullModule.registerQueue({
       name: CHAPTER_TTS_QUEUE,
+      defaultJobOptions: getDefaultJobOptions(),
+    }),
+    BullModule.registerQueue({
+      name: FISH_CHAPTER_TTS_QUEUE,
       defaultJobOptions: getDefaultJobOptions(),
     }),
     BullModule.registerQueue({

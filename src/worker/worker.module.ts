@@ -6,6 +6,7 @@ import { TtsModule } from '../tts/tts.module.js';
 import { MergeAudioProcessor } from './merge-audio.processor.js';
 import { ParseBookProcessor } from './parse-book.processor.js';
 import { SynthesizeChapterProcessor } from './synthesize-chapter.processor.js';
+import { SynthesizeFishChapterProcessor } from './synthesize-fish-chapter.processor.js';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { SynthesizeChapterProcessor } from './synthesize-chapter.processor.js';
   providers: [
     ParseBookProcessor,
     SynthesizeChapterProcessor,
+    SynthesizeFishChapterProcessor,
     MergeAudioProcessor,
   ],
 })

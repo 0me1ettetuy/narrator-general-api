@@ -94,6 +94,11 @@ selects the adapter once per worker job:
   `Audio.modelKey`; a retry cannot silently switch providers or voices. If
   neither is set, the request is rejected with `ttsModelNotSelected` rather
   than silently falling back to a guessed model.
+- Chapter synthesis has two BullMQ queues chosen by the snapshotted model:
+  `fish-chapter-tts` (concurrency `TTS_FISH_CONCURRENCY`, default 2) and
+  `chapter-tts` for local models (concurrency 1, they share the CPU/GPU).
+  Fish `429`/`5xx` responses are retried in-process (honouring
+  `Retry-After`, otherwise 2/4/8/16 s) before the job attempt fails.
 - Local model health is checked both while queueing and immediately before the
   worker generates audio.
 - The worker passes `Book.language` to its adapter. Qwen maps supported BCP 47

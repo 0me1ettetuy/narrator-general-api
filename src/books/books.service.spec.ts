@@ -259,6 +259,44 @@ describe('BooksService', () => {
     );
     expect(jobsService.enqueueChapterSynthesis).toHaveBeenCalledWith(
       'first-job-id',
+      'LOCAL',
+    );
+  });
+
+  it('sends chapters for a Fish model to the Fish queue', async () => {
+    jest.mocked(ttsModelsService.getSelectableModel).mockResolvedValue({
+      id: 'fish.s2.1-pro',
+      source: 'FISH',
+      providerModel: 's2.1-pro',
+    });
+    jest
+      .mocked(fishVoices.resolveVoiceReferenceId)
+      .mockResolvedValue('voice-reference-id');
+    const service = new BooksService(
+      prisma,
+      storageService,
+      jobsService,
+      ttsModelsService,
+      fishVoices,
+    );
+    jest
+      .spyOn(
+        service as unknown as BooksServiceInternals,
+        'createOrReuseChapterAudioJob',
+      )
+      .mockResolvedValue({
+        audio: {} as Audio,
+        job: { id: 'fish-job-id' } as ProcessingJob,
+        shouldEnqueue: true,
+      });
+
+    await service.queueSelectedChapterAudio('user-id', book.id, [
+      firstChapter.id,
+    ]);
+
+    expect(jobsService.enqueueChapterSynthesis).toHaveBeenCalledWith(
+      'fish-job-id',
+      'FISH',
     );
   });
 

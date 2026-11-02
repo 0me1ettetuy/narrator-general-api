@@ -24,6 +24,10 @@ export {
 const FISH_AUDIO_TTS_URL = 'https://api.fish.audio/v1/tts';
 const DEFAULT_FISH_TTS_MODEL = 's2.1-pro-free';
 const DEFAULT_TTS_IDLE_TIMEOUT_MS = 300_000;
+const RETRYABLE_FISH_STATUSES = new Set([429, 500, 502, 503, 504]);
+const MAX_FISH_RETRIES = 4;
+const FIRST_FISH_RETRY_DELAY_MS = 2_000;
+const MAX_FISH_RETRY_DELAY_MS = 60_000;
 
 @Injectable()
 export class TtsService implements TtsAdapter {
@@ -62,11 +66,8 @@ export class TtsService implements TtsAdapter {
       input.providerModel,
       input.voiceId,
     );
-    const { response, controller, clearTimeout } = await this.requestAudio(
-      text,
-      input.userId,
-      configuration,
-    );
+    const { response, controller, clearTimeout } =
+      await this.requestAudioWithRetries(text, input.userId, configuration);
 
     try {
       assertSuccessfulMp3Response(response);
@@ -104,6 +105,28 @@ export class TtsService implements TtsAdapter {
       throw new TtsSynthesisError('TTS provider response could not be read');
     } finally {
       clearTimeout();
+    }
+  }
+
+  // Retried here so throttling cannot exhaust a chapter's job attempts in seconds.
+  private async requestAudioWithRetries(
+    text: string,
+    userId: string,
+    configuration: { apiKey: string; model: string; voice: string },
+  ): ReturnType<TtsService['requestAudio']> {
+    for (let retry = 0; ; retry += 1) {
+      const request = await this.requestAudio(text, userId, configuration);
+
+      if (
+        !RETRYABLE_FISH_STATUSES.has(request.response.status) ||
+        retry >= MAX_FISH_RETRIES
+      ) {
+        return request;
+      }
+
+      request.clearTimeout();
+      request.controller.abort();
+      await wait(getRetryDelayMs(request.response, retry));
     }
   }
 
@@ -184,4 +207,24 @@ export class TtsService implements TtsAdapter {
 
     return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
   }
+}
+
+function getRetryDelayMs(response: Response, retry: number): number {
+  const retryAfter = response.headers.get('retry-after');
+  const seconds = Number(retryAfter);
+  const requestedMs = retryAfter
+    ? Number.isFinite(seconds)
+      ? seconds * 1_000
+      : Date.parse(retryAfter) - Date.now()
+    : Number.NaN;
+  const delayMs =
+    Number.isFinite(requestedMs) && requestedMs >= 0
+      ? requestedMs
+      : FIRST_FISH_RETRY_DELAY_MS * 2 ** retry;
+
+  return Math.min(delayMs, MAX_FISH_RETRY_DELAY_MS);
+}
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }

@@ -196,6 +196,15 @@ onto `Audio.voice` before its first chunk. Selecting a different saved voice
 later affects only new audio jobs; it cannot make one in-progress chapter mix
 voices across chunks or retries.
 
+Queued chapters go to `fish-chapter-tts` or `chapter-tts` according to the
+model snapshotted on the audio. Fish chapters run in parallel up to
+`TTS_FISH_CONCURRENCY` (default 2, kept under the per-key provider limit);
+local chapters run one at a time because they compete for the same CPU/GPU.
+A Fish `429` or `5xx` is retried up to four times inside the request
+(`Retry-After` when sent, otherwise 2, 4, 8, then 16 seconds, capped at 60)
+before the job attempt fails; other errors fail immediately. A cancel is
+noticed after the current wait ends.
+
 For a Fish adapter, the worker decrypts only the job owner's key immediately
 before the Fish request. For a local adapter, the worker calls the healthy
 local Docker service. Neither key nor model catalogue belongs in BullMQ job
