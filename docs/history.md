@@ -5,10 +5,18 @@ milestones and backed by a complete chronological commit index. It documents
 what entered the repository, rather than the intent suggested by a commit
 subject alone.
 
-**Scope:** 26 August–1 November 2026, through the local Compose build-policy
-fix.
+**Scope:** 26 August–2 November 2026, through the independent MinIO Compose
+switch.
 
 ## Milestones
+
+### 2 November — independent MinIO Compose switch
+
+- Added a dedicated `MINIO_ENABLED` flag so the MinIO container turns on the
+  same way each local TTS model does: via its own flag resolving to the
+  active `true` Compose profile. `COMPOSE_PROFILES` is now a fixed `"true"`
+  that never changes, instead of a value hand-edited to `"minio,true"`
+  whenever local storage was selected.
 
 ### 31 October — production-style container runtime
 
@@ -222,3 +230,4 @@ fix.
 | 2026-10-31 | `149deee` | Added the production-style backend image/Compose runtime, automatic schema update, and deployment documentation.                          |
 | 2026-10-31 | `2c453fb` | Added a standalone Docker watcher setup for the API and worker.                                                                           |
 | 2026-11-01 | `19efe19` | Made local API/MinIO images build locally instead of attempting a registry pull.                                                          |
+| 2026-11-02 | `5eb79ff` | Added `MINIO_ENABLED`; `COMPOSE_PROFILES` is now a fixed `"true"`.                                                                        |
