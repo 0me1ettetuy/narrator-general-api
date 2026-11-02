@@ -116,10 +116,11 @@ deployment secret `TTS_CREDENTIAL_ENCRYPTION_KEY` to the output of
 `openssl rand -base64 32` before users can save credentials.
 
 Local engines are opt-in through their matching `*_ENABLED=true` value in
-`.env`. Keep `COMPOSE_PROFILES=true` (or `minio,true` with MinIO): Compose then
-starts only the models whose own flag is true. Each enabled model also requires
-its health and synthesis URLs. See `docs/tts/local-tts-docker.md` for hardware
-requirements, model IDs, and examples.
+`.env`. `COMPOSE_PROFILES=true` is fixed and never changes; Compose starts
+only the models whose own flag is true, and MinIO only when `MINIO_ENABLED=true`
+is also set. Each enabled model also requires its health and synthesis URLs.
+See `docs/tts/local-tts-docker.md` for hardware requirements, model IDs, and
+examples.
 
 ## Guardrails
 

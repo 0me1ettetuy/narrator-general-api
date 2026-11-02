@@ -28,10 +28,11 @@ internal Docker network.
 
 ## Enable one model
 
-`COMPOSE_PROFILES` must include `true` once. It already does in the supplied
-`.env` and `.env.example`; keep `minio,true` when using MinIO. Compose maps an
-enabled model to its active `true` profile and a disabled model to an inactive
-`false` profile. Therefore you only change the individual model flag.
+`COMPOSE_PROFILES` is fixed at `true` in the supplied `.env` and
+`.env.example` and never needs to change. Compose maps an enabled model to
+its active `true` profile and a disabled model to an inactive `false`
+profile. Therefore you only change the individual model flag (MinIO is the
+same pattern via its own `MINIO_ENABLED` flag).
 
 Example for Piper:
 

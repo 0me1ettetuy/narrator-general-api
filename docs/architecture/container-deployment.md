@@ -43,10 +43,11 @@ services:
 - `true` for each local TTS model whose individual
   `TTS_LOCAL_*_ENABLED="true"` flag is set.
 
-The commented MinIO section in `.env.example` sets
-`COMPOSE_PROFILES="minio,true"` and provides the required container-only
-`STORAGE_INTERNAL_ENDPOINT`. The browser continues to use the public
-`STORAGE_ENDPOINT` in signed URLs; API and worker use the internal endpoint.
+The commented MinIO section in `.env.example` sets `MINIO_ENABLED="true"`
+and provides the required container-only `STORAGE_INTERNAL_ENDPOINT`.
+`COMPOSE_PROFILES="true"` stays fixed regardless. The browser continues to
+use the public `STORAGE_ENDPOINT` in signed URLs; API and worker use the
+internal endpoint.
 
 ## Development
 

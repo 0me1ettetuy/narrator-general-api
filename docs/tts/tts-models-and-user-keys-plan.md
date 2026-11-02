@@ -178,10 +178,11 @@ TTS_CREDENTIAL_ENCRYPTION_KEY="generate-a-real-32-byte-base64-value"
 
 Each `TTS_LOCAL_*_ENABLED` setting is the Docker and backend toggle. Compose
 maps `true` values to its active `true` profile, while false values map to an
-inactive profile; `COMPOSE_PROFILES` therefore includes `true` once (or
-`minio,true` for local storage). Startup configuration must reject an enabled
-local model without its URL. The Models endpoint will still report
-`UNAVAILABLE` if a properly configured service later stops responding.
+inactive profile; `COMPOSE_PROFILES` is therefore fixed at `true` and never
+changes (MinIO uses the same pattern via its own `MINIO_ENABLED` flag).
+Startup configuration must reject an enabled local model without its URL.
+The Models endpoint will still report `UNAVAILABLE` if a properly configured
+service later stops responding.
 
 For a Docker deployment, the local model gets a service with an env-driven
 Compose profile, health check, persistent model-cache volume if required,

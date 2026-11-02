@@ -397,9 +397,9 @@ key.
 - Local cards are evaluated dynamically: disabled by env → `DISABLED`; enabled
   but failed/mismatched health endpoint → `UNAVAILABLE`; healthy → `READY` and
   selectable. Health results have a small cache to avoid probing on every view.
-- Each `TTS_LOCAL_*_ENABLED` value is now the single local-model switch. With
-  `COMPOSE_PROFILES=true` (or `minio,true`), Compose starts only containers
-  with an enabled flag, and the backend exposes the same enabled models. See
+- Each `TTS_LOCAL_*_ENABLED` value is now the single local-model switch.
+  `COMPOSE_PROFILES=true` is fixed; Compose starts only containers with an
+  enabled flag, and the backend exposes the same enabled models. See
   [`docs/tts/local-tts-docker.md`](../tts/local-tts-docker.md) for hardware and exact
   configuration. Qwen and Chatterbox require NVIDIA Docker support.
 - Adapter behavior is deliberately model-specific: Qwen maps the book's BCP 47
@@ -534,8 +534,8 @@ storage; Postgres stores metadata and object keys.
 - For Amazon S3, set `STORAGE_PROVIDER=s3`, AWS region/bucket/credentials, and
   leave `STORAGE_ENDPOINT` empty so the AWS SDK chooses AWS's endpoint.
 - For a local/open-source deployment, set `STORAGE_PROVIDER=minio`, configure
-  the local credentials, and use `COMPOSE_PROFILES=minio,true`. Compose starts
-  MinIO and an init container creates the bucket.
+  the local credentials, and set `MINIO_ENABLED=true`. Compose starts MinIO
+  and an init container creates the bucket.
 - Enable only needed local TTS model flags; their persistent volumes preserve
   downloaded weights across container restarts.
 

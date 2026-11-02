@@ -87,7 +87,7 @@ DELETE /tts/models/providers/fish-audio/voices/:voiceId
 Local models require all of the following:
 
 ```dotenv
-# COMPOSE_PROFILES must include true (or minio,true when using MinIO).
+# COMPOSE_PROFILES is fixed at "true" and never needs to change.
 TTS_LOCAL_KOKORO_82M_ENABLED="true"
 TTS_LOCAL_KOKORO_82M_HEALTH_URL="http://localhost:7860/health/ready"
 TTS_LOCAL_KOKORO_82M_URL="http://localhost:7860"

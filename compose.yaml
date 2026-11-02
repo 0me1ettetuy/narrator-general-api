@@ -40,7 +40,7 @@ services:
     image: narrator-minio:local
     pull_policy: build
     container_name: narrator-minio
-    profiles: ['minio']
+    profiles: ['${MINIO_ENABLED:-false}']
     restart: unless-stopped
     command: ['server', '/data', '--console-address', ':9001']
     environment:
@@ -65,7 +65,7 @@ services:
   minio-init:
     image: amazon/aws-cli:2.31.23
     container_name: narrator-minio-init
-    profiles: ['minio']
+    profiles: ['${MINIO_ENABLED:-false}']
     depends_on:
       minio:
         condition: service_healthy
@@ -163,8 +163,6 @@ services:
   piper-tts:
     image: ${TTS_LOCAL_PIPER_IMAGE:-kamilkrawiec/piper-openai-tts:latest}
     container_name: narrator-piper-tts
-    # COMPOSE_PROFILES must include `true`. The model's own *_ENABLED flag
-    # resolves this to either the active `true` profile or inactive `false`.
     profiles: ['${TTS_LOCAL_PIPER_EN_US_AMY_ENABLED:-false}']
     restart: unless-stopped
     environment:
