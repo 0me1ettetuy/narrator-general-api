@@ -15,7 +15,7 @@ plan, or older UI differs from the final implementation.
 | Capability                 | Where a user sees it                         | What it provides                                                                                      |
 | -------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | Account and session        | Public header, register/login pages, sidebar | Secure sign-up, sign-in, session restore, logout, protected workspace                                 |
-| Library and EPUB upload    | `/library`                                   | Direct EPUB upload, parse status, book cards, cover images                                            |
+| Library and EPUB upload    | `/library`                                   | Direct EPUB upload, parse status, book cards, cover images, book deletion                             |
 | Parsed book view           | `/library/:bookId`                           | Metadata (including declared language), ordered chapter cards, selection, status and progress         |
 | Chapter audio              | Book page                                    | Generate, continue, stop, delete, play and download a chapter MP3                                     |
 | Voice models               | `/models`                                    | Per-user Fish key, local model health/status, selected model, and default/custom Fish voice selection |
@@ -134,6 +134,9 @@ background. It currently supports EPUB only.
 4. Select a book card to open its book page. The card/page shows the filename,
    parsed title/authors/language, file size, chapter count, and, when available,
    cover.
+5. Delete a book from its library card (trash icon) or the book page header
+   (**Delete book**) after confirming. It works in any state, including while
+   uploading, parsing, or generating audio; the book disappears immediately.
 
 ### What happens underneath
 
@@ -149,6 +152,16 @@ background. It currently supports EPUB only.
 4. The library API is owner-scoped and paginated (`limit`/`offset`, max 50 per
    request). A book detail response returns active chapters in their stored
    order.
+5. `DELETE /books/:bookId` (`BookDeletionService`) first sets `Book.deletedAt`
+   and, in the same transaction, cancels the book's jobs and marks its audio
+   `DELETING`. It then deletes every object under `books/{userId}/{bookId}/`
+   (source EPUB, cover, chapter MP3s, temporary parts, plus anything an
+   interrupted worker left behind) and finally the rows in foreign-key order.
+   Every lookup and worker claim ignores deleted books; a worker already
+   running stops at its next status check and deletes what it just uploaded.
+   The endpoint is idempotent, so a retry finishes a partly failed deletion.
+   A browser upload that lands after deletion can still leave one orphan
+   source object (see [`direct-upload-lifecycle.md`](../issues/direct-upload-lifecycle.md)).
 
 ### Contributing commits, checked by actual change
 
@@ -161,6 +174,10 @@ background. It currently supports EPUB only.
   lifecycle document despite its commit title.
 - Frontend: `66a828e` added the library route, cards, dialog/form, direct
   browser upload, parse-status display, and book-page navigation.
+- Book deletion: backend `b7c3939` added the endpoint, `Book.deletedAt`,
+  prefix storage cleanup, and the deleted-book guards in lookups, the parser,
+  and the TTS/merge workers; frontend `514081d` added the confirmed Delete
+  action on library cards and the book page (`features/delete-book`).
 
 ## 4. Background EPUB parsing and book information
 
@@ -384,8 +401,10 @@ key.
 - `GET /tts/models` returns enabled/disabled voices as
   `providers[0].voices`, with source (`DEFAULT`/`CUSTOM`), name, reference ID,
   and selected state. Users can select a shared default but may only delete
-  their own custom row. A deleted selected custom voice clears the preference;
-  new Fish jobs then fall back to the first enabled configured default.
+  their own custom row. A deleted selected custom voice clears the preference,
+  so the user must pick another voice before generating again.
+- There is no fallback voice: Fish generation requires an explicitly selected,
+  enabled voice and is rejected with `FISH_VOICE_NOT_SELECTED` otherwise.
 - The queue resolves and snapshots the selected reference ID in `Audio.voice`
   at chapter-audio creation. Later selection/catalogue changes cannot mix
   voices in an in-progress chapter or its retries.
@@ -417,6 +436,9 @@ key.
   `Audio.modelKey`. Later preference changes do not silently alter queued or
   completed audio. To regenerate an existing chapter with another model, the
   user must delete its old audio first.
+- There is no fallback model either: without a saved selection or a
+  per-request `modelId`, chapter audio is rejected with `TTS_MODEL_NOT_SELECTED`.
+  New accounts start with nothing selected.
 
 ### Current UI/API boundary
 
@@ -427,6 +449,12 @@ The UI supports saving and replacing a Fish key, but does not yet render a
 The Models page renders supplied default voices alongside the user's custom
 voices. Defaults are selectable but not removable; custom entries show their
 label and may be removed by their owner.
+
+The book page has a compact model/voice dropdown next to **Generate** (Fish
+Audio with a nested model/voice submenu, then local models, or a link to the
+Models page when no Fish key is saved). It uses the same selection endpoints,
+so both places stay in sync. **Generate** stays disabled, with an inline
+explanation, until a model and (for Fish) a voice are selected.
 
 ### Contributing commits, checked by actual change
 
@@ -442,6 +470,10 @@ label and may be removed by their owner.
   Fish default/custom voice picker and the chapter-audio voice label;
   `ae3399e` added the temporary local-model rollout guard and refined voice
   presentation.
+- No-fallback selection: backend `3a0e0bc` removed the implicit Fish model and
+  default-voice fallbacks in favor of `TTS_MODEL_NOT_SELECTED` /
+  `FISH_VOICE_NOT_SELECTED`; frontend `5362900` added the book-page model/voice
+  dropdown and disabled **Generate** until the selection is complete.
 
 ## 8. Chapter curation and outline repair
 

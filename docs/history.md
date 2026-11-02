@@ -5,10 +5,23 @@ milestones and backed by a complete chronological commit index. It documents
 what entered the repository, rather than the intent suggested by a commit
 subject alone.
 
-**Scope:** 26 August–2 November 2026, through the independent MinIO Compose
-switch.
+**Scope:** 26 August–3 November 2026, through safe book deletion.
 
 ## Milestones
+
+### 3 November — explicit TTS selection and safe book deletion
+
+- Removed both implicit TTS fallbacks. Chapter audio without a saved or
+  requested model now fails with `TTS_MODEL_NOT_SELECTED` instead of using the
+  first enabled Fish model, and Fish synthesis without a selected voice fails
+  with `FISH_VOICE_NOT_SELECTED` instead of using the first configured default
+  (or Fish's own default voice). New accounts start with nothing selected.
+- Added `DELETE /books/:bookId`, safe in every parse/audio state. It marks the
+  book with the new `Book.deletedAt` and cancels its jobs/audio in one
+  transaction, deletes every object under the book's storage prefix with the
+  new `StorageService.deleteObjectsByPrefix`, then deletes the rows in
+  foreign-key order. All API lookups and TTS/merge claims skip deleted books,
+  and the parser's final save is now conditional so it cannot revive one.
 
 ### 2 November — independent MinIO Compose switch
 
@@ -231,3 +244,5 @@ switch.
 | 2026-10-31 | `2c453fb` | Added a standalone Docker watcher setup for the API and worker.                                                                           |
 | 2026-11-01 | `19efe19` | Made local API/MinIO images build locally instead of attempting a registry pull.                                                          |
 | 2026-11-02 | `5eb79ff` | Added `MINIO_ENABLED`; `COMPOSE_PROFILES` is now a fixed `"true"`.                                                                        |
+| 2026-11-03 | `3a0e0bc` | Rejected chapter audio without an explicitly selected TTS model or Fish voice instead of falling back.                                    |
+| 2026-11-03 | `b7c3939` | Added safe book deletion: `Book.deletedAt`, prefix storage cleanup, and deleted-book guards.                                              |
