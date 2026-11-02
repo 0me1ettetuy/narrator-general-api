@@ -70,9 +70,16 @@ pnpm start:dev
 pnpm worker:dev
 ```
 
-Add MinIO or a local TTS profile through `.env` when needed. The development
-Compose stack performs a schema update on startup; after a schema change in an
-already-running session, run:
+When `STORAGE_PROVIDER="minio"`, start the MinIO services explicitly as well:
+
+```bash
+docker compose up -d minio minio-init
+```
+
+Likewise, start an enabled local-TTS service by name (for example,
+`docker compose up -d piper-tts`). The development Compose stack performs a
+schema update on startup; after a schema change in an already-running session,
+run:
 
 ```bash
 docker compose -f compose.dev.yaml exec api pnpm exec prisma db update

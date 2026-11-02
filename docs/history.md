@@ -5,11 +5,8 @@ milestones and backed by a complete chronological commit index. It documents
 what entered the repository, rather than the intent suggested by a commit
 subject alone.
 
-**Scope:** 26 August–31 October 2026, through the current local book-list
-author metadata change.
-
-Uncommitted work is recorded separately below without a commit ID. Move it to
-the complete index when the change is committed.
+**Scope:** 26 August–1 November 2026, through the local Compose build-policy
+fix.
 
 ## Milestones
 
@@ -27,9 +24,6 @@ the complete index when the change is committed.
   Docker-network endpoint.
 - Pinned the repository package-manager declaration to pnpm 10.29.2 so local
   and Docker dependency installation use the same toolchain.
-
-### Working tree — Docker watcher development mode (pending commit)
-
 - Added a standalone `compose.dev.yaml` command that extends the shared
   infrastructure/service definitions while running API and worker as Nest
   source watchers in development containers.
@@ -37,6 +31,14 @@ the complete index when the change is committed.
   an isolated container `node_modules` volume. It retains the same `.env`,
   database/Redis volumes, MinIO behavior, and optional local-TTS profiles as
   the default stack.
+
+### 1 November — local Compose build policy
+
+- Set the named local API and MinIO images to Compose's explicit build policy,
+  so `docker compose up -d` builds the current checkout instead of first
+  attempting to pull `narrator-api:local` or `narrator-minio:local` from a
+  container registry.
+- Kept the worker on the locally built API image without any registry pull.
 
 ### 26–31 August — Nest foundation and persistence
 
@@ -216,5 +218,7 @@ the complete index when the change is committed.
 | 2026-10-31 | `fb36b48` | Persisted EPUB language metadata and made Qwen/Piper/Kokoro narration language-aware.                                                     |
 | 2026-10-31 | `041ced4` | Added metadata-missing EPUB language detection from parsed chapter text.                                                                  |
 | 2026-10-31 | `e6602e0` | Added direct replacement uploads for private book covers using the existing object key.                                                   |
-| 2026-10-31 | `current` | Added ordered author metadata to paginated book-list results with one bounded secondary query.                                            |
+| 2026-10-31 | `d0d31f8` | Added ordered author metadata to paginated book-list results with one bounded secondary query.                                            |
 | 2026-10-31 | `149deee` | Added the production-style backend image/Compose runtime, automatic schema update, and deployment documentation.                          |
+| 2026-10-31 | `2c453fb` | Added a standalone Docker watcher setup for the API and worker.                                                                           |
+| 2026-11-01 | `19efe19` | Made local API/MinIO images build locally instead of attempting a registry pull.                                                          |
