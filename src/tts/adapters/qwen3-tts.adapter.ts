@@ -1,3 +1,7 @@
+// Local TTS models are disabled; see docs/tts/local-tts-models-removed.md
+// for the full restoration record. The body below is commented out, not
+// deleted, so restoring is: delete this header and the /* */ wrapper.
+/*
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OpenAiCompatibleLocalTtsAdapter } from './openai-compatible-local-tts.adapter.js';
@@ -46,3 +50,5 @@ function toQwenLanguage(language: string | null | undefined): string {
     ? (QWEN_LANGUAGE_NAMES[primaryLanguage] ?? 'Auto')
     : 'Auto';
 }
+
+*/

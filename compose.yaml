@@ -104,14 +104,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:? Set POSTGRES_USER}:${POSTGRES_PASSWORD:? Set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:? Set POSTGRES_DB}
       REDIS_URL: redis://redis:6379
       STORAGE_INTERNAL_ENDPOINT: ${STORAGE_INTERNAL_ENDPOINT:-}
-      TTS_LOCAL_PIPER_EN_US_AMY_HEALTH_URL: http://piper-tts:5000/v1/audio/models
-      TTS_LOCAL_PIPER_EN_US_AMY_URL: http://piper-tts:5000
-      TTS_LOCAL_KOKORO_82M_HEALTH_URL: http://kokoro-tts:7860/health/ready
-      TTS_LOCAL_KOKORO_82M_URL: http://kokoro-tts:7860
-      TTS_LOCAL_QWEN3_TTS_0_6B_HEALTH_URL: http://qwen3-tts:8001/health
-      TTS_LOCAL_QWEN3_TTS_0_6B_URL: http://qwen3-tts:8001
-      TTS_LOCAL_CHATTERBOX_TURBO_HEALTH_URL: http://chatterbox-tts:8000/healthz
-      TTS_LOCAL_CHATTERBOX_TURBO_URL: http://chatterbox-tts:8000
+      # Local TTS services removed; see docs/tts/local-tts-models-removed.md.
     depends_on:
       db:
         condition: service_healthy
@@ -160,85 +153,14 @@ services:
       redis:
         condition: service_healthy
 
-  piper-tts:
-    image: ${TTS_LOCAL_PIPER_IMAGE:-kamilkrawiec/piper-openai-tts:latest}
-    container_name: narrator-piper-tts
-    profiles: ['${TTS_LOCAL_PIPER_EN_US_AMY_ENABLED:-false}']
-    restart: unless-stopped
-    environment:
-      PORT: '5000'
-      DATA_DIR: /data
-    ports:
-      - '127.0.0.1:${TTS_LOCAL_PIPER_PUBLISHED_PORT:-9500}:5000'
-    volumes:
-      - narrator_piper_tts_data:/data
-
-  kokoro-tts:
-    image: ${TTS_LOCAL_KOKORO_IMAGE:-hangrylabs/kokorotts:latest}
-    container_name: narrator-kokoro-tts
-    profiles: ['${TTS_LOCAL_KOKORO_82M_ENABLED:-false}']
-    restart: unless-stopped
-    ports:
-      - '127.0.0.1:${TTS_LOCAL_KOKORO_PUBLISHED_PORT:-7860}:7860'
-    volumes:
-      - narrator_kokoro_tts_data:/app/persistent
-
-  qwen3-tts:
-    image: ${TTS_LOCAL_QWEN3_TTS_0_6B_IMAGE:-ghcr.io/malaiwah/qwen3-tts-server:latest}
-    container_name: narrator-qwen3-tts
-    profiles: ['${TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED:-false}']
-    restart: unless-stopped
-    environment:
-      QWEN3_TTS_MODEL_ID: Qwen/Qwen3-TTS-12Hz-0.6B-Base
-      QWEN3_TTS_VOICES_DIR: /data/voices
-      HF_HOME: /root/.cache/huggingface
-    ports:
-      - '127.0.0.1:${TTS_LOCAL_QWEN3_TTS_0_6B_PUBLISHED_PORT:-8001}:8001'
-    volumes:
-      - narrator_qwen3_tts_data:/data
-      - narrator_qwen3_tts_huggingface_cache:/root/.cache/huggingface
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-
-  chatterbox-tts:
-    image: ${TTS_LOCAL_CHATTERBOX_TURBO_IMAGE:-ghcr.io/openttsgroup/chatterbox-open-tts:latest}
-    container_name: narrator-chatterbox-tts
-    profiles: ['${TTS_LOCAL_CHATTERBOX_TURBO_ENABLED:-false}']
-    restart: unless-stopped
-    environment:
-      CHATTERBOX_VARIANT: turbo
-      CHATTERBOX_DEVICE: cuda
-      CHATTERBOX_DEFAULT_LANGUAGE: en
-      MAX_CONCURRENCY: '1'
-      VOICES_DIR: /voices
-    ports:
-      - '127.0.0.1:${TTS_LOCAL_CHATTERBOX_TURBO_PUBLISHED_PORT:-8000}:8000'
-    volumes:
-      - narrator_chatterbox_tts_cache:/root/.cache
-      - narrator_chatterbox_tts_voices:/voices
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+  # Local TTS services (piper-tts, kokoro-tts, qwen3-tts, chatterbox-tts)
+  # removed; full definitions preserved in
+  # docs/tts/local-tts-models-removed.md.
 
 volumes:
   narrator_postgres_data:
   narrator_redis_data:
   narrator_minio_data:
-  narrator_piper_tts_data:
-  narrator_kokoro_tts_data:
-  narrator_qwen3_tts_data:
-  narrator_qwen3_tts_huggingface_cache:
-  narrator_chatterbox_tts_cache:
-  narrator_chatterbox_tts_voices:
 
 networks:
   default:

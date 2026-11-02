@@ -7,44 +7,47 @@ import type {
   LocalTtsModelDefinition,
 } from './types/tts-model.type.js';
 
-const LOCAL_TTS_MODEL_DEFINITIONS: LocalTtsModelDefinition[] = [
-  {
-    id: 'local.piper.en-us-amy',
-    provider: 'local-piper',
-    displayName: 'Piper — English (Amy)',
-    enabledConfigKey: 'TTS_LOCAL_PIPER_EN_US_AMY_ENABLED',
-    healthUrlConfigKey: 'TTS_LOCAL_PIPER_EN_US_AMY_HEALTH_URL',
-    synthesisUrlConfigKey: 'TTS_LOCAL_PIPER_EN_US_AMY_URL',
-    healthStrategy: 'HTTP_OK',
-  },
-  {
-    id: 'local.kokoro-82m',
-    provider: 'local-kokoro',
-    displayName: 'Kokoro-82M',
-    enabledConfigKey: 'TTS_LOCAL_KOKORO_82M_ENABLED',
-    healthUrlConfigKey: 'TTS_LOCAL_KOKORO_82M_HEALTH_URL',
-    synthesisUrlConfigKey: 'TTS_LOCAL_KOKORO_82M_URL',
-    healthStrategy: 'HTTP_OK',
-  },
-  {
-    id: 'local.qwen3-tts-0.6b',
-    provider: 'local-qwen3-tts',
-    displayName: 'Qwen3-TTS 0.6B',
-    enabledConfigKey: 'TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED',
-    healthUrlConfigKey: 'TTS_LOCAL_QWEN3_TTS_0_6B_HEALTH_URL',
-    synthesisUrlConfigKey: 'TTS_LOCAL_QWEN3_TTS_0_6B_URL',
-    healthStrategy: 'JSON_STATUS_HEALTHY',
-  },
-  {
-    id: 'local.chatterbox-turbo',
-    provider: 'local-chatterbox',
-    displayName: 'Chatterbox Turbo',
-    enabledConfigKey: 'TTS_LOCAL_CHATTERBOX_TURBO_ENABLED',
-    healthUrlConfigKey: 'TTS_LOCAL_CHATTERBOX_TURBO_HEALTH_URL',
-    synthesisUrlConfigKey: 'TTS_LOCAL_CHATTERBOX_TURBO_URL',
-    healthStrategy: 'JSON_STATUS_OK',
-  },
-];
+// Local TTS models are disabled; see docs/tts/local-tts-models-removed.md.
+// Uncomment to restore:
+// const LOCAL_TTS_MODEL_DEFINITIONS: LocalTtsModelDefinition[] = [
+//   {
+//     id: 'local.piper.en-us-amy',
+//     provider: 'local-piper',
+//     displayName: 'Piper — English (Amy)',
+//     enabledConfigKey: 'TTS_LOCAL_PIPER_EN_US_AMY_ENABLED',
+//     healthUrlConfigKey: 'TTS_LOCAL_PIPER_EN_US_AMY_HEALTH_URL',
+//     synthesisUrlConfigKey: 'TTS_LOCAL_PIPER_EN_US_AMY_URL',
+//     healthStrategy: 'HTTP_OK',
+//   },
+//   {
+//     id: 'local.kokoro-82m',
+//     provider: 'local-kokoro',
+//     displayName: 'Kokoro-82M',
+//     enabledConfigKey: 'TTS_LOCAL_KOKORO_82M_ENABLED',
+//     healthUrlConfigKey: 'TTS_LOCAL_KOKORO_82M_HEALTH_URL',
+//     synthesisUrlConfigKey: 'TTS_LOCAL_KOKORO_82M_URL',
+//     healthStrategy: 'HTTP_OK',
+//   },
+//   {
+//     id: 'local.qwen3-tts-0.6b',
+//     provider: 'local-qwen3-tts',
+//     displayName: 'Qwen3-TTS 0.6B',
+//     enabledConfigKey: 'TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED',
+//     healthUrlConfigKey: 'TTS_LOCAL_QWEN3_TTS_0_6B_HEALTH_URL',
+//     synthesisUrlConfigKey: 'TTS_LOCAL_QWEN3_TTS_0_6B_URL',
+//     healthStrategy: 'JSON_STATUS_HEALTHY',
+//   },
+//   {
+//     id: 'local.chatterbox-turbo',
+//     provider: 'local-chatterbox',
+//     displayName: 'Chatterbox Turbo',
+//     enabledConfigKey: 'TTS_LOCAL_CHATTERBOX_TURBO_ENABLED',
+//     healthUrlConfigKey: 'TTS_LOCAL_CHATTERBOX_TURBO_HEALTH_URL',
+//     synthesisUrlConfigKey: 'TTS_LOCAL_CHATTERBOX_TURBO_URL',
+//     healthStrategy: 'JSON_STATUS_OK',
+//   },
+// ];
+const LOCAL_TTS_MODEL_DEFINITIONS: LocalTtsModelDefinition[] = [];
 
 const FISH_TTS_MODEL_DEFINITIONS: FishTtsModelDefinition[] = [
   {

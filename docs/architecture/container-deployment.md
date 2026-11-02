@@ -36,12 +36,10 @@ data.
 
 ## Optional profiles
 
-The default starts the complete backend. Profiles only enable optional local
-services:
-
-- `minio` for local object storage.
-- `true` for each local TTS model whose individual
-  `TTS_LOCAL_*_ENABLED="true"` flag is set.
+The default starts the complete backend. The only optional profile is
+`minio`, for local object storage. (Local TTS models previously had their own
+Compose profiles here; they are disabled — see
+[`docs/tts/local-tts-models-removed.md`](../tts/local-tts-models-removed.md).)
 
 The commented MinIO section in `.env.example` sets `MINIO_ENABLED="true"`
 and provides the required container-only `STORAGE_INTERNAL_ENDPOINT`.
@@ -57,9 +55,9 @@ For watcher containers, use the dedicated development Compose definition:
 docker compose -f compose.dev.yaml up -d --build
 ```
 
-It loads the same `.env`, infrastructure, persistent data volumes, MinIO
-selection, and local-TTS profiles as the normal Compose definition. Its only
-runtime difference is that API and worker mount the local source directory and
+It loads the same `.env`, infrastructure, persistent data volumes, and MinIO
+selection as the normal Compose definition. Its only runtime difference is
+that API and worker mount the local source directory and
 run `pnpm start:dev` / `pnpm worker:dev`. Saving backend code restarts the
 matching Nest process inside its still-running container.
 
@@ -77,8 +75,7 @@ When `STORAGE_PROVIDER="minio"`, start the MinIO services explicitly as well:
 docker compose up -d minio minio-init
 ```
 
-Likewise, start an enabled local-TTS service by name (for example,
-`docker compose up -d piper-tts`). The development Compose stack performs a
+The development Compose stack performs a
 schema update on startup; after a schema change in an already-running session,
 run:
 

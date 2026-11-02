@@ -82,9 +82,15 @@ book-detail endpoint exposes chapter audio status and progress.
 
 ## TTS adapters and models
 
-`src/tts/adapters/` contains the narrow shared TTS adapter interface and local
-adapters for Piper, Kokoro, Qwen3-TTS, and Chatterbox. `TtsAdapterResolverService`
-selects the adapter once per worker job:
+Local TTS (Piper, Kokoro-82M, Qwen3-TTS, Chatterbox Turbo) is disabled; Fish
+Audio is the only active provider. `src/tts/adapters/` still contains the
+narrow shared TTS adapter interface; the four local adapter files and their
+registry entries are commented out in place, not deleted. See
+[`docs/tts/local-tts-models-removed.md`](docs/tts/local-tts-models-removed.md)
+for the full restoration record and
+[`docs/issues/local-tts-models-disabled.md`](docs/issues/local-tts-models-disabled.md)
+for why. `TtsAdapterResolverService` now only ever resolves the Fish adapter;
+requesting a local `modelId` returns `404 TTS_MODEL_NOT_FOUND`.
 
 - Choose a ready model with `PUT /tts/models/selection`. It stores the user's
   nullable `defaultTtsModelKey` preference. `GET /tts/models` returns it as
@@ -96,15 +102,10 @@ selects the adapter once per worker job:
   than silently falling back to a guessed model.
 - Chapter synthesis has two BullMQ queues chosen by the snapshotted model:
   `fish-chapter-tts` (concurrency `TTS_FISH_CONCURRENCY`, default 2) and
-  `chapter-tts` for local models (concurrency 1, they share the CPU/GPU).
-  Fish `429`/`5xx` responses are retried in-process (honouring
-  `Retry-After`, otherwise 2/4/8/16 s) before the job attempt fails.
-- Local model health is checked both while queueing and immediately before the
-  worker generates audio.
-- The worker passes `Book.language` to its adapter. Qwen maps supported BCP 47
-  primary tags to its provider language names (otherwise `Auto`); Piper picks
-  an English/Russian voice from the tag; Kokoro rejects Russian because its
-  bundled model has no Russian voice. See `docs/tts/local-tts-docker.md`.
+  `chapter-tts`, which currently has nothing to route to it since local
+  models are disabled. Fish `429`/`5xx` responses are retried in-process
+  (honouring `Retry-After`, otherwise 2/4/8/16 s) before the job attempt
+  fails.
 - Fish keys belong to a user, are AES-256-GCM encrypted in Postgres, and are
   decrypted only in worker memory immediately before a Fish request. Never
   use or add a global Fish API key to the server environment.
@@ -119,7 +120,7 @@ selects the adapter once per worker job:
   reference ID in `Audio.voice`, so retries and existing generation jobs
   cannot mix voices after a catalogue change.
 
-`GET /tts/models` returns local model status, `selectedModelId`, and the
+`GET /tts/models` returns an empty `local` group, `selectedModelId`, and the
 current user's safe Fish credential state (`MISSING`, `VALID`, `INVALID`, or
 `UNKNOWN`). Fish model cards appear only for a valid key. The API never returns
 the key, even partly. Use `PUT /tts/models/providers/fish-audio/credential` to
@@ -130,12 +131,9 @@ remove it. `POST /tts/models/providers/fish-audio/voices` saves a voice,
 deployment secret `TTS_CREDENTIAL_ENCRYPTION_KEY` to the output of
 `openssl rand -base64 32` before users can save credentials.
 
-Local engines are opt-in through their matching `*_ENABLED=true` value in
-`.env`. `COMPOSE_PROFILES=true` is fixed and never changes; Compose starts
-only the models whose own flag is true, and MinIO only when `MINIO_ENABLED=true`
-is also set. Each enabled model also requires its health and synthesis URLs.
-See `docs/tts/local-tts-docker.md` for hardware requirements, model IDs, and
-examples.
+`COMPOSE_PROFILES=true` is fixed and never changes; Compose starts MinIO only
+when `MINIO_ENABLED=true` is also set. There is no local-TTS Compose profile
+to enable anymore (see above).
 
 ## Guardrails
 
@@ -157,7 +155,8 @@ examples.
   change index.
 - `docs/architecture/backend-architecture.md` — module and worker boundaries.
 - `docs/api/api-contracts-and-errors.md` — OpenAPI/error requirements.
-- `docs/tts/local-tts-docker.md` — local model deployment and selection.
+- `docs/tts/local-tts-models-removed.md` — local models are disabled; full
+  restoration record (what was commented/removed and how to bring it back).
 - `docs/tts/tts-model-catalogue.md` — source of truth, toggles, and steps for
   adding a local or Fish model.
 - `docs/tts/tts-models-and-user-keys-plan.md` — model/key design and follow-up

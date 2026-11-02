@@ -12,16 +12,16 @@ plan, or older UI differs from the final implementation.
 
 ## At a glance
 
-| Capability                 | Where a user sees it                         | What it provides                                                                                      |
-| -------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Account and session        | Public header, register/login pages, sidebar | Secure sign-up, sign-in, session restore, logout, protected workspace                                 |
-| Library and EPUB upload    | `/library`                                   | Direct EPUB upload, parse status, book cards, cover images, book deletion                             |
-| Parsed book view           | `/library/:bookId`                           | Metadata (including declared language), ordered chapter cards, selection, status and progress         |
-| Chapter audio              | Book page                                    | Generate, continue, stop, delete, play and download a chapter MP3                                     |
-| Voice models               | `/models`                                    | Per-user Fish key, local model health/status, selected model, and default/custom Fish voice selection |
-| Chapter curation           | Book page → **Review chapters**              | Parser suggestions plus manual edit, tag, add, merge, remove, restore, and reorder                    |
-| Preferences and navigation | Headers and sidebar                          | Responsive private/public navigation, breadcrumbs, light/dark theme, English/Russian                  |
-| Self-hosted deployment     | Deployment configuration                     | R2, S3, or MinIO storage; optional local TTS engines                                                  |
+| Capability                 | Where a user sees it                         | What it provides                                                                                   |
+| -------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Account and session        | Public header, register/login pages, sidebar | Secure sign-up, sign-in, session restore, logout, protected workspace                              |
+| Library and EPUB upload    | `/library`                                   | Direct EPUB upload, parse status, book cards, cover images, book deletion                          |
+| Parsed book view           | `/library/:bookId`                           | Metadata (including declared language), ordered chapter cards, selection, status and progress      |
+| Chapter audio              | Book page                                    | Generate, continue, stop, delete, play and download a chapter MP3                                  |
+| Voice models               | `/models`                                    | Per-user Fish key, selected model, and default/custom Fish voice selection (local models disabled) |
+| Chapter curation           | Book page → **Review chapters**              | Parser suggestions plus manual edit, tag, add, merge, remove, restore, and reorder                 |
+| Preferences and navigation | Headers and sidebar                          | Responsive private/public navigation, breadcrumbs, light/dark theme, English/Russian               |
+| Self-hosted deployment     | Deployment configuration                     | R2, S3, or MinIO storage; optional local TTS engines                                               |
 
 ## 1. Account, session, and protected workspace
 
@@ -418,24 +418,19 @@ key.
   at chapter-audio creation. Later selection/catalogue changes cannot mix
   voices in an in-progress chapter or its retries.
 
-#### Local models
+#### Local models (currently disabled)
 
-- The catalogue currently has Piper, Kokoro-82M, Qwen3-TTS 0.6B, and
-  Chatterbox Turbo. Each has a narrow adapter and a health check strategy.
-- Local cards are evaluated dynamically: disabled by env → `DISABLED`; enabled
-  but failed/mismatched health endpoint → `UNAVAILABLE`; healthy → `READY` and
-  selectable. Health results have a small cache to avoid probing on every view.
-- Each `TTS_LOCAL_*_ENABLED` value is now the single local-model switch.
-  `COMPOSE_PROFILES=true` is fixed; Compose starts only containers with an
-  enabled flag, and the backend exposes the same enabled models. See
-  [`docs/tts/local-tts-docker.md`](../tts/local-tts-docker.md) for hardware and exact
-  configuration. Qwen and Chatterbox require NVIDIA Docker support.
-- Adapter behavior is deliberately model-specific: Qwen maps the book's BCP 47
-  tag to a Qwen language name (or `Auto`); Piper selects its configured English
-  default (the supplied value is male `en_US-hfc_male-medium`) or Russian
-  `ru_RU-denis-medium`; Kokoro uses `am_michael` for English and rejects
-  Russian because Kokoro-82M has no built-in Russian voice. The resolved voice
-  is recorded on the audio after its first generated part.
+The catalogue previously had four local models — Piper, Kokoro-82M, Qwen3-TTS
+0.6B, and Chatterbox Turbo, each with a narrow adapter, a health check
+strategy, and their own Docker service. They are now disabled so the product
+can focus on Fish Audio only: `GET /tts/models` returns an empty `local`
+group, and the frontend shows that section as "coming soon" rather than
+removing it.
+
+Full restoration record (exact code locations, the removed Docker Compose and
+`.env.example` content, and how to bring each model back):
+[`docs/tts/local-tts-models-removed.md`](../tts/local-tts-models-removed.md).
+Why: [`docs/issues/local-tts-models-disabled.md`](../issues/local-tts-models-disabled.md).
 
 #### Selection snapshot
 
@@ -460,10 +455,11 @@ voices. Defaults are selectable but not removable; custom entries show their
 label and may be removed by their owner.
 
 The book page has a compact model/voice dropdown next to **Generate** (Fish
-Audio with a nested model/voice submenu, then local models, or a link to the
-Models page when no Fish key is saved). It uses the same selection endpoints,
-so both places stay in sync. **Generate** stays disabled, with an inline
-explanation, until a model and (for Fish) a voice are selected.
+Audio with a nested model/voice submenu, a disabled "Local models — Coming
+soon" section, or a link to the Models page when no Fish key is saved). It
+uses the same selection endpoints, so both places stay in sync. **Generate**
+stays disabled, with an inline explanation, until a model and (for Fish) a
+voice are selected.
 
 ### Contributing commits, checked by actual change
 
@@ -645,11 +641,8 @@ planned or only partially surfaced.
   control. The key is not requested automatically on login. Default Fish
   voices are configured by the deployment; users can select but cannot edit or
   delete them.
-- **Local models:** Docker definitions and adapters exist, but a local model is
-  usable only when its operator enabled it and its real health check succeeds.
-  A listed card alone does not mean the model is installed or ready. Until
-  each adapter passes an end-to-end check, the frontend exposes only Piper;
-  Kokoro-82M cannot narrate Russian with its built-in voices.
+- **Local models:** disabled; see the local-models subsection above for the
+  restoration record.
 - **Curation:** parser classification suggests roles; it never automatically
   merges or deletes short chapters. Users make those decisions explicitly.
 - **Progress detail:** chunk progress is durable, but the book page currently

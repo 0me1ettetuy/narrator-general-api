@@ -1,5 +1,13 @@
 # TTS model catalogue maintenance guide
 
+> **Local TTS is currently disabled.** `LOCAL_TTS_MODEL_DEFINITIONS` is an
+> empty array; the four local model rows below, their adapters, and their
+> Docker services are commented out or removed, not deleted. See
+> [local-tts-models-removed.md](local-tts-models-removed.md) for the full
+> restoration record and [the issue record](../issues/local-tts-models-disabled.md)
+> for why. The rest of this guide (how the catalogue works, how to add a
+> model) remains accurate for Fish Audio and for restoring a local model.
+
 ## The source of truth
 
 The list of models is **code**, not a seeded database table.
@@ -39,14 +47,14 @@ whenever a user saves it or starts a generation.
 
 ## Current model definitions
 
-| Source | Model ID sent by frontend | Definition location | Enable setting |
-| --- | --- | --- | --- |
-| Local | `local.piper.en-us-amy` | `LOCAL_TTS_MODEL_DEFINITIONS` | `TTS_LOCAL_PIPER_EN_US_AMY_ENABLED` |
-| Local | `local.kokoro-82m` | `LOCAL_TTS_MODEL_DEFINITIONS` | `TTS_LOCAL_KOKORO_82M_ENABLED` |
-| Local | `local.qwen3-tts-0.6b` | `LOCAL_TTS_MODEL_DEFINITIONS` | `TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED` |
-| Local | `local.chatterbox-turbo` | `LOCAL_TTS_MODEL_DEFINITIONS` | `TTS_LOCAL_CHATTERBOX_TURBO_ENABLED` |
-| Fish | `fish.s2.1-pro-free` | `FISH_TTS_MODEL_DEFINITIONS` | `TTS_FISH_S2_1_PRO_FREE_ENABLED` |
-| Fish | `fish.s2.1-pro` | `FISH_TTS_MODEL_DEFINITIONS` | `TTS_FISH_S2_1_PRO_ENABLED` |
+| Source | Model ID sent by frontend | Definition location          | Enable setting                   |
+| ------ | ------------------------- | ---------------------------- | -------------------------------- |
+| Fish   | `fish.s2.1-pro-free`      | `FISH_TTS_MODEL_DEFINITIONS` | `TTS_FISH_S2_1_PRO_FREE_ENABLED` |
+| Fish   | `fish.s2.1-pro`           | `FISH_TTS_MODEL_DEFINITIONS` | `TTS_FISH_S2_1_PRO_ENABLED`      |
+
+The four local model rows (`local.piper.en-us-amy`, `local.kokoro-82m`,
+`local.qwen3-tts-0.6b`, `local.chatterbox-turbo`) are commented out in
+`LOCAL_TTS_MODEL_DEFINITIONS`; see the disabled-local-TTS note above.
 
 Keep IDs stable. An ID is stored on `Audio.modelKey`, so renaming one breaks
 retries and makes existing audio metadata unclear.

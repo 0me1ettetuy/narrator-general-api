@@ -26,25 +26,7 @@ services:
       file: compose.yaml
       service: minio-init
 
-  piper-tts:
-    extends:
-      file: compose.yaml
-      service: piper-tts
-
-  kokoro-tts:
-    extends:
-      file: compose.yaml
-      service: kokoro-tts
-
-  qwen3-tts:
-    extends:
-      file: compose.yaml
-      service: qwen3-tts
-
-  chatterbox-tts:
-    extends:
-      file: compose.yaml
-      service: chatterbox-tts
+  # Local TTS services removed; see docs/tts/local-tts-models-removed.md.
 
   migrate:
     extends:
@@ -88,12 +70,6 @@ volumes:
   narrator_postgres_data:
   narrator_redis_data:
   narrator_minio_data:
-  narrator_piper_tts_data:
-  narrator_kokoro_tts_data:
-  narrator_qwen3_tts_data:
-  narrator_qwen3_tts_huggingface_cache:
-  narrator_chatterbox_tts_cache:
-  narrator_chatterbox_tts_voices:
   narrator_api_node_modules:
 
 networks:
