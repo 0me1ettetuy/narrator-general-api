@@ -23,7 +23,6 @@ export {
 
 const FISH_AUDIO_TTS_URL = 'https://api.fish.audio/v1/tts';
 const DEFAULT_FISH_TTS_MODEL = 's2.1-pro-free';
-const DEFAULT_FISH_TTS_VOICE = 'default';
 const DEFAULT_TTS_IDLE_TIMEOUT_MS = 300_000;
 
 @Injectable()
@@ -130,9 +129,7 @@ export class TtsService implements TtsAdapter {
         },
         body: JSON.stringify({
           text,
-          ...(configuration.voice === DEFAULT_FISH_TTS_VOICE
-            ? {}
-            : { reference_id: configuration.voice }),
+          reference_id: configuration.voice,
           format: 'mp3',
         }),
         signal: controller.signal,
@@ -172,8 +169,7 @@ export class TtsService implements TtsAdapter {
       model: providerModel ?? DEFAULT_FISH_TTS_MODEL,
       voice:
         voiceId?.trim() ||
-        (await this.fishVoices.resolveVoiceReferenceId(userId))?.trim() ||
-        DEFAULT_FISH_TTS_VOICE,
+        (await this.fishVoices.resolveVoiceReferenceId(userId)).trim(),
     };
   }
 

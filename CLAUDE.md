@@ -85,7 +85,9 @@ selects the adapter once per worker job:
   `selectedModelId`.
 - Chapter-audio requests can omit `modelId` and use that saved preference, or
   include it for a one-request override. The resolved ID is persisted as
-  `Audio.modelKey`; a retry cannot silently switch providers or voices.
+  `Audio.modelKey`; a retry cannot silently switch providers or voices. If
+  neither is set, the request is rejected with `ttsModelNotSelected` rather
+  than silently falling back to a guessed model.
 - Local model health is checked both while queueing and immediately before the
   worker generates audio.
 - The worker passes `Book.language` to its adapter. Qwen maps supported BCP 47
@@ -99,10 +101,12 @@ selects the adapter once per worker job:
   `DEFAULT` voice or a user-owned `CUSTOM` voice; `User.selectedFishVoiceId`
   points to either. On startup, `FISH_DEFAULT_VOICES` safely upserts shared
   defaults and disables—never deletes—entries removed from configuration. Fish
-  synthesis resolves the user's selected enabled voice first, then the first
-  enabled configured default. Do not auto-switch based on guessed language.
-  The queue snapshots the resolved reference ID in `Audio.voice`, so retries
-  and existing generation jobs cannot mix voices after a catalogue change.
+  synthesis requires the user's own selected enabled voice
+  (`User.selectedFishVoiceId`); it rejects with `fishVoiceNotSelected` rather
+  than falling back to a default voice when none is selected. Do not
+  auto-switch based on guessed language. The queue snapshots the resolved
+  reference ID in `Audio.voice`, so retries and existing generation jobs
+  cannot mix voices after a catalogue change.
 
 `GET /tts/models` returns local model status, `selectedModelId`, and the
 current user's safe Fish credential state (`MISSING`, `VALID`, `INVALID`, or

@@ -173,14 +173,9 @@ describe('TtsService', () => {
     );
   });
 
-  it('uses the Fish provider default when no voice is configured', async () => {
-    fishVoices.resolveVoiceReferenceId.mockResolvedValueOnce(null);
-    fetchMock.mockResolvedValue(
-      new Response(new Uint8Array([1]), {
-        status: 200,
-        headers: { 'content-type': 'audio/mpeg' },
-      }),
-    );
+  it('propagates the error when the user has not selected a Fish voice', async () => {
+    const voiceNotSelected = new Error('No Fish voice is selected');
+    fishVoices.resolveVoiceReferenceId.mockRejectedValueOnce(voiceNotSelected);
     service = new TtsService(
       {
         get: jest.fn(),
@@ -189,15 +184,10 @@ describe('TtsService', () => {
       fishVoices,
     );
 
-    const result = await service.synthesizeStream({
-      text: 'Hello world.',
-      userId: 'user-id',
-    });
-
-    expect(result.voice).toBe('default');
-    await expect(readStream(result.stream)).resolves.toEqual(
-      new Uint8Array([1]),
-    );
+    await expect(
+      service.synthesizeStream({ text: 'Hello world.', userId: 'user-id' }),
+    ).rejects.toBe(voiceNotSelected);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('rejects empty input before reading a user credential', async () => {

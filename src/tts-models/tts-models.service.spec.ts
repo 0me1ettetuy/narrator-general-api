@@ -196,6 +196,21 @@ describe('TtsModelsService', () => {
     );
   });
 
+  it('rejects selection when the user has no default model and none is requested', async () => {
+    const service = new TtsModelsService(
+      prisma,
+      createRegistry(),
+      availableLocalModel,
+      {} as FishCredentialService,
+    );
+
+    await expect(
+      service.getSelectableModel('user-id', null),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'TTS_MODEL_NOT_SELECTED' }),
+    });
+  });
+
   it('uses the saved model when generation does not specify one', async () => {
     userPreferenceFirst.mockResolvedValue({
       defaultTtsModelKey: 'local.piper.en-us-amy',

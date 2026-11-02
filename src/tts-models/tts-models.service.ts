@@ -93,7 +93,10 @@ export class TtsModelsService {
     const requestedModelId = modelId ?? (await this.getSelectedModelId(userId));
 
     if (!requestedModelId) {
-      return this.getDefaultFishModel(userId);
+      throw new ConflictException({
+        code: API_ERROR_CODES.ttsModelNotSelected,
+        message: 'No TTS model is selected',
+      });
     }
 
     const localModel = this.registry
@@ -181,29 +184,6 @@ export class TtsModelsService {
     }).first()) as UserModelPreference | null;
 
     return user?.defaultTtsModelKey ?? null;
-  }
-
-  private async getDefaultFishModel(
-    userId: string,
-  ): Promise<SelectableTtsModel> {
-    const model = this.registry
-      .getFishModels()
-      .find((candidate) => candidate.enabled);
-
-    if (!model) {
-      throw new ConflictException({
-        code: API_ERROR_CODES.ttsModelUnavailable,
-        message: 'No default TTS model is configured',
-      });
-    }
-
-    await this.fishCredentials.assertValidCredential(userId);
-
-    return {
-      id: model.id,
-      source: 'FISH',
-      providerModel: model.providerModel,
-    };
   }
 
   private async assertSelectableLocalModel(

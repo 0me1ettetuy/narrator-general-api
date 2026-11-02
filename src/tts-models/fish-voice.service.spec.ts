@@ -204,6 +204,16 @@ describe('FishVoiceService', () => {
     );
   });
 
+  it('rejects resolving a voice when the user has not selected one', async () => {
+    await service.onModuleInit();
+
+    await expect(
+      service.resolveVoiceReferenceId('user-id'),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'FISH_VOICE_NOT_SELECTED' }),
+    });
+  });
+
   it('does not expose or allow selection of another user’s custom voice', async () => {
     const otherUsersVoice = await service.addVoice('other-user-id', {
       referenceId: 'other-user-reference-id',

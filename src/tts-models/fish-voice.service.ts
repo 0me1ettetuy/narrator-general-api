@@ -146,32 +146,32 @@ export class FishVoiceService implements OnModuleInit {
     });
   }
 
-  async resolveVoiceReferenceId(userId: string): Promise<string | null> {
+  async resolveVoiceReferenceId(userId: string): Promise<string> {
     const preference = await this.getUserPreference(userId);
 
-    if (preference?.selectedFishVoiceId) {
-      const selectedVoice = (await this.prisma.db.orm.public.FishVoice.where({
-        id: preference.selectedFishVoiceId,
-      }).first()) as StoredFishVoice | null;
-
-      if (!selectedVoice || !this.isAccessibleToUser(selectedVoice, userId)) {
-        throw this.createVoiceNotFoundException();
-      }
-
-      if (!selectedVoice.isEnabled) {
-        throw new ConflictException({
-          code: API_ERROR_CODES.conflict,
-          message: 'Selected Fish voice is unavailable',
-        });
-      }
-
-      return selectedVoice.referenceId;
+    if (!preference?.selectedFishVoiceId) {
+      throw new ConflictException({
+        code: API_ERROR_CODES.fishVoiceNotSelected,
+        message: 'No Fish voice is selected',
+      });
     }
 
-    return (
-      (await this.getDefaultVoices()).find((voice) => voice.isEnabled)
-        ?.referenceId ?? null
-    );
+    const selectedVoice = (await this.prisma.db.orm.public.FishVoice.where({
+      id: preference.selectedFishVoiceId,
+    }).first()) as StoredFishVoice | null;
+
+    if (!selectedVoice || !this.isAccessibleToUser(selectedVoice, userId)) {
+      throw this.createVoiceNotFoundException();
+    }
+
+    if (!selectedVoice.isEnabled) {
+      throw new ConflictException({
+        code: API_ERROR_CODES.conflict,
+        message: 'Selected Fish voice is unavailable',
+      });
+    }
+
+    return selectedVoice.referenceId;
   }
 
   private async syncConfiguredDefaults(): Promise<void> {

@@ -65,17 +65,17 @@ the safe provider state (`MISSING`, `INVALID`, or `UNKNOWN`) and omits Fish
 model cards. Once their key is valid, enabled Fish cards are returned. The key
 itself is never returned.
 
-Voice resolution is deliberately independent of the model choice:
-
-```text
-selected enabled FishVoice -> first enabled configured default -> Fish Audio's provider default
-```
+Voice resolution is deliberately independent of the model choice, and
+deliberately has no fallback: `FishVoiceService.resolveVoiceReferenceId`
+requires `User.selectedFishVoiceId` to point at an enabled voice, and rejects
+with `fishVoiceNotSelected` (no fallback voice) when the user has not made a
+selection.
 
 Set `FISH_DEFAULT_VOICES` to an ordered JSON array of `{ id, name }` objects.
-At API/worker startup, the backend upserts those `DEFAULT` rows and uses the
-first one as the fallback when a user has no selection. Removing an item from
-the environment disables its database row instead of deleting it, preserving
-old audio and selections. Narrator does not infer the text language and silently
+At API/worker startup, the backend upserts those `DEFAULT` rows into the
+shared catalogue so users can select one. Removing an item from the
+environment disables its database row instead of deleting it, preserving old
+audio and selections. Narrator does not infer the text language and silently
 switch voices. The model page can add/select/remove custom voices with:
 
 ```text
@@ -188,8 +188,8 @@ Frontend gets GET /tts/models (including selectedModelId)
 A chapter-audio request may include `{ "modelId": "..." }` as a one-request
 override. It does not change the saved selection. Changing a saved selection
 only affects future audio jobs; queued and completed audio keep their
-`Audio.modelKey`. A legacy Fish fallback remains only for users who have not
-saved a selection yet.
+`Audio.modelKey`. A user with neither an override nor a saved selection gets
+rejected with `ttsModelNotSelected`; there is no fallback model.
 
 When a Fish worker begins a chapter, it snapshots the selected voice reference
 onto `Audio.voice` before its first chunk. Selecting a different saved voice
