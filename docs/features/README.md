@@ -284,10 +284,17 @@ User selects chapters
 - `Audio` persists its model key, status, stage, chunk totals, completed count,
   final object key, error, and completion time. `Job` persists attempt/status/
   progress independently from BullMQ, so the UI can recover after refresh.
-- The current worker config processes one job at a time in each processor.
-  Jobs have up to three attempts. Cancelling marks durable work cancelled and
-  removes waiting queue jobs; it cannot recall a provider request already in
-  flight.
+- Chapter synthesis has two queues, chosen by the snapshotted model: Fish
+  chapters run in parallel on `fish-chapter-tts` (`TTS_FISH_CONCURRENCY`,
+  default 2, under Fish's per-key concurrency limit) and local-model chapters
+  run one at a time on `chapter-tts`, since they share the CPU/GPU. Parsing and
+  merging run one job at a time. Jobs have up to three attempts.
+- A Fish `429`/`5xx` is retried inside the request up to four times
+  (`Retry-After`, otherwise 2/4/8/16 s, each capped at 60 s), so throttling no
+  longer burns a chapter's job attempts within seconds.
+- Cancelling marks durable work cancelled and removes waiting queue jobs from
+  both TTS queues; it cannot recall a provider request already in flight, and
+  during a throttling wait it takes effect when the wait ends.
 - Deleting audio is stronger than stopping: it cancels applicable jobs, deletes
   final and temporary objects, then deletes audio chunks, audio row, and
   related audio-job records. Editing a chapter's text similarly requires audio
@@ -317,6 +324,8 @@ User selects chapters
   title, `e1aece0` specifically added stop, delete, signed playback, and
   download controls. `7ff3f12` later replaced one-card-at-a-time generation
   with the current batch selection UI.
+- Backend `363e89b` split synthesis into the Fish and local queues with
+  configurable Fish concurrency and added in-request Fish `429`/`5xx` retries.
 
 ## 6. Narration inclusion and batch selection
 

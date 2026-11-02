@@ -5,7 +5,7 @@ milestones and backed by a complete chronological commit index. It documents
 what entered the repository, rather than the intent suggested by a commit
 subject alone.
 
-**Scope:** 26 August–3 November 2026, through safe book deletion.
+**Scope:** 26 August–3 November 2026, through parallel Fish chapter generation.
 
 ## Milestones
 
@@ -22,6 +22,11 @@ subject alone.
   new `StorageService.deleteObjectsByPrefix`, then deletes the rows in
   foreign-key order. All API lookups and TTS/merge claims skip deleted books,
   and the parser's final save is now conditional so it cannot revive one.
+- Split chapter synthesis into a `fish-chapter-tts` queue (concurrency from
+  `TTS_FISH_CONCURRENCY`, default 2) and the local `chapter-tts` queue
+  (concurrency 1), routed by the snapshotted model, so one book no longer
+  blocks every other user's chapters. Fish `429`/`5xx` responses are now
+  retried in-process with `Retry-After` or exponential backoff.
 
 ### 2 November — independent MinIO Compose switch
 
@@ -246,3 +251,4 @@ subject alone.
 | 2026-11-02 | `5eb79ff` | Added `MINIO_ENABLED`; `COMPOSE_PROFILES` is now a fixed `"true"`.                                                                        |
 | 2026-11-03 | `3a0e0bc` | Rejected chapter audio without an explicitly selected TTS model or Fish voice instead of falling back.                                    |
 | 2026-11-03 | `b7c3939` | Added safe book deletion: `Book.deletedAt`, prefix storage cleanup, and deleted-book guards.                                              |
+| 2026-11-03 | `363e89b` | Split chapter TTS into Fish (parallel) and local queues and retried Fish 429/5xx with backoff.                                            |
