@@ -63,6 +63,10 @@ export class JobsService {
     await this.removeWaitingJob(this.audioMergeQueue, jobId);
   }
 
+  async removeBookParsing(jobId: string): Promise<void> {
+    await this.removeInactiveJob(this.bookParsingQueue, jobId);
+  }
+
   async removeChapterSynthesis(jobId: string): Promise<void> {
     await this.removeInactiveJob(this.chapterTtsQueue, jobId);
   }

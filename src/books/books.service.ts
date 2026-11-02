@@ -108,6 +108,7 @@ export class BooksService {
     const book = await this.prisma.db.orm.public.Book.where({
       id: bookId,
       userId,
+      deletedAt: null,
     }).first();
 
     if (!book) {
@@ -163,6 +164,7 @@ export class BooksService {
         id: book.id,
         userId,
         parseStatus: 'UPLOADING',
+        deletedAt: null,
       }).update({
         parseStatus: 'QUEUED',
         updatedAt: now,
@@ -210,7 +212,10 @@ export class BooksService {
   ): Promise<BooksListResponse> {
     const limit = query.limit ?? DEFAULT_PAGE_SIZE;
     const offset = query.offset ?? 0;
-    const books = (await this.prisma.db.orm.public.Book.where({ userId })
+    const books = (await this.prisma.db.orm.public.Book.where({
+      userId,
+      deletedAt: null,
+    })
       .orderBy([(book) => book.createdAt.desc(), (book) => book.id.desc()])
       .offset(offset)
       .limit(limit + 1)
@@ -247,6 +252,7 @@ export class BooksService {
     const book = await this.prisma.db.orm.public.Book.where({
       id: bookId,
       userId,
+      deletedAt: null,
     }).first();
 
     if (!book) {
@@ -342,6 +348,7 @@ export class BooksService {
     const book = await this.prisma.db.orm.public.Book.where({
       id: bookId,
       userId,
+      deletedAt: null,
     }).first();
 
     if (!book) {
@@ -484,6 +491,7 @@ export class BooksService {
     const book = await this.prisma.db.orm.public.Book.where({
       id: bookId,
       userId,
+      deletedAt: null,
     }).first();
 
     if (!book) {
@@ -606,6 +614,7 @@ export class BooksService {
     const book = await this.prisma.db.orm.public.Book.where({
       id: bookId,
       userId,
+      deletedAt: null,
     }).first();
 
     if (!book) {
@@ -660,6 +669,7 @@ export class BooksService {
     const book = (await this.prisma.db.orm.public.Book.where({
       id: bookId,
       userId,
+      deletedAt: null,
     }).first()) as Book | null;
 
     if (!book || !book.coverObjectKey) {
@@ -717,6 +727,7 @@ export class BooksService {
       id: book.id,
       userId,
       parseStatus: 'READY',
+      deletedAt: null,
     }).update({
       coverObjectKey: objectKey,
       coverMimeType: dto.mimeType,
@@ -729,6 +740,7 @@ export class BooksService {
     const book = await this.prisma.db.orm.public.Book.where({
       id: bookId,
       userId,
+      deletedAt: null,
     }).first();
 
     if (!book) {
@@ -900,6 +912,7 @@ export class BooksService {
     const book = (await this.prisma.db.orm.public.Book.where({
       id: bookId,
       userId,
+      deletedAt: null,
     }).first()) as Book | null;
 
     if (!book) {

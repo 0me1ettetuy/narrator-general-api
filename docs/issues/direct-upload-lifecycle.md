@@ -2,9 +2,12 @@
 
 ## Status
 
-Deferred product/backend work. The direct browser-to-R2 upload flow works, but
-it needs cancellation, retry, and abandoned-upload cleanup before it is a
-complete user experience.
+Partly done. Book deletion now exists for every state, including `UPLOADING`,
+`QUEUED`, and `PROCESSING` (`DELETE /books/:bookId`, `Book.deletedAt`; see
+`CLAUDE.md`, book workflow step 7). An `upload-complete` for a deleted book
+returns `404` and queues nothing. Still deferred: a fresh-URL retry, aborting
+the browser `PUT` on delete, and the periodic stale-`UPLOADING` cleanup. A
+direct `PUT` that lands after deletion can still leave an orphan source object.
 
 ## Current flow
 

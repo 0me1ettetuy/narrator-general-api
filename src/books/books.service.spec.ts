@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import type { JobsService } from '../jobs/jobs.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { StorageService } from '../storage/storage.service.js';
@@ -282,6 +283,7 @@ describe('BooksService', () => {
     expect(db.orm.public.Book.where).toHaveBeenLastCalledWith({
       id: book.id,
       userId: 'user-id',
+      deletedAt: null,
     });
     expect(storage.createDownloadUrl).toHaveBeenCalledWith(book.coverObjectKey);
   });
@@ -340,5 +342,97 @@ describe('BooksService', () => {
         coverSize: 123,
       }),
     );
+  });
+
+  describe('a book that is being deleted', () => {
+    const createService = () =>
+      new BooksService(
+        prisma,
+        storageService,
+        jobsService,
+        ttsModelsService,
+        fishVoices,
+      );
+
+    beforeEach(() => {
+      db.orm.public.Book.where.mockImplementation(
+        (criteria: Record<string, unknown>) => ({
+          first: jest
+            .fn()
+            .mockResolvedValue(
+              criteria.deletedAt === null
+                ? null
+                : { ...book, coverObjectKey: 'cover-key', deletedAt: 'now' },
+            ),
+          update: bookUpdate,
+        }),
+      );
+    });
+
+    it.each<[string, (service: BooksService) => Promise<unknown>]>([
+      ['getBook', (service) => service.getBook('user-id', 'book-id')],
+      [
+        'completeUpload',
+        (service) => service.completeUpload('user-id', 'book-id'),
+      ],
+      [
+        'queueChapterAudio',
+        (service) =>
+          service.queueChapterAudio('user-id', 'book-id', 'chapter-id', null),
+      ],
+      [
+        'queueSelectedChapterAudio',
+        (service) =>
+          service.queueSelectedChapterAudio('user-id', 'book-id', [
+            firstChapter.id,
+          ]),
+      ],
+      [
+        'cancelChapterAudio',
+        (service) =>
+          service.cancelChapterAudio('user-id', 'book-id', 'chapter-id'),
+      ],
+      [
+        'deleteChapterAudio',
+        (service) =>
+          service.deleteChapterAudio('user-id', 'book-id', 'chapter-id'),
+      ],
+      [
+        'getChapterAudioAccess',
+        (service) =>
+          service.getChapterAudioAccess('user-id', 'book-id', 'chapter-id'),
+      ],
+      [
+        'getBookCoverAccess',
+        (service) => service.getBookCoverAccess('user-id', 'book-id'),
+      ],
+      [
+        'createBookCoverUpload',
+        (service) =>
+          service.createBookCoverUpload('user-id', 'book-id', {
+            mimeType: 'image/png',
+            size: 1,
+          }),
+      ],
+    ])('%s treats it as not found', async (_name, call) => {
+      await expect(call(createService())).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+
+    it('is left out of the library list', async () => {
+      const all = jest.fn().mockResolvedValue([]);
+      const limit = jest.fn().mockReturnValue({ all });
+      const offset = jest.fn().mockReturnValue({ limit });
+      const orderBy = jest.fn().mockReturnValue({ offset });
+      db.orm.public.Book.where.mockReturnValue({ orderBy });
+
+      await createService().listBooks('user-id', {});
+
+      expect(db.orm.public.Book.where).toHaveBeenCalledWith({
+        userId: 'user-id',
+        deletedAt: null,
+      });
+    });
   });
 });

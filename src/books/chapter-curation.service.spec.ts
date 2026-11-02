@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { BooksService } from './books.service.js';
 import type { Book, Chapter } from './types/book.type.js';
@@ -80,5 +81,27 @@ describe('ChapterCurationService', () => {
       }),
     );
     expect(chapterUpdate).toHaveBeenCalledTimes(2);
+  });
+
+  it('refuses to curate a book that is being deleted', async () => {
+    db.orm.public.Book.where.mockImplementation(
+      (criteria: Record<string, unknown>) => ({
+        first: jest
+          .fn()
+          .mockResolvedValue(
+            criteria.deletedAt === null ? null : { ...book, deletedAt: 'now' },
+          ),
+      }),
+    );
+    const service = new ChapterCurationService(prisma, booksService);
+
+    await expect(
+      service.updateSelection('user-id', book.id, {
+        chapterIds: [chapters[0].id],
+        role: 'NAVIGATION',
+        includeInDefaultNarration: false,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(chapterUpdate).not.toHaveBeenCalled();
   });
 });

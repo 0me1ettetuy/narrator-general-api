@@ -70,6 +70,12 @@ task unless explicitly requested.
 6. The worker segments chapter text, stores completed temporary MP3 parts in
    object storage, merges them with ffmpeg, saves final audio, then cleans up
    temporary parts.
+7. `DELETE /books/:bookId` (`BookDeletionService`) works in any state. It sets
+   `Book.deletedAt` and cancels the book's jobs/audio in one transaction, then
+   deletes every object under `books/{userId}/{bookId}/` and finally the rows.
+   Every book lookup and worker claim must filter `deletedAt: null`; running
+   workers stop at their next status check and delete what they just uploaded.
+   It is idempotent, so a retry finishes a partly failed deletion.
 
 Audio/job state is persisted so the frontend can recover after reload. The
 book-detail endpoint exposes chapter audio status and progress.

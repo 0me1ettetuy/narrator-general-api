@@ -428,6 +428,7 @@ export class ChapterCurationService {
     const book = (await this.prisma.db.orm.public.Book.where({
       id: bookId,
       userId,
+      deletedAt: null,
     }).first()) as Book | null;
 
     if (!book) {

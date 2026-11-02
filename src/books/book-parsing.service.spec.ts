@@ -32,8 +32,9 @@ describe('BookParsingService', () => {
     sourceSize: 123,
   };
   let shouldFindProcessingBook = true;
+  let deletedBeforeFinalSave = false;
   const jobUpdate = jest.fn().mockResolvedValue(undefined);
-  const bookUpdate = jest.fn().mockResolvedValue(undefined);
+  const bookUpdate = jest.fn().mockImplementation(() => Promise.resolve(book));
   const chapterCreate = jest.fn().mockResolvedValue(undefined);
   const storageService = {
     deleteObject: jest.fn().mockResolvedValue(undefined),
@@ -69,6 +70,7 @@ describe('BookParsingService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     shouldFindProcessingBook = true;
+    deletedBeforeFinalSave = false;
     db.transaction.mockImplementation(async (callback) => callback(db));
     db.orm.public.Job.where.mockImplementation(
       (where: { status?: string; type?: string }) => ({
@@ -83,7 +85,7 @@ describe('BookParsingService', () => {
       }),
     );
     db.orm.public.Book.where.mockImplementation(
-      (where: { parseStatus?: string }) => ({
+      (where: { parseStatus?: string; deletedAt?: null }) => ({
         first: jest
           .fn()
           .mockResolvedValue(
@@ -92,7 +94,12 @@ describe('BookParsingService', () => {
               ? book
               : null,
           ),
-        update: bookUpdate,
+        update:
+          deletedBeforeFinalSave &&
+          where.parseStatus === 'PROCESSING' &&
+          where.deletedAt === null
+            ? jest.fn().mockResolvedValue(null)
+            : bookUpdate,
       }),
     );
     db.orm.public.BookAuthor.create.mockResolvedValue(undefined);
@@ -164,6 +171,26 @@ describe('BookParsingService', () => {
       'Book is no longer being parsed',
     );
 
+    expect(storageService.deleteObject).toHaveBeenCalledWith(
+      'books/user-id/book-id/cover/original.png',
+    );
+  });
+
+  it('does not mark a book ready when it is deleted during the final save', async () => {
+    deletedBeforeFinalSave = true;
+    const service = new BookParsingService(
+      prisma,
+      storageService,
+      epubParserService,
+    );
+
+    await expect(service.parse(parseJob.id)).rejects.toThrow(
+      'Book is no longer being parsed',
+    );
+
+    expect(bookUpdate).not.toHaveBeenCalledWith(
+      expect.objectContaining({ parseStatus: 'READY' }),
+    );
     expect(storageService.deleteObject).toHaveBeenCalledWith(
       'books/user-id/book-id/cover/original.png',
     );

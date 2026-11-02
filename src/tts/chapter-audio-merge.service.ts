@@ -1,7 +1,7 @@
 import { createReadStream } from 'node:fs';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { temporalNow } from '../prisma/temporal.js';
+import { temporalNow, type Instant } from '../prisma/temporal.js';
 import { StorageService } from '../storage/storage.service.js';
 import {
   type AudioPartToMerge,
@@ -24,6 +24,7 @@ type PersistedMergeJob = {
 type PersistedBook = {
   id: string;
   userId: string;
+  deletedAt: Instant | null;
 };
 
 type PersistedAudio = {
@@ -201,6 +202,10 @@ export class ChapterAudioMergeService {
 
       if (!book) {
         throw new Error('Audio merge job references missing data');
+      }
+
+      if (book.deletedAt) {
+        return null;
       }
 
       if (

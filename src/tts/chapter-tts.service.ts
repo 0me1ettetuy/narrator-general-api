@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { JOB_MAX_ATTEMPTS } from '../jobs/jobs.constants.js';
 import { JobsService } from '../jobs/jobs.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { temporalNow } from '../prisma/temporal.js';
+import { temporalNow, type Instant } from '../prisma/temporal.js';
 import { StorageService } from '../storage/storage.service.js';
 import { FishVoiceService } from '../tts-models/fish-voice.service.js';
 import { AudioChunkService } from './audio-chunk.service.js';
@@ -25,6 +25,7 @@ type PersistedBook = {
   id: string;
   userId: string;
   language: string | null;
+  deletedAt: Instant | null;
 };
 
 type PersistedChapter = {
@@ -279,6 +280,10 @@ export class ChapterTtsService {
 
       if (!chapter || !book) {
         throw new Error('Chapter TTS job references missing data');
+      }
+
+      if (book.deletedAt) {
+        return null;
       }
 
       if (

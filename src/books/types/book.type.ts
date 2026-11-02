@@ -28,6 +28,7 @@ export type Book = {
   parseError: string | null;
   parsedAt: Instant | null;
   chapterCount: number;
+  deletedAt: Instant | null;
   createdAt: Instant;
   updatedAt: Instant;
 };

@@ -113,6 +113,7 @@ export class BookParsingService {
       const book = await transaction.orm.public.Book.where({
         id: job.bookId,
         parseStatus: 'QUEUED',
+        deletedAt: null,
       }).first();
 
       if (!book) {
@@ -198,13 +199,19 @@ export class BookParsingService {
       const book = await transaction.orm.public.Book.where({
         id: job.bookId,
         parseStatus: 'PROCESSING',
+        deletedAt: null,
       }).first();
 
       if (!book) {
         throw new Error('Book is no longer being parsed');
       }
 
-      await transaction.orm.public.Book.where({ id: book.id }).update({
+      // Re-checked in the update: a deletion can commit after the read above.
+      const readyBook = await transaction.orm.public.Book.where({
+        id: book.id,
+        parseStatus: 'PROCESSING',
+        deletedAt: null,
+      }).update({
         title: parsedEpub.title ?? book.title,
         language: parsedEpub.language,
         coverObjectKey: cover?.objectKey ?? null,
@@ -216,6 +223,11 @@ export class BookParsingService {
         chapterCount: parsedEpub.chapters.length,
         updatedAt: now,
       });
+
+      if (!readyBook) {
+        throw new Error('Book is no longer being parsed');
+      }
+
       await transaction.orm.public.Job.where({
         id: job.id,
         status: 'PROCESSING',

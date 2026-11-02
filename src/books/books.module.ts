@@ -4,6 +4,7 @@ import { PrismaModule } from '../prisma/prisma.module.js';
 import { StorageModule } from '../storage/storage.module.js';
 import { TtsModelsModule } from '../tts-models/tts-models.module.js';
 import { BooksController } from './books.controller.js';
+import { BookDeletionService } from './book-deletion.service.js';
 import { BookParsingService } from './book-parsing.service.js';
 import { ChapterCurationService } from './chapter-curation.service.js';
 import { BooksService } from './books.service.js';
@@ -14,6 +15,7 @@ import { EpubParserService } from './epub-parser.service.js';
   controllers: [BooksController],
   providers: [
     BooksService,
+    BookDeletionService,
     EpubParserService,
     BookParsingService,
     ChapterCurationService,

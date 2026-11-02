@@ -3,6 +3,7 @@ import {
   DeleteObjectsCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
   S3ServiceException,
@@ -147,6 +148,37 @@ export class StorageService {
         throw new Error('One or more storage objects could not be deleted');
       }
     }
+  }
+
+  async deleteObjectsByPrefix(prefix: string): Promise<void> {
+    if (!/^[^/]+(\/[^/]+)*\/$/.test(prefix)) {
+      throw new Error(
+        'Storage prefix must be a non-empty folder path ending with /',
+      );
+    }
+
+    let continuationToken: string | undefined;
+
+    do {
+      const page = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+        }),
+      );
+      const objectKeys = (page.Contents ?? [])
+        .map((object) => object.Key)
+        .filter((key): key is string => Boolean(key));
+
+      if (objectKeys.length) {
+        await this.deleteObjects(objectKeys);
+      }
+
+      continuationToken = page.IsTruncated
+        ? page.NextContinuationToken
+        : undefined;
+    } while (continuationToken);
   }
 
   async getObjectMetadata(

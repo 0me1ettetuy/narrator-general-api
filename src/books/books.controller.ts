@@ -80,6 +80,7 @@ import {
   UpdateChapterOrderDto,
   UpdateChapterSelectionDto,
 } from './dto/chapter-curation.dto.js';
+import { BookDeletionService } from './book-deletion.service.js';
 import { ChapterCurationService } from './chapter-curation.service.js';
 import { BooksService } from './books.service.js';
 
@@ -93,6 +94,7 @@ type RequestWithUser = Request & {
 export class BooksController {
   constructor(
     private readonly booksService: BooksService,
+    private readonly bookDeletionService: BookDeletionService,
     private readonly chapterCurationService: ChapterCurationService,
   ) {}
 
@@ -577,5 +579,26 @@ export class BooksController {
     @Req() request: RequestWithUser,
   ): Promise<BookDetailResponse> {
     return this.booksService.getBook(request.user.sub, params.bookId);
+  }
+
+  @Delete(':bookId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary:
+      'Delete a book, stopping its parsing/audio work and removing its files',
+  })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiNoContentResponse({
+    description: 'The book, its chapters, audio, and stored files were removed',
+  })
+  @ApiBadRequestResponse({ description: 'bookId must be a UUID' })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book not found' })
+  @UseGuards(JwtAccessGuard)
+  async deleteBook(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+  ): Promise<void> {
+    await this.bookDeletionService.deleteBook(request.user.sub, params.bookId);
   }
 }
