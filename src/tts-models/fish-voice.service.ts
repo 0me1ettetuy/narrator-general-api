@@ -230,6 +230,16 @@ export class FishVoiceService implements OnModuleInit {
           defaultOrder: null,
           updatedAt: now,
         });
+        // An archived voice can no longer be resolved for synthesis (see
+        // resolveVoiceReferenceId), so clear it out of every selection that
+        // pointed at it rather than leaving a dead selection the frontend
+        // has to detect on its own.
+        await this.prisma.db.orm.public.User.where({
+          selectedFishVoiceId: existing.id,
+        }).update({
+          selectedFishVoiceId: null,
+          updatedAt: now,
+        });
       }
     }
   }

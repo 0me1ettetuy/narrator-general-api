@@ -166,6 +166,27 @@ describe('FishVoiceService', () => {
     ).toMatchObject({ isEnabled: true, defaultOrder: 0 });
   });
 
+  it('clears every user selection pointing at a default voice removed from config', async () => {
+    await service.onModuleInit();
+    const sarah = storedVoices.find(
+      (voice) => voice.referenceId === 'sarah-reference-id',
+    ) as TestVoice;
+    await service.selectVoice('user-id', sarah.id);
+    await service.selectVoice('other-user-id', sarah.id);
+
+    configuredVoices = JSON.stringify([
+      { id: 'adrian-reference-id', name: 'Adrian' },
+    ]);
+    await service.onModuleInit();
+
+    expect(
+      users.find((user) => user.id === 'user-id')?.selectedFishVoiceId,
+    ).toBeNull();
+    expect(
+      users.find((user) => user.id === 'other-user-id')?.selectedFishVoiceId,
+    ).toBeNull();
+  });
+
   it('lists and selects shared defaults and owned custom voices', async () => {
     await service.onModuleInit();
     const defaultVoice = storedVoices.find(
