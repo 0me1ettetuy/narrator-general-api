@@ -433,11 +433,11 @@ export class ChapterCurationService {
   }
 
   private async getOwnedBook(userId: string, bookId: string): Promise<Book> {
-    const book = (await this.prisma.db.orm.public.Book.where({
+    const book = await this.prisma.db.orm.public.Book.where({
       id: bookId,
       userId,
       deletedAt: null,
-    }).first()) as Book | null;
+    }).first();
 
     if (!book) {
       throw new NotFoundException({

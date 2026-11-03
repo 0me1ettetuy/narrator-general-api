@@ -3,6 +3,7 @@ import type {
   AudioProcessingStage,
   AudioStatus,
   BookParseStatus,
+  BookVisibility,
   ChapterClassificationConfidence,
   ChapterClassificationSource,
   ChapterOrigin,
@@ -28,6 +29,7 @@ export type Book = {
   parseError: string | null;
   parsedAt: Instant | null;
   chapterCount: number;
+  visibility: BookVisibility;
   deletedAt: Instant | null;
   createdAt: Instant;
   updatedAt: Instant;
@@ -75,4 +77,11 @@ export type ProcessingJob = {
   id: string;
   status: JobStatus;
   progress: number;
+};
+
+export type BookLibraryEntry = {
+  id: string;
+  userId: string;
+  bookId: string;
+  createdAt: Instant;
 };

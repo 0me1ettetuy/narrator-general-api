@@ -32,16 +32,21 @@ import type {
   CreateBookUploadResponse,
   QueueChapterAudioResponse,
 } from './contracts/books.response.js';
-import type { BooksListQueryDto } from './dto/books-list-query.dto.js';
+import type {
+  BooksListQueryDto,
+  PublicBooksListQueryDto,
+} from './dto/books-list-query.dto.js';
 import type { CreateBookCoverUploadDto } from './dto/create-book-cover-upload.dto.js';
 import {
   EPUB_MIME_TYPE,
   type CreateBookUploadDto,
 } from './dto/create-book-upload.dto.js';
+import type { UpdateBookVisibilityDto } from './dto/update-book-visibility.dto.js';
 import type {
   Audio,
   Book,
   BookAuthor,
+  BookLibraryEntry,
   Chapter,
   ProcessingJob,
 } from './types/book.type.js';
@@ -212,16 +217,41 @@ export class BooksService {
   ): Promise<BooksListResponse> {
     const limit = query.limit ?? DEFAULT_PAGE_SIZE;
     const offset = query.offset ?? 0;
-    const books = (await this.prisma.db.orm.public.Book.where({
-      userId,
-      deletedAt: null,
-    })
-      .orderBy([(book) => book.createdAt.desc(), (book) => book.id.desc()])
-      .offset(offset)
-      .limit(limit + 1)
-      .all()) as Book[];
-    const hasNextPage = books.length > limit;
-    const pageBooks = books.slice(0, limit);
+    const source = query.source ?? 'all';
+
+    const entries =
+      source === 'owned'
+        ? []
+        : ((await this.prisma.db.orm.public.BookLibraryEntry.where({
+            userId,
+          }).all()) as BookLibraryEntry[]);
+    const addedBookIds = entries.map((entry) => entry.bookId);
+    const addedBookIdSet = new Set(addedBookIds);
+
+    const ownedBooks =
+      source === 'added'
+        ? []
+        : ((await this.prisma.db.orm.public.Book.where({
+            userId,
+            deletedAt: null,
+          }).all()) as Book[]);
+    const addedBooks = addedBookIds.length
+      ? ((await this.prisma.db.orm.public.Book.where((book) =>
+          book.id.in(addedBookIds),
+        ).all()) as Book[])
+      : [];
+    // Added books can briefly outlive their owner's book being deleted
+    // (cleaned up asynchronously by BookDeletionService); filter defensively
+    // rather than relying on that cleanup alone.
+    const visibleAddedBooks = addedBooks.filter(
+      (book) => book.deletedAt === null,
+    );
+    const combined = [...ownedBooks, ...visibleAddedBooks].sort(
+      compareBooksNewestFirst,
+    );
+    const hasNextPage = combined.length > offset + limit;
+    const pageBooks = combined.slice(offset, offset + limit);
+
     const authors = pageBooks.length
       ? ((await this.prisma.db.orm.public.BookAuthor.where((author) =>
           author.bookId.in(pageBooks.map((book) => book.id)),
@@ -237,7 +267,68 @@ export class BooksService {
 
     return {
       books: pageBooks.map((book) =>
-        toBookSummary(book, authorsByBookId.get(book.id) ?? []),
+        toBookSummary(
+          book,
+          userId,
+          addedBookIdSet.has(book.id),
+          authorsByBookId.get(book.id) ?? [],
+        ),
+      ),
+      nextOffset: hasNextPage ? offset + limit : null,
+    };
+  }
+
+  async listPublicBooks(
+    userId: string,
+    query: PublicBooksListQueryDto,
+  ): Promise<BooksListResponse> {
+    const limit = query.limit ?? DEFAULT_PAGE_SIZE;
+    const offset = query.offset ?? 0;
+    const search = query.search?.trim().toLowerCase();
+
+    // Title search is applied in-memory (no proven case-insensitive
+    // substring operator in this ORM yet), so the public catalogue is
+    // fetched whole and paginated after filtering/sorting. Fine for a
+    // personal-scale public catalogue; revisit if it grows large.
+    const allPublicBooks = (await this.prisma.db.orm.public.Book.where({
+      visibility: 'PUBLIC',
+      deletedAt: null,
+    }).all()) as Book[];
+    const matchingBooks = search
+      ? allPublicBooks.filter((book) =>
+          book.title.toLowerCase().includes(search),
+        )
+      : allPublicBooks;
+    const sortedBooks = matchingBooks.sort(compareBooksNewestFirst);
+    const hasNextPage = sortedBooks.length > offset + limit;
+    const pageBooks = sortedBooks.slice(offset, offset + limit);
+
+    const [authors, entries] = (await Promise.all([
+      pageBooks.length
+        ? this.prisma.db.orm.public.BookAuthor.where((author) =>
+            author.bookId.in(pageBooks.map((book) => book.id)),
+          ).all()
+        : Promise.resolve([]),
+      this.prisma.db.orm.public.BookLibraryEntry.where({ userId }).all(),
+    ])) as [BookAuthor[], BookLibraryEntry[]];
+    const authorsByBookId = new Map<string, BookAuthor[]>();
+
+    for (const author of authors) {
+      const bookAuthors = authorsByBookId.get(author.bookId) ?? [];
+      bookAuthors.push(author);
+      authorsByBookId.set(author.bookId, bookAuthors);
+    }
+
+    const addedBookIdSet = new Set(entries.map((entry) => entry.bookId));
+
+    return {
+      books: pageBooks.map((book) =>
+        toBookSummary(
+          book,
+          userId,
+          addedBookIdSet.has(book.id),
+          authorsByBookId.get(book.id) ?? [],
+        ),
       ),
       nextOffset: hasNextPage ? offset + limit : null,
     };
@@ -599,7 +690,7 @@ export class BooksService {
 
     await this.prisma.db.transaction(async (transaction) => {
       const audio = await transaction.orm.public.Audio.where({
-        id: deletion.audioId as string,
+        id: deletion.audioId,
         status: 'DELETING',
       }).first();
 
@@ -608,11 +699,11 @@ export class BooksService {
       }
 
       await transaction.orm.public.AudioChunk.where({
-        audioId: deletion.audioId as string,
+        audioId: deletion.audioId,
       }).deleteAndCount();
       await this.deleteChapterAudioJobs(deletion.jobs, transaction);
       await transaction.orm.public.Audio.where({
-        id: deletion.audioId as string,
+        id: deletion.audioId,
         status: 'DELETING',
       }).deleteAndCount();
     });
@@ -623,18 +714,7 @@ export class BooksService {
     bookId: string,
     chapterId: string,
   ): Promise<ChapterAudioAccessResponse> {
-    const book = await this.prisma.db.orm.public.Book.where({
-      id: bookId,
-      userId,
-      deletedAt: null,
-    }).first();
-
-    if (!book) {
-      throw new NotFoundException({
-        code: API_ERROR_CODES.notFound,
-        message: 'Book not found',
-      });
-    }
+    const book = await this.getReadableBook(userId, bookId);
 
     const chapter = await this.prisma.db.orm.public.Chapter.where({
       id: chapterId,
@@ -678,13 +758,9 @@ export class BooksService {
     userId: string,
     bookId: string,
   ): Promise<BookCoverAccessResponse> {
-    const book = (await this.prisma.db.orm.public.Book.where({
-      id: bookId,
-      userId,
-      deletedAt: null,
-    }).first()) as Book | null;
+    const book = await this.getReadableBook(userId, bookId);
 
-    if (!book || !book.coverObjectKey) {
+    if (!book.coverObjectKey) {
       throw new NotFoundException({
         code: API_ERROR_CODES.notFound,
         message: 'Book cover not found',
@@ -749,27 +825,18 @@ export class BooksService {
   }
 
   async getBook(userId: string, bookId: string): Promise<BookDetailResponse> {
-    const book = await this.prisma.db.orm.public.Book.where({
-      id: bookId,
-      userId,
-      deletedAt: null,
-    }).first();
+    const book = await this.getReadableBook(userId, bookId);
 
-    if (!book) {
-      throw new NotFoundException({
-        code: API_ERROR_CODES.notFound,
-        message: 'Book not found',
-      });
-    }
-
-    const [authors, chapters, voiceNamesByReferenceId] = (await Promise.all([
-      this.prisma.db.orm.public.BookAuthor.where({ bookId }).all(),
-      this.prisma.db.orm.public.Chapter.where({
-        bookId,
-        removedAt: null,
-      }).all(),
-      this.getVoiceNamesByReferenceId(userId),
-    ])) as [BookAuthor[], Chapter[], ReadonlyMap<string, string>];
+    const [authors, chapters, voiceNamesByReferenceId, isAdded] =
+      (await Promise.all([
+        this.prisma.db.orm.public.BookAuthor.where({ bookId }).all(),
+        this.prisma.db.orm.public.Chapter.where({
+          bookId,
+          removedAt: null,
+        }).all(),
+        this.getVoiceNamesByReferenceId(userId),
+        this.isBookAdded(userId, bookId),
+      ])) as [BookAuthor[], Chapter[], ReadonlyMap<string, string>, boolean];
     const sortedChapters = chapters.sort(compareByPosition);
     const audioByChapterId = new Map(
       (
@@ -786,7 +853,12 @@ export class BooksService {
     );
 
     return {
-      book: toBookSummary(book),
+      book: toBookSummary(
+        book,
+        userId,
+        isAdded,
+        authors.sort(compareByPosition),
+      ),
       authors: authors.sort(compareByPosition).map(toBookAuthorResponse),
       chapters: sortedChapters.map((chapter) =>
         toChapterSummaryResponse(
@@ -796,6 +868,148 @@ export class BooksService {
         ),
       ),
     };
+  }
+
+  async updateVisibility(
+    userId: string,
+    bookId: string,
+    dto: UpdateBookVisibilityDto,
+  ): Promise<BookSummary> {
+    const book = await this.getOwnedBook(userId, bookId);
+
+    if (dto.visibility === 'PUBLIC' && book.parseStatus !== 'READY') {
+      throw new ConflictException({
+        code: API_ERROR_CODES.conflict,
+        message: 'Only a fully parsed book can be made public',
+      });
+    }
+
+    if (book.visibility === dto.visibility) {
+      return toBookSummary(book, userId, false);
+    }
+
+    const now = temporalNow();
+    const updated = await this.prisma.db.transaction(async (transaction) => {
+      const updatedBook = (await transaction.orm.public.Book.where({
+        id: book.id,
+        userId,
+      }).update({
+        visibility: dto.visibility,
+        updatedAt: now,
+      })) as Book;
+
+      // Other users' saved references to a book that just went private no
+      // longer resolve to anything they can read; drop them instead of
+      // leaving a dangling, inaccessible library entry.
+      if (dto.visibility === 'PRIVATE') {
+        await transaction.orm.public.BookLibraryEntry.where({
+          bookId: book.id,
+        }).deleteAndCount();
+      }
+
+      return updatedBook;
+    });
+
+    return toBookSummary(updated, userId, false);
+  }
+
+  async addToLibrary(userId: string, bookId: string): Promise<void> {
+    const book = await this.getReadableBook(userId, bookId);
+
+    if (book.visibility !== 'PUBLIC') {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Book not found',
+      });
+    }
+
+    if (book.userId === userId) {
+      throw new ConflictException({
+        code: API_ERROR_CODES.conflict,
+        message: 'You already own this book',
+      });
+    }
+
+    if (await this.isBookAdded(userId, bookId)) {
+      return;
+    }
+
+    await this.prisma.db.orm.public.BookLibraryEntry.create({
+      id: randomUUID(),
+      userId,
+      bookId,
+    });
+  }
+
+  async removeFromLibrary(userId: string, bookId: string): Promise<void> {
+    await this.prisma.db.orm.public.BookLibraryEntry.where({
+      userId,
+      bookId,
+    }).deleteAndCount();
+  }
+
+  async copyBook(
+    userId: string,
+    bookId: string,
+  ): Promise<CompleteBookUploadResponse> {
+    const source = await this.prisma.db.orm.public.Book.where({
+      id: bookId,
+      deletedAt: null,
+    }).first();
+
+    if (!source || source.visibility !== 'PUBLIC') {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Book not found',
+      });
+    }
+
+    if (source.userId === userId) {
+      throw new ConflictException({
+        code: API_ERROR_CODES.conflict,
+        message: 'You already own this book',
+      });
+    }
+
+    const newBookId = randomUUID();
+    const sourceObjectKey = `books/${userId}/${newBookId}/source/original.epub`;
+
+    await this.storageService.copyObject(
+      source.sourceObjectKey,
+      sourceObjectKey,
+    );
+
+    const now = temporalNow();
+    const jobId = randomUUID();
+    const idempotencyKey = getParseBookIdempotencyKey(newBookId);
+
+    await this.prisma.db.transaction(async (transaction) => {
+      await transaction.orm.public.Book.create({
+        id: newBookId,
+        userId,
+        title: source.title,
+        sourceFormat: 'EPUB',
+        sourceObjectKey,
+        sourceOriginalFilename: source.sourceOriginalFilename,
+        sourceMimeType: source.sourceMimeType,
+        sourceSize: source.sourceSize,
+        sourceChecksum: source.sourceChecksum,
+        parseStatus: 'QUEUED',
+        updatedAt: now,
+      });
+      await transaction.orm.public.Job.create({
+        id: jobId,
+        bookId: newBookId,
+        type: 'PARSE_BOOK',
+        idempotencyKey,
+        maxAttempts: JOB_MAX_ATTEMPTS,
+        updatedAt: now,
+      });
+    });
+
+    await this.jobsService.enqueueBookParsing(jobId);
+
+    return toCompleteBookUploadResponse(newBookId, jobId);
   }
 
   private async createOrReuseChapterAudioJob(
@@ -933,11 +1147,11 @@ export class BooksService {
   }
 
   private async getOwnedBook(userId: string, bookId: string): Promise<Book> {
-    const book = (await this.prisma.db.orm.public.Book.where({
+    const book = await this.prisma.db.orm.public.Book.where({
       id: bookId,
       userId,
       deletedAt: null,
-    }).first()) as Book | null;
+    }).first();
 
     if (!book) {
       throw new NotFoundException({
@@ -947,6 +1161,34 @@ export class BooksService {
     }
 
     return book;
+  }
+
+  // Owner or public: used by every read-only book endpoint. Mutating
+  // endpoints must keep using getOwnedBook instead — visibility only ever
+  // relaxes reads, never writes. Never reveals whether a private id exists.
+  private async getReadableBook(userId: string, bookId: string): Promise<Book> {
+    const book = await this.prisma.db.orm.public.Book.where({
+      id: bookId,
+      deletedAt: null,
+    }).first();
+
+    if (!book || (book.userId !== userId && book.visibility !== 'PUBLIC')) {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Book not found',
+      });
+    }
+
+    return book;
+  }
+
+  private async isBookAdded(userId: string, bookId: string): Promise<boolean> {
+    const entry = await this.prisma.db.orm.public.BookLibraryEntry.where({
+      userId,
+      bookId,
+    }).first();
+
+    return entry !== null;
   }
 
   private async getBookReadyForCoverUpdate(
@@ -1024,7 +1266,12 @@ export class BooksService {
   }
 }
 
-function toBookSummary(book: Book, authors: BookAuthor[] = []): BookSummary {
+function toBookSummary(
+  book: Book,
+  requesterId: string,
+  isAdded: boolean,
+  authors: BookAuthor[] = [],
+): BookSummary {
   return {
     id: book.id,
     title: book.title,
@@ -1037,6 +1284,9 @@ function toBookSummary(book: Book, authors: BookAuthor[] = []): BookSummary {
     hasCover: book.coverObjectKey !== null,
     parseStatus: book.parseStatus,
     chapterCount: book.chapterCount,
+    visibility: book.visibility,
+    isOwner: book.userId === requesterId,
+    isAdded,
     createdAt: book.createdAt,
     updatedAt: book.updatedAt,
   };
@@ -1138,4 +1388,11 @@ function compareByPosition(
   second: BookAuthor | Chapter,
 ): number {
   return first.position - second.position || first.id.localeCompare(second.id);
+}
+
+function compareBooksNewestFirst(first: Book, second: Book): number {
+  return (
+    second.createdAt.epochMilliseconds - first.createdAt.epochMilliseconds ||
+    second.id.localeCompare(first.id)
+  );
 }

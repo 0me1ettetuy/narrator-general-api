@@ -26,6 +26,8 @@ export type ChapterOrigin = 'IMPORTED' | 'USER';
 export type JobStatus =
   'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
+export type BookVisibility = 'PRIVATE' | 'PUBLIC';
+
 export type BookSummary = {
   id: string;
   title: string;
@@ -38,6 +40,13 @@ export type BookSummary = {
   hasCover: boolean;
   parseStatus: BookParseStatus;
   chapterCount: number;
+  visibility: BookVisibility;
+  // Whether the requesting user owns this book (full edit rights) or is
+  // only reading it because it's public.
+  isOwner: boolean;
+  // Whether the requesting user has added this (someone else's) public book
+  // to their own library list. Always false for a book they own.
+  isAdded: boolean;
   createdAt: Instant;
   updatedAt: Instant;
 };

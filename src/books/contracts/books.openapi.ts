@@ -42,6 +42,20 @@ export class BookSummaryResponseDto {
   @ApiProperty({ minimum: 0 })
   chapterCount: number;
 
+  @ApiProperty({ enum: ['PRIVATE', 'PUBLIC'] })
+  visibility: string;
+
+  @ApiProperty({
+    description: 'Whether the requesting user owns this book',
+  })
+  isOwner: boolean;
+
+  @ApiProperty({
+    description:
+      "Whether the requesting user has added this (someone else's public) book to their own library",
+  })
+  isAdded: boolean;
+
   @ApiProperty({ format: 'date-time' })
   createdAt: string;
 

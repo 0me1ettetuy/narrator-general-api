@@ -1,4 +1,5 @@
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   DeleteObjectsCommand,
   GetObjectCommand,
@@ -118,6 +119,19 @@ export class StorageService {
       queueSize: 1,
       partSize: MULTIPART_UPLOAD_PART_SIZE_BYTES,
     }).done();
+  }
+
+  async copyObject(
+    sourceObjectKey: string,
+    targetObjectKey: string,
+  ): Promise<void> {
+    await this.client.send(
+      new CopyObjectCommand({
+        Bucket: this.bucket,
+        CopySource: `${this.bucket}/${sourceObjectKey}`,
+        Key: targetObjectKey,
+      }),
+    );
   }
 
   async deleteObject(objectKey: string): Promise<void> {

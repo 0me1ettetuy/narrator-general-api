@@ -118,6 +118,11 @@ export class BookDeletionService {
       await transaction.orm.public.BookAuthor.where({
         bookId,
       }).deleteAndCount();
+      // Other users may have added this book to their own library; those
+      // references must not dangle once the book itself is gone.
+      await transaction.orm.public.BookLibraryEntry.where({
+        bookId,
+      }).deleteAndCount();
       await transaction.orm.public.Book.where({ id: bookId }).deleteAndCount();
     });
   }

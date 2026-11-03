@@ -76,6 +76,22 @@ task unless explicitly requested.
    Every book lookup and worker claim must filter `deletedAt: null`; running
    workers stop at their next status check and delete what they just uploaded.
    It is idempotent, so a retry finishes a partly failed deletion.
+8. `Book.visibility` (`PRIVATE` default, or `PUBLIC`) lets any signed-in user
+   read someone else's book — never write it; mutations stay owner-only
+   regardless of visibility, and a private book 404s for a non-owner exactly
+   like a nonexistent id (`BooksService.getReadableBook`, used by `GET
+/books/:bookId`, its cover, and chapter audio access; `getOwnedBook` keeps
+   gating every mutation). `PATCH /books/:bookId/visibility` is owner-only
+   and rejects making a non-`READY` book public; flipping back to private
+   deletes every other user's `BookLibraryEntry` row for it.
+   `BookLibraryEntry { userId, bookId }` is a separate "added to my library"
+   reference, not a copy — `POST`/`DELETE /books/:bookId/library` manage it,
+   `GET /books?source=owned|added|all` lists by it. `POST /books/:bookId/copy`
+   duplicates a public book's source object and re-parses it as a new,
+   independently owned book (no audio or curation edits carried over).
+   `GET /books/public` lists every public book, searchable by title. Backend
+   only so far — see `docs/public-private-books-plan.md` (temporary; delete
+   once the frontend work it tracks is done) for what's still open.
 
 Audio/job state is persisted so the frontend can recover after reload. The
 book-detail endpoint exposes chapter audio status and progress.

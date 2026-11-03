@@ -38,6 +38,7 @@ import {
   BookCoverAccessResponseDto,
   BookDetailResponseDto,
   BooksListResponseDto,
+  BookSummaryResponseDto,
   ChapterAudioResponseDto,
   ChapterDetailResponseDto,
   ChapterMergeResponseDto,
@@ -54,6 +55,7 @@ import type {
   BookCoverAccessResponse,
   BookDetailResponse,
   BooksListResponse,
+  BookSummary,
   ChapterAudioResponse,
   ChapterDetailResponse,
   ChapterMergeResponse,
@@ -67,11 +69,15 @@ import type {
 } from './contracts/books.response.js';
 import { BatchChapterAudioDto } from './dto/batch-chapter-audio.dto.js';
 import { BookIdParamsDto } from './dto/book-id-params.dto.js';
-import { BooksListQueryDto } from './dto/books-list-query.dto.js';
+import {
+  BooksListQueryDto,
+  PublicBooksListQueryDto,
+} from './dto/books-list-query.dto.js';
 import { ChapterAudioParamsDto } from './dto/chapter-audio-params.dto.js';
 import { CreateBookUploadDto } from './dto/create-book-upload.dto.js';
 import { CreateBookCoverUploadDto } from './dto/create-book-cover-upload.dto.js';
 import { QueueChapterAudioDto } from './dto/queue-chapter-audio.dto.js';
+import { UpdateBookVisibilityDto } from './dto/update-book-visibility.dto.js';
 import {
   CreateChapterDto,
   MergeChaptersDto,
@@ -553,9 +559,17 @@ export class BooksController {
   }
 
   @Get()
-  @ApiOperation({ summary: "List the authenticated user's books" })
+  @ApiOperation({
+    summary: "List the authenticated user's own and added-to-library books",
+  })
   @ApiQuery({ name: 'limit', required: false, minimum: 1, maximum: 50 })
   @ApiQuery({ name: 'offset', required: false, minimum: 0 })
+  @ApiQuery({
+    name: 'source',
+    required: false,
+    enum: ['owned', 'added', 'all'],
+    description: 'Default "all" — owned books plus added-to-library books',
+  })
   @ApiOkResponse({ type: BooksListResponseDto })
   @ApiUnauthorizedResponse({ description: 'Invalid access token' })
   @UseGuards(JwtAccessGuard)
@@ -566,8 +580,30 @@ export class BooksController {
     return this.booksService.listBooks(request.user.sub, query);
   }
 
+  // Registered before ':bookId' so "public" is never matched as a bookId.
+  @Get('public')
+  @ApiOperation({ summary: 'List every public book across all users' })
+  @ApiQuery({ name: 'limit', required: false, minimum: 1, maximum: 50 })
+  @ApiQuery({ name: 'offset', required: false, minimum: 0 })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Case-insensitive title substring match',
+  })
+  @ApiOkResponse({ type: BooksListResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @UseGuards(JwtAccessGuard)
+  listPublicBooks(
+    @Req() request: RequestWithUser,
+    @Query() query: PublicBooksListQueryDto,
+  ): Promise<BooksListResponse> {
+    return this.booksService.listPublicBooks(request.user.sub, query);
+  }
+
   @Get(':bookId')
-  @ApiOperation({ summary: "Get one of the authenticated user's books" })
+  @ApiOperation({
+    summary: "Get a book: the caller's own, or anyone's public book",
+  })
   @ApiParam({ name: 'bookId', format: 'uuid' })
   @ApiOkResponse({ type: BookDetailResponseDto })
   @ApiBadRequestResponse({ description: 'bookId must be a UUID' })
@@ -579,6 +615,87 @@ export class BooksController {
     @Req() request: RequestWithUser,
   ): Promise<BookDetailResponse> {
     return this.booksService.getBook(request.user.sub, params.bookId);
+  }
+
+  @Patch(':bookId/visibility')
+  @ApiOperation({
+    summary: 'Make an owned book public or private',
+  })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiBody({ type: UpdateBookVisibilityDto })
+  @ApiOkResponse({ type: BookSummaryResponseDto })
+  @ApiBadRequestResponse({ description: 'bookId must be a UUID' })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book not found' })
+  @ApiConflictResponse({
+    description: 'Only a fully parsed book can be made public',
+  })
+  @UseGuards(JwtAccessGuard)
+  updateVisibility(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+    @Body() dto: UpdateBookVisibilityDto,
+  ): Promise<BookSummary> {
+    return this.booksService.updateVisibility(
+      request.user.sub,
+      params.bookId,
+      dto,
+    );
+  }
+
+  @Post(':bookId/library')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: "Add a public book to the caller's own library (idempotent)",
+  })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiNoContentResponse({ description: 'Added (or already added)' })
+  @ApiBadRequestResponse({ description: 'bookId must be a UUID' })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book not found or not public' })
+  @ApiConflictResponse({ description: 'The caller already owns this book' })
+  @UseGuards(JwtAccessGuard)
+  async addToLibrary(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+  ): Promise<void> {
+    await this.booksService.addToLibrary(request.user.sub, params.bookId);
+  }
+
+  @Delete(':bookId/library')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: "Remove a book from the caller's own library (idempotent)",
+  })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiNoContentResponse({ description: 'Removed (or already absent)' })
+  @ApiBadRequestResponse({ description: 'bookId must be a UUID' })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @UseGuards(JwtAccessGuard)
+  async removeFromLibrary(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+  ): Promise<void> {
+    await this.booksService.removeFromLibrary(request.user.sub, params.bookId);
+  }
+
+  @Post(':bookId/copy')
+  @ApiOperation({
+    summary:
+      'Copy a public book into a new, independently owned and editable book',
+  })
+  @ApiParam({ name: 'bookId', format: 'uuid' })
+  @ApiCreatedResponse({ type: CompleteBookUploadResponseDto })
+  @ApiBadRequestResponse({ description: 'bookId must be a UUID' })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiNotFoundResponse({ description: 'Book not found or not public' })
+  @ApiConflictResponse({ description: 'The caller already owns this book' })
+  @UseGuards(JwtAccessGuard)
+  copyBook(
+    @Param() params: BookIdParamsDto,
+    @Req() request: RequestWithUser,
+  ): Promise<CompleteBookUploadResponse> {
+    return this.booksService.copyBook(request.user.sub, params.bookId);
   }
 
   @Delete(':bookId')

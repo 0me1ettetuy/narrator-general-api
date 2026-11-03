@@ -17,11 +17,18 @@ import { BookDeletionService } from './book-deletion.service.js';
 
 type Row = Record<string, unknown>;
 type TableName =
-  'Book' | 'BookAuthor' | 'Chapter' | 'Audio' | 'AudioChunk' | 'Job';
+  | 'Book'
+  | 'BookAuthor'
+  | 'BookLibraryEntry'
+  | 'Chapter'
+  | 'Audio'
+  | 'AudioChunk'
+  | 'Job';
 
 const FOREIGN_KEYS: Partial<Record<TableName, [TableName, string][]>> = {
   Book: [
     ['BookAuthor', 'bookId'],
+    ['BookLibraryEntry', 'bookId'],
     ['Chapter', 'bookId'],
     ['Job', 'bookId'],
   ],
@@ -112,6 +119,7 @@ describe('BookDeletionService', () => {
     return [
       ...tables.Book.filter((book) => book.id === bookId),
       ...tables.BookAuthor.filter((author) => author.bookId === bookId),
+      ...tables.BookLibraryEntry.filter((entry) => entry.bookId === bookId),
       ...tables.Chapter.filter((chapter) => chapter.bookId === bookId),
       ...tables.Job.filter((job) => job.bookId === bookId),
       ...tables.Audio.filter((audio) => audioIds.includes(audio.id)),
@@ -136,6 +144,9 @@ describe('BookDeletionService', () => {
         },
       ],
       BookAuthor: [{ id: 'author-id', bookId: 'book-id' }],
+      BookLibraryEntry: [
+        { id: 'entry-id', userId: 'other-user-id', bookId: 'book-id' },
+      ],
       Chapter: [
         { id: 'chapter-1', bookId: 'book-id', removedAt: null },
         { id: 'chapter-2', bookId: 'book-id', removedAt: 'removed' },
@@ -173,6 +184,7 @@ describe('BookDeletionService', () => {
         public: {
           Book: createTable('Book'),
           BookAuthor: createTable('BookAuthor'),
+          BookLibraryEntry: createTable('BookLibraryEntry'),
           Chapter: createTable('Chapter'),
           Audio: createTable('Audio'),
           AudioChunk: createTable('AudioChunk'),
