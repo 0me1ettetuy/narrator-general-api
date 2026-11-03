@@ -12,16 +12,16 @@ plan, or older UI differs from the final implementation.
 
 ## At a glance
 
-| Capability                 | Where a user sees it                         | What it provides                                                                                   |
-| -------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Account and session        | Public header, register/login pages, sidebar | Secure sign-up, sign-in, session restore, logout, protected workspace                              |
-| Library and EPUB upload    | `/library`                                   | Direct EPUB upload, parse status, book cards, cover images, book deletion                          |
-| Parsed book view           | `/library/:bookId`                           | Metadata (including declared language), ordered chapter cards, selection, status and progress      |
-| Chapter audio              | Book page                                    | Generate, continue, stop, delete, play and download a chapter MP3                                  |
-| Voice models               | `/models`                                    | Per-user Fish key, selected model, and default/custom Fish voice selection (local models disabled) |
-| Chapter curation           | Book page → **Review chapters**              | Parser suggestions plus manual edit, tag, add, merge, remove, restore, and reorder                 |
-| Preferences and navigation | Headers and sidebar                          | Responsive private/public navigation, breadcrumbs, light/dark theme, English/Russian               |
-| Self-hosted deployment     | Deployment configuration                     | R2, S3, or MinIO storage; optional local TTS engines                                               |
+| Capability                   | Where a user sees it                            | What it provides                                                                                   |
+| ---------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Account and session          | Public header, register/login pages, sidebar    | Secure sign-up, sign-in, session restore, logout, protected workspace                              |
+| Library and EPUB upload      | `/library`                                      | Direct EPUB upload, parse status, book cards, cover images, book deletion                          |
+| Parsed book view             | `/library/:bookId`                              | Metadata (including declared language), ordered chapter cards, selection, status and progress      |
+| Chapter audio                | Book page                                       | Generate, continue, stop, delete, play and download a chapter MP3                                  |
+| Voice models                 | `/models`                                       | Per-user Fish key, selected model, and default/custom Fish voice selection (local models disabled) |
+| Chapter curation (UI hidden) | Book page → **Review chapters** (commented out) | Parser suggestions plus manual edit, tag, add, merge, remove, restore, and reorder; API unchanged  |
+| Preferences and navigation   | Headers and sidebar                             | Responsive private/public navigation, breadcrumbs, light/dark theme, English/Russian               |
+| Self-hosted deployment       | Deployment configuration                        | R2, S3, or MinIO storage; optional local TTS engines                                               |
 
 ## 1. Account, session, and protected workspace
 
@@ -337,6 +337,14 @@ front matter or references in its outline while excluding them from the common
 
 ### How to use it in the UI
 
+> **UI entry points currently hidden.** The **Select narrated chapters**
+> quick-select and each chapter card's role tag badge, "excluded from
+> narration" pill, and "Parser suggestion" pill are commented out; only
+> **Select all** and individual checkboxes remain. See
+> [`narrator-fe/docs/issues/chapter-tags-and-narrated-selector-hidden.md`](../../../narrator-fe/docs/issues/chapter-tags-and-narrated-selector-hidden.md).
+> `includeInDefaultNarration` itself, the API, and the batch-generation logic
+> below are unchanged.
+
 - On the book page, **Select narrated chapters** selects only chapters whose
   inclusion switch is on.
 - **Select all** intentionally includes every active chapter, even chapters
@@ -509,6 +517,11 @@ MAIN | FRONT_MATTER | NAVIGATION | REFERENCE | BACK_MATTER | OTHER
 
 ### 8.2 Manual outline editing
 
+> **UI entry point currently hidden.** The **Review chapters** button on the
+> book page is commented out; the backend endpoints and
+> `ChapterCurationPanel.tsx` below are unchanged and fully functional. See
+> [`narrator-fe/docs/issues/chapter-curation-hidden.md`](../../../narrator-fe/docs/issues/chapter-curation-hidden.md).
+
 #### How to use it in the UI
 
 1. Open a book and select **Review chapters**.
@@ -643,8 +656,12 @@ planned or only partially surfaced.
   delete them.
 - **Local models:** disabled; see the local-models subsection above for the
   restoration record.
-- **Curation:** parser classification suggests roles; it never automatically
-  merges or deletes short chapters. Users make those decisions explicitly.
+- **Curation:** its UI entry point is currently hidden (see the subsection
+  above). Parser classification suggests roles; it never automatically merges
+  or deletes short chapters. Users make those decisions explicitly.
+- **Role tags and narrated-chapters quick select:** also currently hidden
+  (see section 6 above); only **Select all** and individual chapter
+  checkboxes remain for batch selection.
 - **Progress detail:** chunk progress is durable, but the book page currently
   fetches the full book detail to obtain it rather than a small status-only
   endpoint.
