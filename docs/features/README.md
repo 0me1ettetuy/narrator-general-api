@@ -20,6 +20,7 @@ plan, or older UI differs from the final implementation.
 | Chapter audio                | Book page                                       | Generate, continue, stop, delete, play and download a chapter MP3                                  |
 | Voice models                 | `/models`                                       | Per-user Fish key, selected model, and default/custom Fish voice selection (local models disabled) |
 | Chapter curation (UI hidden) | Book page → **Review chapters** (commented out) | Parser suggestions plus manual edit, tag, add, merge, remove, restore, and reorder; API unchanged  |
+| Public book sharing          | Book page, `/library/browse`, `/library`        | Make a book public, browse/search the community library, add or copy someone else's public book    |
 | Preferences and navigation   | Headers and sidebar                             | Responsive private/public navigation, breadcrumbs, light/dark theme, English/Russian               |
 | Self-hosted deployment       | Deployment configuration                        | R2, S3, or MinIO storage; optional local TTS engines                                               |
 
@@ -149,9 +150,10 @@ background. It currently supports EPUB only.
 3. `POST /books/:bookId/upload-complete` checks the uploaded object's content
    type and size, marks the book `QUEUED`, persists a `PARSE_BOOK` job with an
    idempotency key, and puts that job onto Redis/BullMQ.
-4. The library API is owner-scoped and paginated (`limit`/`offset`, max 50 per
-   request). A book detail response returns active chapters in their stored
-   order.
+4. The library list (`GET /books`) returns owned and added-to-library books
+   (see section 11), paginated (`limit`/`offset`, max 50 per request); every
+   mutation stays owner-scoped. A book detail response returns active
+   chapters in their stored order.
 5. `DELETE /books/:bookId` (`BookDeletionService`) first sets `Book.deletedAt`
    and, in the same transaction, cancels the book's jobs and marks its audio
    `DELETING`. It then deletes every object under `books/{userId}/{bookId}/`
@@ -637,6 +639,68 @@ but they make the features above reliable to evolve.
   styling/tooling, shadcn, TanStack Query/Router, generated-client, FSD, and
   project-documentation baseline.
 
+## 11. Public book sharing and the community library
+
+### What it is
+
+A book is private by default. Its owner can make it public, after which any
+signed-in user can view it, play its ready chapter audio, and download it —
+read-only, never edit it. Other users can add a public book to their own
+library as a reference (not a copy), or make an independent, fully editable
+copy of it.
+
+### How to use it in the UI
+
+1. On your own book's page, once it has finished parsing (**Ready**), use
+   **Make public** (confirms, since this exposes it to every user) or
+   **Make private** to toggle visibility. A **Public** badge shows next to
+   the **Ready**/`EPUB` badges whenever a book is public, including on your
+   own page.
+2. Open **Browse community library** from the Library page, or go to
+   `/library/browse`, to see every public book from every user, searchable
+   by title. Each card has an **Add to library** / **Remove from library**
+   toggle.
+3. On a public book that isn't yours, its page shows the same **Add to
+   library** toggle and a **Make a copy** button instead of the owner's
+   controls. A copy opens as a new book you fully own once it finishes
+   parsing.
+4. The **Library** page's **My books** / **Added** / **All** pills filter
+   between books you own and books you've added from the community library.
+   An added book's card shows an **Added** badge and a remove action instead
+   of the owner-only delete button.
+
+### What happens underneath
+
+- `Book.visibility` (`PRIVATE` default, `PUBLIC`) gates three read-only
+  endpoints — book detail, cover, and chapter audio access — to owner-or-
+  public (`BooksService.getReadableBook`); a private book 404s a non-owner
+  exactly like a nonexistent id. Every mutating endpoint keeps the existing
+  owner-only check unchanged — visibility never relaxes a write.
+- `PATCH /books/:bookId/visibility` is owner-only and rejects making a
+  non-`READY` book public. Flipping back to private deletes every other
+  user's saved reference to it in the same transaction.
+- `BookLibraryEntry` (`userId`, `bookId`) is a separate "added to my
+  library" reference, distinct from ownership — adding a book never copies
+  it or changes `Book.userId`. `POST`/`DELETE /books/:bookId/library`
+  manage it; `GET /books?source=owned|added|all` lists by it; deleting the
+  underlying book also deletes every library entry pointing at it.
+- `POST /books/:bookId/copy` duplicates the source EPUB object under the new
+  owner's storage prefix and re-parses it exactly like a fresh upload — a
+  copy carries no audio and none of the original owner's chapter edits or
+  merges, since it starts from the clean EPUB.
+- `GET /books/public` lists every public book, searchable by title
+  (in-memory substring match — no proven case-insensitive operator was found
+  on this ORM's query builder; revisit if the public catalogue grows large).
+
+### Contributing commits, checked by actual change
+
+- Backend: `ece1440` added `Book.visibility`, `BookLibraryEntry`, the read
+  relaxation, and the five new endpoints, with the `BookDeletionService`
+  cascade.
+- Frontend: `e495e30` added the book-page read-only gating, visibility
+  toggle, and add/copy actions; `0da22d0` added the community library
+  browse page and the `/library` filter pills.
+
 ## Explicit current boundaries
 
 This section prevents the catalogue from promising features that are only
@@ -665,6 +729,12 @@ planned or only partially surfaced.
 - **Progress detail:** chunk progress is durable, but the book page currently
   fetches the full book detail to obtain it rather than a small status-only
   endpoint.
+- **Public book attribution:** the community library and a public book's page
+  never show who shared it. `User` has no display name today, only an
+  `email` that must never be shown to other users; adding a handle is a
+  separate, later decision.
+- **No moderation:** there is no reporting, flagging, or takedown tooling for
+  public books.
 
 ## Related documentation
 
