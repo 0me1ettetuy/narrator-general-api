@@ -152,6 +152,14 @@ export class ChapterAudioResponseDto {
   voice: string | null;
 
   @ApiProperty({
+    type: String,
+    nullable: true,
+    description:
+      'Display name of the voice above, resolved at response time. Null if the voice has since been removed.',
+  })
+  voiceName: string | null;
+
+  @ApiProperty({
     enum: ['QUEUED', 'PROCESSING', 'READY', 'FAILED', 'CANCELLED', 'DELETING'],
   })
   status: string;

@@ -98,6 +98,7 @@ describe('BooksService', () => {
   } as unknown as TtsModelsService;
   const fishVoices = {
     resolveVoiceReferenceId: jest.fn(),
+    getVoices: jest.fn().mockResolvedValue([]),
   } as unknown as FishVoiceService;
 
   beforeEach(() => {
@@ -298,6 +299,52 @@ describe('BooksService', () => {
       'fish-job-id',
       'FISH',
     );
+  });
+
+  it("resolves a chapter audio's voice name alongside its snapshotted voice id", async () => {
+    authorsAll.mockResolvedValue([]);
+    chaptersAll.mockResolvedValue([firstChapter]);
+    audioFirst.mockResolvedValue({
+      id: 'audio-id',
+      chapterId: firstChapter.id,
+      modelKey: 'fish.s2.1-pro',
+      voice: 'voice-reference-id',
+      status: 'READY',
+      processingStage: null,
+      totalChunks: 1,
+      completedChunks: 1,
+      error: null,
+    } as Audio);
+    jest.mocked(fishVoices.getVoices).mockResolvedValue([
+      {
+        id: 'voice-id',
+        referenceId: 'voice-reference-id',
+        name: 'Sarah',
+        source: 'DEFAULT',
+        enabled: true,
+        selected: false,
+      },
+    ]);
+    const service = new BooksService(
+      prisma,
+      storageService,
+      jobsService,
+      ttsModelsService,
+      fishVoices,
+    );
+
+    await expect(service.getBook('user-id', book.id)).resolves.toMatchObject({
+      chapters: [
+        {
+          id: firstChapter.id,
+          audio: expect.objectContaining({
+            voice: 'voice-reference-id',
+            voiceName: 'Sarah',
+          }),
+        },
+      ],
+    });
+    expect(fishVoices.getVoices).toHaveBeenCalledWith('user-id');
   });
 
   it('returns a signed cover URL for an owned book', async () => {

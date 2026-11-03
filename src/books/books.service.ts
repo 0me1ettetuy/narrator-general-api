@@ -295,8 +295,11 @@ export class BooksService {
       );
     }
 
+    const voiceNamesByReferenceId =
+      await this.getVoiceNamesByReferenceId(userId);
+
     return {
-      audio: toChapterAudioResponse(queued.audio),
+      audio: toChapterAudioResponse(queued.audio, voiceNamesByReferenceId),
       job: toChapterAudioJobResponse(queued.job),
     };
   }
@@ -456,7 +459,10 @@ export class BooksService {
       ),
     );
 
-    return toChapterAudioResponse(cancellation.audio);
+    const voiceNamesByReferenceId =
+      await this.getVoiceNamesByReferenceId(userId);
+
+    return toChapterAudioResponse(cancellation.audio, voiceNamesByReferenceId);
   }
 
   async cancelSelectedChapterAudio(
@@ -756,13 +762,14 @@ export class BooksService {
       });
     }
 
-    const [authors, chapters] = (await Promise.all([
+    const [authors, chapters, voiceNamesByReferenceId] = (await Promise.all([
       this.prisma.db.orm.public.BookAuthor.where({ bookId }).all(),
       this.prisma.db.orm.public.Chapter.where({
         bookId,
         removedAt: null,
       }).all(),
-    ])) as [BookAuthor[], Chapter[]];
+      this.getVoiceNamesByReferenceId(userId),
+    ])) as [BookAuthor[], Chapter[], ReadonlyMap<string, string>];
     const sortedChapters = chapters.sort(compareByPosition);
     const audioByChapterId = new Map(
       (
@@ -785,6 +792,7 @@ export class BooksService {
         toChapterSummaryResponse(
           chapter,
           audioByChapterId.get(chapter.id) ?? null,
+          voiceNamesByReferenceId,
         ),
       ),
     };
@@ -912,6 +920,16 @@ export class BooksService {
     return source === 'FISH'
       ? this.fishVoices.resolveVoiceReferenceId(userId)
       : null;
+  }
+
+  // Public: also used by ChapterCurationService, which composes this
+  // service rather than injecting FishVoiceService itself.
+  async getVoiceNamesByReferenceId(
+    userId: string,
+  ): Promise<ReadonlyMap<string, string>> {
+    const voices = await this.fishVoices.getVoices(userId);
+
+    return new Map(voices.map((voice) => [voice.referenceId, voice.name]));
   }
 
   private async getOwnedBook(userId: string, bookId: string): Promise<Book> {
@@ -1064,6 +1082,7 @@ function toBookAuthorResponse(author: BookAuthor): BookAuthorResponse {
 function toChapterSummaryResponse(
   chapter: Chapter,
   audio: Audio | null,
+  voiceNamesByReferenceId: ReadonlyMap<string, string>,
 ): ChapterSummaryResponse {
   return {
     id: chapter.id,
@@ -1075,15 +1094,27 @@ function toChapterSummaryResponse(
     classificationSource: chapter.classificationSource,
     classificationConfidence: chapter.classificationConfidence,
     classificationReason: chapter.classificationReason,
-    audio: audio ? toChapterAudioResponse(audio) : null,
+    audio: audio
+      ? toChapterAudioResponse(audio, voiceNamesByReferenceId)
+      : null,
   };
 }
 
-function toChapterAudioResponse(audio: Audio): ChapterAudioResponse {
+function toChapterAudioResponse(
+  audio: Audio,
+  voiceNamesByReferenceId: ReadonlyMap<string, string>,
+): ChapterAudioResponse {
   return {
     id: audio.id,
     modelId: audio.modelKey,
     voice: audio.voice,
+    // Resolved at response time against the user's current voice catalogue,
+    // not stored on Audio: the snapshotted `voice` id is what generation
+    // uses and must never change, but its display name can (a rename, or
+    // the voice being archived later) without touching past audio rows.
+    voiceName: audio.voice
+      ? (voiceNamesByReferenceId.get(audio.voice) ?? null)
+      : null,
     status: audio.status,
     processingStage: audio.processingStage,
     totalChunks: audio.totalChunks,

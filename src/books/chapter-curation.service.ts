@@ -45,8 +45,10 @@ export class ChapterCurationService {
     const audio = (await this.prisma.db.orm.public.Audio.where({
       chapterId: chapter.id,
     }).first()) as Audio | null;
+    const voiceNamesByReferenceId =
+      await this.booksService.getVoiceNamesByReferenceId(userId);
 
-    return toChapterDetailResponse(chapter, audio);
+    return toChapterDetailResponse(chapter, audio, voiceNamesByReferenceId);
   }
 
   async listRemovedChapters(
@@ -63,13 +65,19 @@ export class ChapterCurationService {
           Boolean(chapter.removedAt) && chapter.mergedIntoChapterId === null,
       )
       .sort(compareByPosition);
+    const voiceNamesByReferenceId =
+      await this.booksService.getVoiceNamesByReferenceId(userId);
     const responses = await Promise.all(
       removedChapters.map(async (chapter) => {
         const audio = (await this.prisma.db.orm.public.Audio.where({
           chapterId: chapter.id,
         }).first()) as Audio | null;
 
-        return toChapterSummaryResponse(chapter, audio);
+        return toChapterSummaryResponse(
+          chapter,
+          audio,
+          voiceNamesByReferenceId,
+        );
       }),
     );
 
@@ -298,7 +306,7 @@ export class ChapterCurationService {
     });
 
     return {
-      chapter: await this.getChapterSummary(book.id, primaryChapter.id),
+      chapter: await this.getChapterSummary(userId, book.id, primaryChapter.id),
       removedChapterIds,
     };
   }
@@ -502,6 +510,7 @@ export class ChapterCurationService {
   }
 
   private async getChapterSummary(
+    userId: string,
     bookId: string,
     chapterId: string,
   ): Promise<ChapterSummaryResponse> {
@@ -509,8 +518,10 @@ export class ChapterCurationService {
     const audio = (await this.prisma.db.orm.public.Audio.where({
       chapterId: chapter.id,
     }).first()) as Audio | null;
+    const voiceNamesByReferenceId =
+      await this.booksService.getVoiceNamesByReferenceId(userId);
 
-    return toChapterSummaryResponse(chapter, audio);
+    return toChapterSummaryResponse(chapter, audio, voiceNamesByReferenceId);
   }
 
   private async discardAudioIfNeeded(
@@ -561,6 +572,7 @@ export class ChapterCurationService {
 function toChapterSummaryResponse(
   chapter: Chapter,
   audio: Audio | null,
+  voiceNamesByReferenceId: ReadonlyMap<string, string>,
 ): ChapterSummaryResponse {
   return {
     id: chapter.id,
@@ -577,6 +589,9 @@ function toChapterSummaryResponse(
           id: audio.id,
           modelId: audio.modelKey,
           voice: audio.voice,
+          voiceName: audio.voice
+            ? (voiceNamesByReferenceId.get(audio.voice) ?? null)
+            : null,
           status: audio.status,
           processingStage: audio.processingStage,
           totalChunks: audio.totalChunks,
@@ -590,9 +605,10 @@ function toChapterSummaryResponse(
 function toChapterDetailResponse(
   chapter: Chapter,
   audio: Audio | null,
+  voiceNamesByReferenceId: ReadonlyMap<string, string>,
 ): ChapterDetailResponse {
   return {
-    ...toChapterSummaryResponse(chapter, audio),
+    ...toChapterSummaryResponse(chapter, audio, voiceNamesByReferenceId),
     text: chapter.text,
     origin: chapter.origin,
   };

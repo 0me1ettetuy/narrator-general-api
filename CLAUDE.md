@@ -112,13 +112,20 @@ requesting a local `modelId` returns `404 TTS_MODEL_NOT_FOUND`.
 - `FishVoice` is the durable shared catalogue. A row is either a shared
   `DEFAULT` voice or a user-owned `CUSTOM` voice; `User.selectedFishVoiceId`
   points to either. On startup, `FISH_DEFAULT_VOICES` safely upserts shared
-  defaults and disables—never deletes—entries removed from configuration. Fish
-  synthesis requires the user's own selected enabled voice
+  defaults and disables—never deletes—entries removed from configuration,
+  clearing `selectedFishVoiceId` for every user who had that voice selected
+  so a stale selection can't linger (`FishVoiceService.syncConfiguredDefaults`).
+  Fish synthesis requires the user's own selected enabled voice
   (`User.selectedFishVoiceId`); it rejects with `fishVoiceNotSelected` rather
   than falling back to a default voice when none is selected. Do not
   auto-switch based on guessed language. The queue snapshots the resolved
   reference ID in `Audio.voice`, so retries and existing generation jobs
-  cannot mix voices after a catalogue change.
+  cannot mix voices after a catalogue change. A chapter's response exposes
+  that id's current display name as `audio.voiceName`, resolved against the
+  user's voice catalogue at response time by
+  `BooksService.getVoiceNamesByReferenceId` (used by both `BooksService` and
+  `ChapterCurationService`) — null if the voice has since been removed
+  entirely, independent of the immutable snapshotted `voice` id.
 
 `GET /tts/models` returns an empty `local` group, `selectedModelId`, and the
 current user's safe Fish credential state (`MISSING`, `VALID`, `INVALID`, or
