@@ -20,7 +20,7 @@ plan, or older UI differs from the final implementation.
 | Chapter audio                | Book page                                       | Generate, continue, stop, delete, play and download a chapter MP3                                  |
 | Voice models                 | `/models`                                       | Per-user Fish key, selected model, and default/custom Fish voice selection (local models disabled) |
 | Chapter curation (UI hidden) | Book page → **Review chapters** (commented out) | Parser suggestions plus manual edit, tag, add, merge, remove, restore, and reorder; API unchanged  |
-| Public book sharing          | Book page, `/library/browse`, `/library`        | Make a book public, browse/search the community library, add or copy someone else's public book    |
+| Public book sharing          | Book page, `/library`'s **Community** tab       | Make a book public, browse/search the community library, add or copy someone else's public book    |
 | Preferences and navigation   | Headers and sidebar                             | Responsive private/public navigation, breadcrumbs, light/dark theme, English/Russian               |
 | Self-hosted deployment       | Deployment configuration                        | R2, S3, or MinIO storage; optional local TTS engines                                               |
 
@@ -656,18 +656,17 @@ copy of it.
    **Make private** to toggle visibility. A **Public** badge shows next to
    the **Ready**/`EPUB` badges whenever a book is public, including on your
    own page.
-2. Open **Browse community library** from the Library page, or go to
-   `/library/browse`, to see every public book from every user, searchable
-   by title. Each card has an **Add to library** / **Remove from library**
-   toggle.
+2. Open the **Community** tab on the `/library` page to see every public
+   book from every user, searchable by title. Each card has an **Add to
+   library** / **Remove from library** toggle.
 3. On a public book that isn't yours, its page shows the same **Add to
    library** toggle and a **Make a copy** button instead of the owner's
    controls. A copy opens as a new book you fully own once it finishes
    parsing.
-4. The **Library** page's **My books** / **Added** / **All** pills filter
-   between books you own and books you've added from the community library.
-   An added book's card shows an **Added** badge and a remove action instead
-   of the owner-only delete button.
+4. The `/library` page's **My library** tab has **My books** / **Added** /
+   **All** pills to filter between books you own and books you've added
+   from the community library. An added book's card shows an **Added**
+   badge and a remove action instead of the owner-only delete button.
 
 ### What happens underneath
 
