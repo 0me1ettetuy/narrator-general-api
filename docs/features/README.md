@@ -663,10 +663,11 @@ copy of it.
    library** toggle and a **Make a copy** button instead of the owner's
    controls. A copy opens as a new book you fully own once it finishes
    parsing.
-4. The `/library` page's **My library** tab has **My books** / **Added** /
-   **All** pills to filter between books you own and books you've added
-   from the community library. An added book's card shows an **Added**
-   badge and a remove action instead of the owner-only delete button.
+4. The `/library` page's **My library** tab has **My books** / **Saved** /
+   **All** pills to filter between books you own and books you've saved
+   from the community library. A saved book's card shows the same
+   **Public** badge as its own page and a remove action instead of the
+   owner-only delete button.
 
 ### What happens underneath
 
