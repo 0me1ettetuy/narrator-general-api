@@ -151,7 +151,11 @@ describe('BookDeletionService', () => {
         { id: 'entry-id', userId: 'other-user-id', bookId: 'book-id' },
       ],
       CollectionBook: [
-        { id: 'collection-book-id', collectionId: 'collection-id', bookId: 'book-id' },
+        {
+          id: 'collection-book-id',
+          collectionId: 'collection-id',
+          bookId: 'book-id',
+        },
       ],
       Chapter: [
         { id: 'chapter-1', bookId: 'book-id', removedAt: null },
