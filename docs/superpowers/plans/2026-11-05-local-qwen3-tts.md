@@ -10,6 +10,8 @@
 
 **Spec:** `docs/tts/local-tts-models-removed.md` (restoration record) and `docs/issues/local-tts-models-disabled.md`. Frontend side: `narrator-fe/docs/issues/local-tts-models-disabled.md`.
 
+**Status (2026-11-05):** Merged to `main` (backend PR #2, frontend PR #2). Done: Tasks 2–7 except the items below. Not done: Task 1 GPU spike (needs `nvidia-container-toolkit` on the dev host); Task 5 step 4 and Task 6 browser check (need a GPU run); Task 4 step 2 chapter failure-path test; image digest pin.
+
 ## Global Constraints
 
 - Only `local.qwen3-tts-0.6b` is restored. Do not un-comment Piper, Kokoro or Chatterbox.

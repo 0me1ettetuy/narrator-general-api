@@ -1,8 +1,8 @@
 # TTS model catalogue maintenance guide
 
-> **Local TTS is currently disabled.** `LOCAL_TTS_MODEL_DEFINITIONS` is an
-> empty array; the four local model rows below, their adapters, and their
-> Docker services are commented out or removed, not deleted. See
+> **Only Qwen3-TTS 0.6B is restored.** `LOCAL_TTS_MODEL_DEFINITIONS` holds that
+> one entry. Piper, Kokoro-82M and Chatterbox Turbo rows, adapters, and Docker
+> services are commented out or removed, not deleted. See
 > [local-tts-models-removed.md](local-tts-models-removed.md) for the full
 > restoration record and [the issue record](../issues/local-tts-models-disabled.md)
 > for why. The rest of this guide (how the catalogue works, how to add a

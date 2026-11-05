@@ -384,9 +384,8 @@ key.
 ### How to use it in the UI
 
 1. Open **Models** in the private sidebar.
-2. Local cards show `READY`, `UNAVAILABLE`, or `DISABLED`. During the current
-   rollout, only tested Piper is selectable; other local cards remain visible
-   but are marked **Coming soon** until their end-to-end adapter tests pass.
+2. Local cards show `READY`, `UNAVAILABLE`, or `DISABLED`. Only Qwen3-TTS 0.6B is
+   restored; it is off by default and needs an NVIDIA GPU on the Docker host.
 3. To use Fish Audio, enter a personal key in the Fish setup card. The form
    validates it before Fish model cards are displayed.
 4. Choose a ready card. The selected card becomes the default for future
@@ -429,14 +428,12 @@ key.
   at chapter-audio creation. Later selection/catalogue changes cannot mix
   voices in an in-progress chapter or its retries.
 
-#### Local models (currently disabled)
+#### Local models (Qwen3-TTS restored)
 
-The catalogue previously had four local models — Piper, Kokoro-82M, Qwen3-TTS
-0.6B, and Chatterbox Turbo, each with a narrow adapter, a health check
-strategy, and their own Docker service. They are now disabled so the product
-can focus on Fish Audio only: `GET /tts/models` returns an empty `local`
-group, and the frontend shows that section as "coming soon" rather than
-removing it.
+Qwen3-TTS 0.6B is restored and selectable when `TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED`
+is true and its health check passes. Piper, Kokoro-82M and Chatterbox Turbo
+remain disabled: `GET /tts/models` omits them, and the frontend shows no card
+for them.
 
 Full restoration record (exact code locations, the removed Docker Compose and
 `.env.example` content, and how to bring each model back):

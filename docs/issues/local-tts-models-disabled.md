@@ -17,15 +17,10 @@ their UI surface alongside it.
 
 ## What this means today
 
-- `GET /tts/models` returns an empty `local` group; no local model is ever
-  `selectable`.
-- Requesting a local `modelId` (for example `local.piper.en-us-amy`) returns
-  `404 TTS_MODEL_NOT_FOUND`, the same as any unknown model ID.
-- The frontend's model/voice picker (next to **Generate**, and on `/models`)
-  shows only Fish Audio; the local-models section is visibly marked "coming
-  soon" rather than removed.
-- No local-TTS Docker container starts, even if a deployment's `.env` still
-  has `TTS_LOCAL_*_ENABLED="true"`.
+- `GET /tts/models` lists Qwen3-TTS only when `TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED` is true and its health check passes.
+- Requesting a Piper, Kokoro-82M or Chatterbox `modelId` returns `404 TTS_MODEL_NOT_FOUND`.
+- No Docker container starts for Piper, Kokoro-82M or Chatterbox, even if `.env` sets their `TTS_LOCAL_*_ENABLED`.
+- The frontend shows Qwen3-TTS on the Models page; `TtsSelector` shows a local model as a disabled label.
 
 ## Full restoration record
 

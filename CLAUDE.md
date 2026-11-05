@@ -180,7 +180,7 @@ when `MINIO_ENABLED=true` is also set. Qwen3-TTS runs under the `qwen3-tts` Comp
   change index.
 - `docs/architecture/backend-architecture.md` — module and worker boundaries.
 - `docs/api/api-contracts-and-errors.md` — OpenAPI/error requirements.
-- `docs/tts/local-tts-models-removed.md` — local models are disabled; full
+- `docs/tts/local-tts-models-removed.md` — all local models except Qwen3-TTS are disabled; full
   restoration record (what was commented/removed and how to bring it back).
 - `docs/tts/tts-model-catalogue.md` — source of truth, toggles, and steps for
   adding a local or Fish model.

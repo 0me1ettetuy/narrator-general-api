@@ -5,8 +5,8 @@
 - [TTS model catalogue maintenance](tts-model-catalogue.md) — code-owned model
   definitions, env toggles, availability, adapters, and required checks.
 - [Local TTS models: removed, to be restored later](local-tts-models-removed.md)
-  — local engines are currently disabled; this is the full restoration
-  record. [Why](../issues/local-tts-models-disabled.md).
+  — only Qwen3-TTS is restored; Piper, Kokoro-82M and Chatterbox Turbo remain
+  disabled. This is the full restoration record. [Why](../issues/local-tts-models-disabled.md).
 - [Fish Audio notes](fish-audio.md) — current direct Fish model research and
   request notes.
 - [Fish Audio to R2 streaming plan](fish-audio-r2-streaming-plan.md) — the
