@@ -38,6 +38,7 @@ import {
   BookCoverAccessResponseDto,
   BookDetailResponseDto,
   BooksListResponseDto,
+  LibraryBooksListResponseDto,
   BookSummaryResponseDto,
   ChapterAudioResponseDto,
   ChapterDetailResponseDto,
@@ -55,6 +56,7 @@ import type {
   BookCoverAccessResponse,
   BookDetailResponse,
   BooksListResponse,
+  LibraryBooksListResponse,
   BookSummary,
   ChapterAudioResponse,
   ChapterDetailResponse,
@@ -570,13 +572,13 @@ export class BooksController {
     enum: ['owned', 'added', 'all'],
     description: 'Default "all" — owned books plus added-to-library books',
   })
-  @ApiOkResponse({ type: BooksListResponseDto })
+  @ApiOkResponse({ type: LibraryBooksListResponseDto })
   @ApiUnauthorizedResponse({ description: 'Invalid access token' })
   @UseGuards(JwtAccessGuard)
   listBooks(
     @Req() request: RequestWithUser,
     @Query() query: BooksListQueryDto,
-  ): Promise<BooksListResponse> {
+  ): Promise<LibraryBooksListResponse> {
     return this.booksService.listBooks(request.user.sub, query);
   }
 

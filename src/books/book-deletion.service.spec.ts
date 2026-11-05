@@ -20,6 +20,7 @@ type TableName =
   | 'Book'
   | 'BookAuthor'
   | 'BookLibraryEntry'
+  | 'CollectionBook'
   | 'Chapter'
   | 'Audio'
   | 'AudioChunk'
@@ -29,6 +30,7 @@ const FOREIGN_KEYS: Partial<Record<TableName, [TableName, string][]>> = {
   Book: [
     ['BookAuthor', 'bookId'],
     ['BookLibraryEntry', 'bookId'],
+    ['CollectionBook', 'bookId'],
     ['Chapter', 'bookId'],
     ['Job', 'bookId'],
   ],
@@ -120,6 +122,7 @@ describe('BookDeletionService', () => {
       ...tables.Book.filter((book) => book.id === bookId),
       ...tables.BookAuthor.filter((author) => author.bookId === bookId),
       ...tables.BookLibraryEntry.filter((entry) => entry.bookId === bookId),
+      ...tables.CollectionBook.filter((row) => row.bookId === bookId),
       ...tables.Chapter.filter((chapter) => chapter.bookId === bookId),
       ...tables.Job.filter((job) => job.bookId === bookId),
       ...tables.Audio.filter((audio) => audioIds.includes(audio.id)),
@@ -146,6 +149,9 @@ describe('BookDeletionService', () => {
       BookAuthor: [{ id: 'author-id', bookId: 'book-id' }],
       BookLibraryEntry: [
         { id: 'entry-id', userId: 'other-user-id', bookId: 'book-id' },
+      ],
+      CollectionBook: [
+        { id: 'collection-book-id', collectionId: 'collection-id', bookId: 'book-id' },
       ],
       Chapter: [
         { id: 'chapter-1', bookId: 'book-id', removedAt: null },
@@ -185,6 +191,7 @@ describe('BookDeletionService', () => {
           Book: createTable('Book'),
           BookAuthor: createTable('BookAuthor'),
           BookLibraryEntry: createTable('BookLibraryEntry'),
+          CollectionBook: createTable('CollectionBook'),
           Chapter: createTable('Chapter'),
           Audio: createTable('Audio'),
           AudioChunk: createTable('AudioChunk'),
