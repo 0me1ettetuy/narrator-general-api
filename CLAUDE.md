@@ -83,15 +83,21 @@ task unless explicitly requested.
 /books/:bookId`, its cover, and chapter audio access; `getOwnedBook` keeps
    gating every mutation). `PATCH /books/:bookId/visibility` is owner-only
    and rejects making a non-`READY` book public; flipping back to private
-   deletes every other user's `BookLibraryEntry` row for it.
+   keeps other users' `BookLibraryEntry` rows, and `GET /books` returns them
+   in `ghosts` with only an id and title until the book is public again.
    `BookLibraryEntry { userId, bookId }` is a separate "added to my library"
    reference, not a copy — `POST`/`DELETE /books/:bookId/library` manage it,
    `GET /books?source=owned|added|all` lists by it. `POST /books/:bookId/copy`
    duplicates a public book's source object and re-parses it as a new,
    independently owned book (no audio or curation edits carried over).
-   `GET /books/public` lists every public book, searchable by title. Backend
-   only so far — see `docs/public-private-books-plan.md` (temporary; delete
-   once the frontend work it tracks is done) for what's still open.
+   `GET /books/public` lists every public book, searchable by title.
+9. `Collection` (`src/collections`) holds ordered `CollectionBook` references,
+   never copies. It starts `PRIVATE`. `PATCH /collections/:collectionId/visibility`
+   to `PUBLIC` publishes the owner's private books in the same transaction and
+   rejects a non-`READY` one with `COLLECTION_BOOKS_NOT_READY`. Going private
+   leaves books public. Ghosts are calculated on read: references are kept when
+   an item goes private, and permanent deletes remove them. Other viewers only
+   get public books. Only the collection owner sees ghost books.
 
 Audio/job state is persisted so the frontend can recover after reload. The
 book-detail endpoint exposes chapter audio status and progress.

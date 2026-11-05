@@ -21,6 +21,7 @@ plan, or older UI differs from the final implementation.
 | Voice models                 | `/models`                                       | Per-user Fish key, selected model, and default/custom Fish voice selection (local models disabled) |
 | Chapter curation (UI hidden) | Book page → **Review chapters** (commented out) | Parser suggestions plus manual edit, tag, add, merge, remove, restore, and reorder; API unchanged  |
 | Public book sharing          | Book page, `/library`'s **Community** tab       | Make a book public, browse/search the community library, add or copy someone else's public book    |
+| Book collections             | `/library`'s **Collections** tab, Community     | Group books in order, share them publicly, save other people's collections, keep ghosts            |
 | Preferences and navigation   | Headers and sidebar                             | Responsive private/public navigation, breadcrumbs, light/dark theme, English/Russian               |
 | Self-hosted deployment       | Deployment configuration                        | R2, S3, or MinIO storage; optional local TTS engines                                               |
 
