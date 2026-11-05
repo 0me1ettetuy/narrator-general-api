@@ -104,15 +104,13 @@ book-detail endpoint exposes chapter audio status and progress.
 
 ## TTS adapters and models
 
-Local TTS (Piper, Kokoro-82M, Qwen3-TTS, Chatterbox Turbo) is disabled; Fish
-Audio is the only active provider. `src/tts/adapters/` still contains the
+Only Qwen3-TTS 0.6B is restored as a local model (off by default; needs an NVIDIA GPU and the NVIDIA Container Toolkit on the Docker host). Piper, Kokoro-82M and Chatterbox Turbo stay disabled. Fish Audio is the other provider. `src/tts/adapters/` still contains the
 narrow shared TTS adapter interface; the four local adapter files and their
 registry entries are commented out in place, not deleted. See
 [`docs/tts/local-tts-models-removed.md`](docs/tts/local-tts-models-removed.md)
 for the full restoration record and
 [`docs/issues/local-tts-models-disabled.md`](docs/issues/local-tts-models-disabled.md)
-for why. `TtsAdapterResolverService` now only ever resolves the Fish adapter;
-requesting a local `modelId` returns `404 TTS_MODEL_NOT_FOUND`.
+for why. `TtsAdapterResolverService` resolves Fish and Qwen3; a local `modelId` with no adapter or registry entry returns `404 TTS_MODEL_NOT_FOUND`.
 
 - Choose a ready model with `PUT /tts/models/selection`. It stores the user's
   nullable `defaultTtsModelKey` preference. `GET /tts/models` returns it as
@@ -124,8 +122,7 @@ requesting a local `modelId` returns `404 TTS_MODEL_NOT_FOUND`.
   than silently falling back to a guessed model.
 - Chapter synthesis has two BullMQ queues chosen by the snapshotted model:
   `fish-chapter-tts` (concurrency `TTS_FISH_CONCURRENCY`, default 2) and
-  `chapter-tts`, which currently has nothing to route to it since local
-  models are disabled. Fish `429`/`5xx` responses are retried in-process
+  `chapter-tts`, which carries the local Qwen3 jobs, one at a time. Fish `429`/`5xx` responses are retried in-process
   (honouring `Retry-After`, otherwise 2/4/8/16 s) before the job attempt
   fails.
 - Fish keys belong to a user, are AES-256-GCM encrypted in Postgres, and are
@@ -149,7 +146,7 @@ requesting a local `modelId` returns `404 TTS_MODEL_NOT_FOUND`.
   `ChapterCurationService`) — null if the voice has since been removed
   entirely, independent of the immutable snapshotted `voice` id.
 
-`GET /tts/models` returns an empty `local` group, `selectedModelId`, and the
+`GET /tts/models` returns the `local` group (Qwen3 when enabled), `selectedModelId`, and the
 current user's safe Fish credential state (`MISSING`, `VALID`, `INVALID`, or
 `UNKNOWN`). Fish model cards appear only for a valid key. The API never returns
 the key, even partly. Use `PUT /tts/models/providers/fish-audio/credential` to
@@ -161,8 +158,7 @@ deployment secret `TTS_CREDENTIAL_ENCRYPTION_KEY` to the output of
 `openssl rand -base64 32` before users can save credentials.
 
 `COMPOSE_PROFILES=true` is fixed and never changes; Compose starts MinIO only
-when `MINIO_ENABLED=true` is also set. There is no local-TTS Compose profile
-to enable anymore (see above).
+when `MINIO_ENABLED=true` is also set. Qwen3-TTS runs under the `qwen3-tts` Compose profile, switched by `TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED`.
 
 ## Guardrails
 
