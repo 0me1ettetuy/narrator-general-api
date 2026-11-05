@@ -1,11 +1,7 @@
-// Local TTS models are disabled; see docs/tts/local-tts-models-removed.md
-// for the full restoration record. The body below is commented out, not
-// deleted, so restoring is: delete this header and the /* */ wrapper.
-/*
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OpenAiCompatibleLocalTtsAdapter } from './openai-compatible-local-tts.adapter.js';
-import type { TtsSynthesisInput } from './tts-adapter.js';
+import { type TtsSynthesisInput, TtsSynthesisError } from './tts-adapter.js';
 
 const QWEN_LANGUAGE_NAMES: Readonly<Record<string, string>> = {
   zh: 'Chinese',
@@ -46,9 +42,16 @@ export class Qwen3TtsAdapter extends OpenAiCompatibleLocalTtsAdapter {
 function toQwenLanguage(language: string | null | undefined): string {
   const primaryLanguage = language?.trim().toLowerCase().split(/[-_]/, 1)[0];
 
-  return primaryLanguage
-    ? (QWEN_LANGUAGE_NAMES[primaryLanguage] ?? 'Auto')
-    : 'Auto';
-}
+  if (!primaryLanguage) {
+    return 'Auto';
+  }
 
-*/
+  // No silent fallback: a book in an unsupported language must not be narrated with the wrong voice.
+  if (!Object.hasOwn(QWEN_LANGUAGE_NAMES, primaryLanguage)) {
+    throw new TtsSynthesisError(
+      `Qwen3-TTS does not support language ${primaryLanguage}`,
+    );
+  }
+
+  return QWEN_LANGUAGE_NAMES[primaryLanguage];
+}

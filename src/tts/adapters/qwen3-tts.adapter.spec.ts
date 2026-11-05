@@ -1,6 +1,7 @@
 import type { ConfigService } from '@nestjs/config';
 import { Readable } from 'node:stream';
 import { Qwen3TtsAdapter } from './qwen3-tts.adapter.js';
+import { TtsSynthesisError } from './tts-adapter.js';
 
 async function readStream(stream: Readable): Promise<Uint8Array> {
   const chunks: Buffer[] = [];
@@ -56,12 +57,21 @@ describe('Qwen3TtsAdapter', () => {
     );
   });
 
-  it('uses Qwen auto-detection when the EPUB has no supported language', async () => {
+  it('rejects a language Qwen3 does not support, without calling the server', async () => {
+    const adapter = createAdapter();
+
+    await expect(
+      adapter.synthesizeStream({ text: 'Привіт.', language: 'uk' }),
+    ).rejects.toThrow(TtsSynthesisError);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('uses Qwen auto-detection when the book has no language', async () => {
     const adapter = createAdapter();
 
     const result = await adapter.synthesizeStream({
       text: 'Hello world.',
-      language: 'ar',
+      language: null,
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
