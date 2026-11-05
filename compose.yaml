@@ -104,7 +104,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:? Set POSTGRES_USER}:${POSTGRES_PASSWORD:? Set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:? Set POSTGRES_DB}
       REDIS_URL: redis://redis:6379
       STORAGE_INTERNAL_ENDPOINT: ${STORAGE_INTERNAL_ENDPOINT:-}
-      # Local TTS services removed; see docs/tts/local-tts-models-removed.md.
+      TTS_LOCAL_QWEN3_TTS_0_6B_HEALTH_URL: http://qwen3-tts:8001/health
+      TTS_LOCAL_QWEN3_TTS_0_6B_URL: http://qwen3-tts:8001
     depends_on:
       db:
         condition: service_healthy
@@ -153,14 +154,35 @@ services:
       redis:
         condition: service_healthy
 
-  # Local TTS services (piper-tts, kokoro-tts, qwen3-tts, chatterbox-tts)
-  # removed; full definitions preserved in
-  # docs/tts/local-tts-models-removed.md.
+  qwen3-tts:
+    # shortcut: unpinned image tag, pin the digest once the GPU spike (plan Task 1) passes
+    image: ${TTS_LOCAL_QWEN3_TTS_0_6B_IMAGE:-ghcr.io/malaiwah/qwen3-tts-server:latest}
+    container_name: narrator-qwen3-tts
+    profiles: ['${TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED:-false}']
+    restart: unless-stopped
+    environment:
+      QWEN3_TTS_MODEL_ID: Qwen/Qwen3-TTS-12Hz-0.6B-Base
+      QWEN3_TTS_VOICES_DIR: /data/voices
+      HF_HOME: /root/.cache/huggingface
+    ports:
+      - '127.0.0.1:${TTS_LOCAL_QWEN3_TTS_0_6B_PUBLISHED_PORT:-8001}:8001'
+    volumes:
+      - narrator_qwen3_tts_data:/data
+      - narrator_qwen3_tts_huggingface_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
 volumes:
   narrator_postgres_data:
   narrator_redis_data:
   narrator_minio_data:
+  narrator_qwen3_tts_data:
+  narrator_qwen3_tts_huggingface_cache:
 
 networks:
   default:

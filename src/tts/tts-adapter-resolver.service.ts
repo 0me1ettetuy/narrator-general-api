@@ -3,13 +3,12 @@ import {
   type SelectableTtsModel,
   TtsModelsService,
 } from '../tts-models/tts-models.service.js';
-// Local TTS adapters are disabled; see docs/tts/local-tts-models-removed.md.
-// import { ChatterboxTtsAdapter } from './adapters/chatterbox-tts.adapter.js';
-// import { KokoroTtsAdapter } from './adapters/kokoro-tts.adapter.js';
-// import { PiperTtsAdapter } from './adapters/piper-tts.adapter.js';
-// import { Qwen3TtsAdapter } from './adapters/qwen3-tts.adapter.js';
+// Piper, Kokoro and Chatterbox are still disabled; see docs/tts/local-tts-models-removed.md.
+import { Qwen3TtsAdapter } from './adapters/qwen3-tts.adapter.js';
 import { type TtsAdapter, TtsSynthesisError } from './adapters/tts-adapter.js';
 import { TtsService } from './tts.service.js';
+
+const QWEN3_TTS_MODEL_ID = 'local.qwen3-tts-0.6b';
 
 export type ResolvedTtsAdapter = {
   adapter: TtsAdapter;
@@ -21,6 +20,7 @@ export type ResolvedTtsAdapter = {
 export class TtsAdapterResolverService {
   constructor(
     private readonly fishAudioTtsAdapter: TtsService,
+    private readonly qwen3TtsAdapter: Qwen3TtsAdapter,
     private readonly ttsModelsService: TtsModelsService,
   ) {}
 
@@ -45,42 +45,14 @@ export class TtsAdapterResolverService {
       };
     }
 
-    // Unreachable today: the registry offers no local models, so
-    // getSelectableModel() above can no longer return one. Kept as a guard.
-    throw new TtsSynthesisError('Local TTS models are currently disabled');
+    if (model.id === QWEN3_TTS_MODEL_ID) {
+      return {
+        adapter: this.qwen3TtsAdapter,
+        source: model.source,
+        providerModel: null,
+      };
+    }
+
+    throw new TtsSynthesisError('TTS model does not have an adapter');
   }
 }
-
-// Local-adapter wiring preserved for restoration:
-//
-// const LOCAL_TTS_ADAPTER_IDS = [
-//   'local.piper.en-us-amy',
-//   'local.kokoro-82m',
-//   'local.qwen3-tts-0.6b',
-//   'local.chatterbox-turbo',
-// ] as const;
-//
-// type LocalTtsAdapterId = (typeof LOCAL_TTS_ADAPTER_IDS)[number];
-//
-// constructor(
-//   private readonly fishAudioTtsAdapter: TtsService,
-//   private readonly piperTtsAdapter: PiperTtsAdapter,
-//   private readonly kokoroTtsAdapter: KokoroTtsAdapter,
-//   private readonly qwen3TtsAdapter: Qwen3TtsAdapter,
-//   private readonly chatterboxTtsAdapter: ChatterboxTtsAdapter,
-//   private readonly ttsModelsService: TtsModelsService,
-// ) {
-//   this.localAdapters = new Map<LocalTtsAdapterId, TtsAdapter>([
-//     ['local.piper.en-us-amy', piperTtsAdapter],
-//     ['local.kokoro-82m', kokoroTtsAdapter],
-//     ['local.qwen3-tts-0.6b', qwen3TtsAdapter],
-//     ['local.chatterbox-turbo', chatterboxTtsAdapter],
-//   ]);
-// }
-//
-// In toResolvedAdapter(), replace the throw above with:
-//   const adapter = this.localAdapters.get(model.id as LocalTtsAdapterId);
-//   if (!adapter) {
-//     throw new TtsSynthesisError('TTS model does not have an adapter');
-//   }
-//   return { adapter, source: model.source, providerModel: null };

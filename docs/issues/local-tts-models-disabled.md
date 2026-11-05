@@ -2,6 +2,8 @@
 
 ## Status
 
+Update: Qwen3-TTS 0.6B has been restored (see [docs/tts/local-tts-docker.md](docs/tts/local-tts-docker.md)). Piper, Kokoro-82M and Chatterbox Turbo remain disabled, and the rest of this record still describes them.
+
 Deferred. Local TTS (Piper, Kokoro-82M, Qwen3-TTS, Chatterbox Turbo) was fully
 implemented and working — adapters, health checks, Docker services, and a
 frontend model/voice picker — but is now disabled so the product can focus on

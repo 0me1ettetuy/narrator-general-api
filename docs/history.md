@@ -5,9 +5,25 @@ milestones and backed by a complete chronological commit index. It documents
 what entered the repository, rather than the intent suggested by a commit
 subject alone.
 
-**Scope:** 26 August–3 November 2026, through parallel Fish chapter generation.
+**Scope:** 26 August–5 November 2026, through book collections.
 
 ## Milestones
+
+### 5 November — book collections
+
+- Added `Collection` (private by default) holding ordered `CollectionBook`
+  references, never copies, and `CollectionLibraryEntry` saved references with
+  a title snapshot. Added the `COLLECTION_BOOK_NOT_PUBLIC` and
+  `COLLECTION_BOOKS_NOT_READY` error codes.
+- Added the `src/collections` module: create, read, update, delete, set
+  visibility (publishing the owner's private books in the same transaction),
+  add, remove, and reorder books, save and unsave collections, and browse
+  public collections.
+- Going private now keeps other users' book library references. `GET /books`
+  returns them as `ghosts` with only an id and title until the book is public
+  again. Deleting a book also removes its collection references.
+- Recorded the collections spec, the backend plan, and the ghost rules in
+  `CLAUDE.md`.
 
 ### 3 November — explicit TTS selection and safe book deletion
 
@@ -252,3 +268,14 @@ subject alone.
 | 2026-11-03 | `3a0e0bc` | Rejected chapter audio without an explicitly selected TTS model or Fish voice instead of falling back.                                    |
 | 2026-11-03 | `b7c3939` | Added safe book deletion: `Book.deletedAt`, prefix storage cleanup, and deleted-book guards.                                              |
 | 2026-11-03 | `363e89b` | Split chapter TTS into Fish (parallel) and local queues and retried Fish 429/5xx with backoff.                                            |
+| 2026-11-05 | `b3fae68` | Added the book collections spec and backend plan.                                                                                         |
+| 2026-11-05 | `3256595` | Added collection tables, the migration, and the collection error codes.                                                                   |
+| 2026-11-05 | `a613aea` | Kept saved book references as ghosts when a book goes private; moved book summary mapping into a shared mapper.                           |
+| 2026-11-05 | `72676b4` | Added collection reads, creation, and deletion.                                                                                           |
+| 2026-11-05 | `536b5ed` | Added adding, removing, and reordering collection books.                                                                                  |
+| 2026-11-05 | `4e5e5fb` | Added collection publishing and saved collections in the library.                                                                         |
+| 2026-11-05 | `3d65e8f` | Exposed the collections API through the controller and module.                                                                            |
+| 2026-11-05 | `64ffa72` | Recorded book collections and ghosts in the project guidance.                                                                             |
+| 2026-11-05 | `afe428a` | Restored the Qwen3-TTS 0.6B adapter and registry entry; unsupported book languages now fail instead of using Auto. |
+| 2026-11-05 | `347a4e3` | Added the `qwen3-tts` GPU Compose service and its env keys, off by default. |
+| 2026-11-05 | `be884a8` | Recorded the Qwen3-TTS restoration and added its implementation plan. |
