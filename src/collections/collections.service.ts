@@ -33,6 +33,7 @@ import {
   type ReorderCollectionBooksDto,
 } from './dto/reorder-collection-books.dto.js';
 import type { UpdateCollectionDto } from './dto/update-collection.dto.js';
+import type { UpdateCollectionVisibilityDto } from './dto/update-collection-visibility.dto.js';
 import type {
   Collection,
   CollectionBook,
@@ -455,6 +456,90 @@ export class CollectionsService {
         id: collectionId,
       }).update({ updatedAt: now });
     });
+  }
+
+  async updateVisibility(
+    userId: string,
+    collectionId: string,
+    dto: UpdateCollectionVisibilityDto,
+  ): Promise<CollectionSummary> {
+    const collection = await this.getOwnedCollection(userId, collectionId);
+
+    if (collection.visibility !== dto.visibility) {
+      // Going public publishes the owner's private books in the collection.
+      // Going private leaves them public.
+      const views =
+        (await this.loadBookViews([collection.id], userId)).get(
+          collection.id,
+        ) ?? [];
+      const booksToPublish =
+        dto.visibility === 'PUBLIC'
+          ? views
+              .map((view) => view.book)
+              .filter(
+                (book) =>
+                  book.userId === userId && book.visibility === 'PRIVATE',
+              )
+          : [];
+
+      if (booksToPublish.some((book) => book.parseStatus !== 'READY')) {
+        throw new ConflictException({
+          code: API_ERROR_CODES.collectionBooksNotReady,
+          message: 'Only fully parsed books can be made public',
+        });
+      }
+
+      const now = temporalNow();
+
+      await this.prisma.db.transaction(async (transaction) => {
+        for (const book of booksToPublish) {
+          await transaction.orm.public.Book.where({
+            id: book.id,
+            userId,
+          }).update({ visibility: 'PUBLIC', updatedAt: now });
+        }
+        await transaction.orm.public.Collection.where({
+          id: collection.id,
+        }).update({ visibility: dto.visibility, updatedAt: now });
+      });
+    }
+
+    return this.getCollectionSummary(userId, collectionId);
+  }
+
+  async addToLibrary(userId: string, collectionId: string): Promise<void> {
+    const collection = await this.getReadableCollection(userId, collectionId);
+
+    if (collection.visibility !== 'PUBLIC') {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Collection not found',
+      });
+    }
+
+    if (collection.userId === userId) {
+      throw new ConflictException({
+        code: API_ERROR_CODES.conflict,
+        message: 'You already own this collection',
+      });
+    }
+
+    if (await this.isCollectionSaved(userId, collectionId)) return;
+
+    await this.prisma.db.orm.public.CollectionLibraryEntry.create({
+      id: randomUUID(),
+      userId,
+      collectionId,
+      titleSnapshot: collection.title,
+      createdAt: temporalNow(),
+    });
+  }
+
+  async removeFromLibrary(userId: string, collectionId: string): Promise<void> {
+    await this.prisma.db.orm.public.CollectionLibraryEntry.where({
+      userId,
+      collectionId,
+    }).deleteAndCount();
   }
 
   private async getCollectionSummary(

@@ -424,4 +424,149 @@ describe('CollectionsService', () => {
       expect(byBook).toEqual({ 'book-other-public': 0, 'book-own-public': 1 });
     });
   });
+
+  describe('updateVisibility', () => {
+    it("publishes the collection and the owner's private books", async () => {
+      link('collection-1', 'book-own-private', 0);
+
+      const result = await service.updateVisibility('owner', 'collection-1', {
+        visibility: 'PUBLIC',
+      });
+
+      expect(result.visibility).toBe('PUBLIC');
+      expect(findBook('book-own-private').visibility).toBe('PUBLIC');
+    });
+
+    it("changes nothing when one of the owner's books is not READY", async () => {
+      db.orm.public.Book.rows.push(
+        bookRow('book-not-ready', 'owner', 'PRIVATE', {
+          parseStatus: 'PROCESSING',
+        }),
+      );
+      link('collection-1', 'book-own-private', 0);
+      link('collection-1', 'book-not-ready', 1);
+
+      await expect(
+        service.updateVisibility('owner', 'collection-1', {
+          visibility: 'PUBLIC',
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'COLLECTION_BOOKS_NOT_READY' },
+      });
+
+      expect(db.orm.public.Collection.rows[0].visibility).toBe('PRIVATE');
+      expect(findBook('book-own-private').visibility).toBe('PRIVATE');
+    });
+
+    it("never changes another user's private book", async () => {
+      link('collection-1', 'book-other-private', 0);
+
+      await service.updateVisibility('owner', 'collection-1', {
+        visibility: 'PUBLIC',
+      });
+
+      expect(findBook('book-other-private').visibility).toBe('PRIVATE');
+    });
+
+    it('leaves books public and saved entries in place when going private', async () => {
+      db.orm.public.Collection.rows[0].visibility = 'PUBLIC';
+      link('collection-1', 'book-own-public', 0);
+      db.orm.public.CollectionLibraryEntry.rows.push({
+        id: 'entry-1',
+        userId: 'stranger',
+        collectionId: 'collection-1',
+        titleSnapshot: 'Dune',
+        createdAt: at(1000),
+      });
+
+      await service.updateVisibility('owner', 'collection-1', {
+        visibility: 'PRIVATE',
+      });
+
+      expect(findBook('book-own-public').visibility).toBe('PUBLIC');
+      expect(db.orm.public.CollectionLibraryEntry.rows).toHaveLength(1);
+    });
+
+    it('returns a saved collection to the list when it goes public again', async () => {
+      link('collection-1', 'book-own-public', 0);
+      db.orm.public.CollectionLibraryEntry.rows.push({
+        id: 'entry-1',
+        userId: 'stranger',
+        collectionId: 'collection-1',
+        titleSnapshot: 'Dune',
+        createdAt: at(1000),
+      });
+
+      await service.updateVisibility('owner', 'collection-1', {
+        visibility: 'PUBLIC',
+      });
+      const result = await service.listCollections('stranger', {
+        source: 'all',
+      });
+
+      expect(result.ghosts).toEqual([]);
+      expect(result.collections).toHaveLength(1);
+    });
+
+    it('returns 404 for a non-owner', async () => {
+      await expect(
+        service.updateVisibility('stranger', 'collection-1', {
+          visibility: 'PUBLIC',
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('addToLibrary', () => {
+    it('stores the title as a snapshot', async () => {
+      db.orm.public.Collection.rows[0].visibility = 'PUBLIC';
+
+      await service.addToLibrary('stranger', 'collection-1');
+
+      expect(db.orm.public.CollectionLibraryEntry.rows[0]).toMatchObject({
+        userId: 'stranger',
+        collectionId: 'collection-1',
+        titleSnapshot: 'Dune',
+      });
+    });
+
+    it('does nothing when already saved', async () => {
+      db.orm.public.Collection.rows[0].visibility = 'PUBLIC';
+
+      await service.addToLibrary('stranger', 'collection-1');
+      await service.addToLibrary('stranger', 'collection-1');
+
+      expect(db.orm.public.CollectionLibraryEntry.rows).toHaveLength(1);
+    });
+
+    it('returns 404 for a private collection', async () => {
+      await expect(
+        service.addToLibrary('stranger', 'collection-1'),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('rejects the owner saving their own collection', async () => {
+      db.orm.public.Collection.rows[0].visibility = 'PUBLIC';
+
+      await expect(
+        service.addToLibrary('owner', 'collection-1'),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+  });
+
+  describe('removeFromLibrary', () => {
+    it('removes a ghost without needing read access', async () => {
+      db.orm.public.CollectionLibraryEntry.rows.push({
+        id: 'entry-1',
+        userId: 'stranger',
+        collectionId: 'collection-1',
+        titleSnapshot: 'Dune',
+        createdAt: at(1000),
+      });
+
+      await service.removeFromLibrary('stranger', 'collection-1');
+
+      expect(db.orm.public.CollectionLibraryEntry.rows).toEqual([]);
+    });
+  });
 });
