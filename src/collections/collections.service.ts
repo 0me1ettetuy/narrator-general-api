@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { API_ERROR_CODES } from '../global-filters/api-error.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -17,11 +22,16 @@ import type {
   CollectionSummary,
   MyCollectionsListResponse,
 } from './contracts/collections.response.js';
+import type { AddCollectionBookDto } from './dto/add-collection-book.dto.js';
 import type { CreateCollectionDto } from './dto/create-collection.dto.js';
 import type {
   CollectionsListQueryDto,
   PublicCollectionsListQueryDto,
 } from './dto/collections-list-query.dto.js';
+import {
+  MAX_BOOKS_PER_COLLECTION,
+  type ReorderCollectionBooksDto,
+} from './dto/reorder-collection-books.dto.js';
 import type { UpdateCollectionDto } from './dto/update-collection.dto.js';
 import type {
   Collection,
@@ -318,6 +328,132 @@ export class CollectionsService {
       await transaction.orm.public.Collection.where({
         id: collection.id,
       }).deleteAndCount();
+    });
+  }
+
+  async addBook(
+    userId: string,
+    collectionId: string,
+    dto: AddCollectionBookDto,
+  ): Promise<void> {
+    const collection = await this.getOwnedCollection(userId, collectionId);
+    const book = (await this.prisma.db.orm.public.Book.where({
+      id: dto.bookId,
+      deletedAt: null,
+    }).first()) as Book | null;
+
+    if (!book || (book.userId !== userId && book.visibility !== 'PUBLIC')) {
+      throw new NotFoundException({
+        code: API_ERROR_CODES.notFound,
+        message: 'Book not found',
+      });
+    }
+
+    const existing = (await this.prisma.db.orm.public.CollectionBook.where({
+      collectionId,
+    }).all()) as CollectionBook[];
+
+    if (existing.some((row) => row.bookId === book.id)) return;
+
+    if (existing.length >= MAX_BOOKS_PER_COLLECTION) {
+      throw new ConflictException({
+        code: API_ERROR_CODES.conflict,
+        message: 'Collection is full',
+      });
+    }
+
+    const publishes =
+      collection.visibility === 'PUBLIC' && book.visibility === 'PRIVATE';
+
+    if (collection.visibility === 'PUBLIC' && book.parseStatus !== 'READY') {
+      throw new ConflictException({
+        code: API_ERROR_CODES.collectionBooksNotReady,
+        message: 'Only fully parsed books can be added to a public collection',
+      });
+    }
+
+    if (publishes && dto.makePublic !== true) {
+      throw new ConflictException({
+        code: API_ERROR_CODES.collectionBookNotPublic,
+        message: 'Making this book public requires confirmation',
+      });
+    }
+
+    const now = temporalNow();
+    const position = existing.reduce(
+      (highest, row) => Math.max(highest, row.position + 1),
+      0,
+    );
+
+    await this.prisma.db.transaction(async (transaction) => {
+      if (publishes) {
+        await transaction.orm.public.Book.where({
+          id: book.id,
+          userId,
+        }).update({ visibility: 'PUBLIC', updatedAt: now });
+      }
+
+      await transaction.orm.public.CollectionBook.create({
+        id: randomUUID(),
+        collectionId,
+        bookId: book.id,
+        position,
+        createdAt: now,
+      });
+      await transaction.orm.public.Collection.where({
+        id: collectionId,
+      }).update({ updatedAt: now });
+    });
+  }
+
+  async removeBook(
+    userId: string,
+    collectionId: string,
+    bookId: string,
+  ): Promise<void> {
+    await this.getOwnedCollection(userId, collectionId);
+    await this.prisma.db.orm.public.CollectionBook.where({
+      collectionId,
+      bookId,
+    }).deleteAndCount();
+    await this.prisma.db.orm.public.Collection.where({
+      id: collectionId,
+    }).update({ updatedAt: temporalNow() });
+  }
+
+  async reorderBooks(
+    userId: string,
+    collectionId: string,
+    dto: ReorderCollectionBooksDto,
+  ): Promise<void> {
+    await this.getOwnedCollection(userId, collectionId);
+    const rows = (await this.prisma.db.orm.public.CollectionBook.where({
+      collectionId,
+    }).all()) as CollectionBook[];
+    const storedIds = new Set(rows.map((row) => row.bookId));
+
+    if (
+      dto.bookIds.length !== storedIds.size ||
+      dto.bookIds.some((bookId) => !storedIds.has(bookId))
+    ) {
+      throw new BadRequestException({
+        code: API_ERROR_CODES.validationFailed,
+        message: 'The list must include every book in the collection once',
+      });
+    }
+
+    const now = temporalNow();
+
+    await this.prisma.db.transaction(async (transaction) => {
+      for (const [position, bookId] of dto.bookIds.entries()) {
+        await transaction.orm.public.CollectionBook.where({
+          collectionId,
+          bookId,
+        }).update({ position });
+      }
+      await transaction.orm.public.Collection.where({
+        id: collectionId,
+      }).update({ updatedAt: now });
     });
   }
 

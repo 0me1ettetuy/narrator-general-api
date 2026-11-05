@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import { temporalFromEpochMilliseconds } from '../prisma/temporal.js';
 
@@ -84,6 +84,9 @@ describe('CollectionsService', () => {
     updatedAt: at(1000),
     ...extra,
   });
+
+  const findBook = (id: string) =>
+    db.orm.public.Book.rows.find((row) => row.id === id) as Row;
 
   const link = (collectionId: string, bookId: string, position: number) =>
     db.orm.public.CollectionBook.rows.push({
@@ -266,6 +269,159 @@ describe('CollectionsService', () => {
       await expect(
         service.deleteCollection('stranger', 'collection-1'),
       ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('addBook', () => {
+    it('adds a public book owned by someone else after the last position', async () => {
+      db.orm.public.Collection.rows[0].visibility = 'PUBLIC';
+
+      await service.addBook('owner', 'collection-1', {
+        bookId: 'book-own-public',
+      });
+      await service.addBook('owner', 'collection-1', {
+        bookId: 'book-other-public',
+      });
+
+      expect(
+        db.orm.public.CollectionBook.rows.map((row) => row.position),
+      ).toEqual([0, 1]);
+    });
+
+    it('does nothing when the book is already in the collection', async () => {
+      await service.addBook('owner', 'collection-1', {
+        bookId: 'book-own-public',
+      });
+      await service.addBook('owner', 'collection-1', {
+        bookId: 'book-own-public',
+      });
+
+      expect(db.orm.public.CollectionBook.rows).toHaveLength(1);
+    });
+
+    it("returns 404 for another user's private book", async () => {
+      await expect(
+        service.addBook('owner', 'collection-1', {
+          bookId: 'book-other-private',
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('returns 404 when a non-owner adds to a public collection', async () => {
+      db.orm.public.Collection.rows[0].visibility = 'PUBLIC';
+
+      await expect(
+        service.addBook('stranger', 'collection-1', {
+          bookId: 'book-own-public',
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('rejects a private book for a public collection without confirmation', async () => {
+      db.orm.public.Collection.rows[0].visibility = 'PUBLIC';
+
+      await expect(
+        service.addBook('owner', 'collection-1', {
+          bookId: 'book-own-private',
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'COLLECTION_BOOK_NOT_PUBLIC' },
+      });
+      expect(db.orm.public.CollectionBook.rows).toEqual([]);
+    });
+
+    it('publishes a private book when the owner confirms', async () => {
+      db.orm.public.Collection.rows[0].visibility = 'PUBLIC';
+
+      await service.addBook('owner', 'collection-1', {
+        bookId: 'book-own-private',
+        makePublic: true,
+      });
+
+      expect(findBook('book-own-private').visibility).toBe('PUBLIC');
+      expect(db.orm.public.CollectionBook.rows).toHaveLength(1);
+    });
+
+    it('rejects a non-READY book for a public collection', async () => {
+      db.orm.public.Collection.rows[0].visibility = 'PUBLIC';
+      findBook('book-own-private').parseStatus = 'PROCESSING';
+
+      await expect(
+        service.addBook('owner', 'collection-1', {
+          bookId: 'book-own-private',
+          makePublic: true,
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'COLLECTION_BOOKS_NOT_READY' },
+      });
+      expect(findBook('book-own-private').visibility).toBe('PRIVATE');
+    });
+
+    it('allows a non-READY book in a private collection', async () => {
+      findBook('book-own-private').parseStatus = 'PROCESSING';
+
+      await service.addBook('owner', 'collection-1', {
+        bookId: 'book-own-private',
+      });
+
+      expect(db.orm.public.CollectionBook.rows).toHaveLength(1);
+    });
+
+    it('rejects a book when the collection is full', async () => {
+      for (let index = 0; index < 500; index += 1) {
+        db.orm.public.CollectionBook.rows.push({
+          id: `filler-${index}`,
+          collectionId: 'collection-1',
+          bookId: `filler-book-${index}`,
+          position: index,
+          createdAt: at(1000),
+        });
+      }
+
+      await expect(
+        service.addBook('owner', 'collection-1', { bookId: 'book-own-public' }),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+  });
+
+  describe('removeBook', () => {
+    it('removes a ghost reference and leaves the book untouched', async () => {
+      link('collection-1', 'book-other-private', 0);
+
+      await service.removeBook('owner', 'collection-1', 'book-other-private');
+
+      expect(db.orm.public.CollectionBook.rows).toEqual([]);
+      expect(db.orm.public.Book.rows).toHaveLength(4);
+    });
+  });
+
+  describe('reorderBooks', () => {
+    it('rejects a list that leaves out a ghost', async () => {
+      link('collection-1', 'book-own-public', 0);
+      link('collection-1', 'book-other-private', 1);
+
+      await expect(
+        service.reorderBooks('owner', 'collection-1', {
+          bookIds: ['book-own-public'],
+        }),
+      ).rejects.toMatchObject({ response: { code: 'VALIDATION_FAILED' } });
+    });
+
+    it('stores the new order', async () => {
+      link('collection-1', 'book-own-public', 0);
+      link('collection-1', 'book-other-public', 1);
+
+      await service.reorderBooks('owner', 'collection-1', {
+        bookIds: ['book-other-public', 'book-own-public'],
+      });
+
+      const byBook = Object.fromEntries(
+        db.orm.public.CollectionBook.rows.map((row) => [
+          row.bookId,
+          row.position,
+        ]),
+      );
+      expect(byBook).toEqual({ 'book-other-public': 0, 'book-own-public': 1 });
     });
   });
 });
