@@ -26,7 +26,11 @@ services:
       file: compose.yaml
       service: minio-init
 
-  # Local TTS services removed; see docs/tts/local-tts-models-removed.md.
+  qwen3-tts:
+    extends:
+      file: compose.yaml
+      service: qwen3-tts
+
 
   migrate:
     extends:
