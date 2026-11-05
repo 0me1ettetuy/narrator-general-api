@@ -25,6 +25,7 @@ import type {
   BookSummary,
   BooksListResponse,
   ChapterAudioJobResponse,
+  LibraryBooksListResponse,
   ChapterAudioResponse,
   ChapterSummaryResponse,
   CompleteBookUploadResponse,
@@ -50,6 +51,11 @@ import type {
   Chapter,
   ProcessingJob,
 } from './types/book.type.js';
+import {
+  compareByPosition,
+  toBookAuthorResponse,
+  toBookSummary,
+} from './book-summary.mapper.js';
 
 const DEFAULT_PAGE_SIZE = 20;
 const PARSE_BOOK_IDEMPOTENCY_KEY_PREFIX = 'parse-book';
@@ -214,7 +220,7 @@ export class BooksService {
   async listBooks(
     userId: string,
     query: BooksListQueryDto,
-  ): Promise<BooksListResponse> {
+  ): Promise<LibraryBooksListResponse> {
     const limit = query.limit ?? DEFAULT_PAGE_SIZE;
     const offset = query.offset ?? 0;
     const source = query.source ?? 'all';
@@ -244,8 +250,12 @@ export class BooksService {
     // (cleaned up asynchronously by BookDeletionService); filter defensively
     // rather than relying on that cleanup alone.
     const visibleAddedBooks = addedBooks.filter(
-      (book) => book.deletedAt === null,
+      (book) => book.deletedAt === null && book.visibility === 'PUBLIC',
     );
+    // shortcut: ghosts aren't paginated, add paging if saved lists grow large.
+    const ghosts = addedBooks
+      .filter((book) => book.deletedAt === null && book.visibility !== 'PUBLIC')
+      .map((book) => ({ bookId: book.id, title: book.title }));
     const combined = [...ownedBooks, ...visibleAddedBooks].sort(
       compareBooksNewestFirst,
     );
@@ -275,6 +285,7 @@ export class BooksService {
         ),
       ),
       nextOffset: hasNextPage ? offset + limit : null,
+      ghosts,
     };
   }
 
@@ -888,27 +899,13 @@ export class BooksService {
       return toBookSummary(book, userId, false);
     }
 
-    const now = temporalNow();
-    const updated = await this.prisma.db.transaction(async (transaction) => {
-      const updatedBook = (await transaction.orm.public.Book.where({
-        id: book.id,
-        userId,
-      }).update({
-        visibility: dto.visibility,
-        updatedAt: now,
-      })) as Book;
-
-      // Other users' saved references to a book that just went private no
-      // longer resolve to anything they can read; drop them instead of
-      // leaving a dangling, inaccessible library entry.
-      if (dto.visibility === 'PRIVATE') {
-        await transaction.orm.public.BookLibraryEntry.where({
-          bookId: book.id,
-        }).deleteAndCount();
-      }
-
-      return updatedBook;
-    });
+    const updated = (await this.prisma.db.orm.public.Book.where({
+      id: book.id,
+      userId,
+    }).update({
+      visibility: dto.visibility,
+      updatedAt: temporalNow(),
+    })) as Book;
 
     return toBookSummary(updated, userId, false);
   }
@@ -1266,32 +1263,6 @@ export class BooksService {
   }
 }
 
-function toBookSummary(
-  book: Book,
-  requesterId: string,
-  isAdded: boolean,
-  authors: BookAuthor[] = [],
-): BookSummary {
-  return {
-    id: book.id,
-    title: book.title,
-    language: book.language,
-    sourceFormat: book.sourceFormat,
-    sourceOriginalFilename: book.sourceOriginalFilename,
-    sourceMimeType: book.sourceMimeType,
-    sourceSize: book.sourceSize,
-    authors: authors.sort(compareByPosition).map(toBookAuthorResponse),
-    hasCover: book.coverObjectKey !== null,
-    parseStatus: book.parseStatus,
-    chapterCount: book.chapterCount,
-    visibility: book.visibility,
-    isOwner: book.userId === requesterId,
-    isAdded,
-    createdAt: book.createdAt,
-    updatedAt: book.updatedAt,
-  };
-}
-
 function toBookTitle(filename: string): string {
   const title = filename.replace(/\.epub$/i, '').trim();
 
@@ -1318,14 +1289,6 @@ function toCompleteBookUploadResponse(
     bookId,
     jobId,
     parseStatus: 'QUEUED',
-  };
-}
-
-function toBookAuthorResponse(author: BookAuthor): BookAuthorResponse {
-  return {
-    id: author.id,
-    name: author.name,
-    position: author.position,
   };
 }
 
@@ -1381,13 +1344,6 @@ function toChapterAudioJobResponse(
     status: job.status,
     progress: job.progress,
   };
-}
-
-function compareByPosition(
-  first: BookAuthor | Chapter,
-  second: BookAuthor | Chapter,
-): number {
-  return first.position - second.position || first.id.localeCompare(second.id);
 }
 
 function compareBooksNewestFirst(first: Book, second: Book): number {

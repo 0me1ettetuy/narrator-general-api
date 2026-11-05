@@ -516,7 +516,7 @@ describe('BooksService', () => {
       book.parseStatus = 'READY';
     });
 
-    it("clears every other user's library entry when a book goes private", async () => {
+    it("keeps other users' library entries when a book goes private", async () => {
       book.visibility = 'PUBLIC';
       bookUpdate.mockResolvedValue({ ...book, visibility: 'PRIVATE' });
 
@@ -524,10 +524,7 @@ describe('BooksService', () => {
         visibility: 'PRIVATE',
       });
 
-      expect(db.orm.public.BookLibraryEntry.where).toHaveBeenCalledWith({
-        bookId: book.id,
-      });
-      expect(libraryEntryDeleteAndCount).toHaveBeenCalled();
+      expect(libraryEntryDeleteAndCount).not.toHaveBeenCalled();
     });
 
     it("refuses to add a private book to another user's library", async () => {
@@ -629,6 +626,7 @@ describe('BooksService', () => {
         ...book,
         id: 'added-book-id',
         userId: otherUserId,
+        visibility: 'PUBLIC',
       } as Book;
       db.orm.public.Book.where.mockImplementation(
         (criteria: Record<string, unknown> | ((row: unknown) => unknown)) => {
@@ -644,6 +642,50 @@ describe('BooksService', () => {
         createService().listBooks('user-id', { source: 'added' }),
       ).resolves.toMatchObject({
         books: [{ id: 'added-book-id', isOwner: false, isAdded: true }],
+      });
+    });
+
+    describe('ghosts', () => {
+      const privateAddedBook = {
+        ...book,
+        id: 'private-added-book-id',
+        title: 'Private title',
+        userId: otherUserId,
+        visibility: 'PRIVATE',
+      } as Book;
+
+      beforeEach(() => {
+        libraryEntryAll.mockResolvedValue([
+          { id: 'entry-id', userId: 'user-id', bookId: privateAddedBook.id },
+        ] as BookLibraryEntry[]);
+        db.orm.public.Book.where.mockImplementation(
+          (criteria: Record<string, unknown> | ((row: unknown) => unknown)) => {
+            if (typeof criteria === 'function') {
+              return { all: jest.fn().mockResolvedValue([privateAddedBook]) };
+            }
+
+            return { first: bookFirst, all: jest.fn().mockResolvedValue([]) };
+          },
+        );
+      });
+
+      it('returns a private added book as a ghost with only its id and title', async () => {
+        const result = await createService().listBooks('user-id', {
+          source: 'all',
+        });
+
+        expect(result.books).toEqual([]);
+        expect(result.ghosts).toEqual([
+          { bookId: privateAddedBook.id, title: 'Private title' },
+        ]);
+      });
+
+      it('returns no ghosts when filtered to source=owned', async () => {
+        const result = await createService().listBooks('user-id', {
+          source: 'owned',
+        });
+
+        expect(result.ghosts).toEqual([]);
       });
     });
 

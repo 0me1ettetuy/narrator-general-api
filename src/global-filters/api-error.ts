@@ -1,4 +1,6 @@
 export const API_ERROR_CODES = {
+  collectionBookNotPublic: 'COLLECTION_BOOK_NOT_PUBLIC',
+  collectionBooksNotReady: 'COLLECTION_BOOKS_NOT_READY',
   conflict: 'CONFLICT',
   emailAlreadyRegistered: 'EMAIL_ALREADY_REGISTERED',
   fishCredentialInvalid: 'FISH_CREDENTIAL_INVALID',

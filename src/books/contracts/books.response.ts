@@ -136,6 +136,15 @@ export type BooksListResponse = {
   nextOffset: number | null;
 };
 
+export type GhostBook = {
+  bookId: string;
+  title: string;
+};
+
+export type LibraryBooksListResponse = BooksListResponse & {
+  ghosts: GhostBook[];
+};
+
 export type CreateBookUploadResponse = {
   bookId: string;
   uploadUrl: string;

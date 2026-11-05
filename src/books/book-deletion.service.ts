@@ -123,6 +123,10 @@ export class BookDeletionService {
       await transaction.orm.public.BookLibraryEntry.where({
         bookId,
       }).deleteAndCount();
+      // Collections are references too; a permanently deleted book leaves no ghost.
+      await transaction.orm.public.CollectionBook.where({
+        bookId,
+      }).deleteAndCount();
       await transaction.orm.public.Book.where({ id: bookId }).deleteAndCount();
     });
   }

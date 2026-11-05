@@ -5,6 +5,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { UsersModule } from './users/users.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BooksModule } from './books/books.module.js';
+import { CollectionsModule } from './collections/collections.module.js';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { StorageModule } from './storage/storage.module.js';
@@ -26,6 +27,7 @@ import { TtsModelsModule } from './tts-models/tts-models.module.js';
     UsersModule,
     AuthModule,
     BooksModule,
+    CollectionsModule,
     StorageModule,
     JobsModule,
     TtsModelsModule,

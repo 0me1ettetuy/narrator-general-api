@@ -255,6 +255,22 @@ export class BooksListResponseDto {
   nextOffset: number | null;
 }
 
+export class GhostBookResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  bookId: string;
+
+  @ApiProperty()
+  title: string;
+}
+
+export class LibraryBooksListResponseDto extends BooksListResponseDto {
+  @ApiProperty({
+    type: () => [GhostBookResponseDto],
+    description: 'Saved books whose owner has made them private',
+  })
+  ghosts: GhostBookResponseDto[];
+}
+
 export class CreateBookUploadResponseDto {
   @ApiProperty({ format: 'uuid' })
   bookId: string;
