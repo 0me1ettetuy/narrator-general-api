@@ -276,3 +276,6 @@ subject alone.
 | 2026-11-05 | `4e5e5fb` | Added collection publishing and saved collections in the library.                                                                         |
 | 2026-11-05 | `3d65e8f` | Exposed the collections API through the controller and module.                                                                            |
 | 2026-11-05 | `64ffa72` | Recorded book collections and ghosts in the project guidance.                                                                             |
+| 2026-11-05 | `afe428a` | Restored the Qwen3-TTS 0.6B adapter and registry entry; unsupported book languages now fail instead of using Auto. |
+| 2026-11-05 | `347a4e3` | Added the `qwen3-tts` GPU Compose service and its env keys, off by default. |
+| 2026-11-05 | `be884a8` | Recorded the Qwen3-TTS restoration and added its implementation plan. |
