@@ -11,6 +11,8 @@ model User {
   sessions               Session[]
   books                  Book[]
   libraryEntries         BookLibraryEntry[]
+  collections            Collection[]
+  collectionLibraryEntries CollectionLibraryEntry[]
   legacyFishVoices       UserFishVoice[]
   customFishVoices       FishVoice[] @relation("FishVoiceOwner")
   selectedFishVoice      FishVoice?  @relation("SelectedFishVoice", fields: [selectedFishVoiceId], references: [id])
@@ -209,6 +211,7 @@ model Book {
   chapters      Chapter[]
   jobs          Job[]
   libraryEntries BookLibraryEntry[]
+  collectionBooks CollectionBook[]
 
   @@index([userId, createdAt])
   @@index([visibility, createdAt])
@@ -227,6 +230,54 @@ model BookLibraryEntry {
   @@unique([userId, bookId])
   @@index([userId, createdAt])
   @@map("book_library_entry")
+}
+
+model Collection {
+  id          String         @id @default(uuid())
+  userId      String
+  title       String
+  description String?
+  visibility  BookVisibility @default(PRIVATE)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime
+
+  user           User                     @relation(fields: [userId], references: [id])
+  books          CollectionBook[]
+  libraryEntries CollectionLibraryEntry[]
+
+  @@index([userId, createdAt])
+  @@index([visibility, createdAt])
+  @@map("collection")
+}
+
+model CollectionBook {
+  id           String   @id @default(uuid())
+  collectionId String
+  bookId       String
+  position     Int
+  createdAt    DateTime @default(now())
+
+  collection Collection @relation(fields: [collectionId], references: [id])
+  book       Book       @relation(fields: [bookId], references: [id])
+
+  @@unique([collectionId, bookId])
+  @@index([bookId])
+  @@map("collection_book")
+}
+
+model CollectionLibraryEntry {
+  id            String   @id @default(uuid())
+  userId        String
+  collectionId  String
+  titleSnapshot String
+  createdAt     DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id])
+  collection Collection @relation(fields: [collectionId], references: [id])
+
+  @@unique([userId, collectionId])
+  @@index([userId, createdAt])
+  @@map("collection_library_entry")
 }
 
 model BookAuthor {
