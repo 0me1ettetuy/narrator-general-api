@@ -8,11 +8,17 @@ subject alone.
 **Scope:** 26 August–8 November 2026, through Silero TTS.
 
 **Rules.** Newest milestone first; each entry is 1–3 lines (detail belongs in
-the owning doc). Add work in "Uncommitted work". When this file passes about
+the owning doc). Add work under "Recent changes" before committing, so the
+entry lands in the same commit as the work. Start each entry with a short unique
+title, no hashes; find its commit with `git log -S"<title>" -- docs/history.md`
+(or `git blame`). When this file passes about
 150 lines, move the oldest milestones to `history/milestones-archive.md`.
 
-## Uncommitted work
+## Recent changes
 
+- History without hashes: renamed "Uncommitted work" to "Recent changes"; entries are
+  written before the commit with a unique title and found via
+  `git log -S"<title>" -- docs/history.md`.
 - Docs tree audit: added `docs/superpowers/README.md` (plans and specs index,
   marks the Qwen3-TTS plan superseded) and linked it, the root `README.md` and
   `prisma-next.md` from `docs/README.md`, so every markdown file is reachable

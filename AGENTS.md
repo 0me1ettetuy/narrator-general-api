@@ -225,7 +225,8 @@ A task is done only when all of these hold:
 2. Docs are synced: each affected doc is updated using the routing table in
    [`docs/README.md`](docs/README.md), and every new doc is linked from its
    folder README.
-3. `docs/history.md` has an entry for the change under "Uncommitted work".
+3. `docs/history.md` has an entry (short unique title, no hash) under "Recent
+   changes", written before the commit.
 4. Every doc you touched is within the size budget in `docs/README.md`; if one
    is over, split it before finishing.
 5. No server, worker or Compose stack you started is left running.

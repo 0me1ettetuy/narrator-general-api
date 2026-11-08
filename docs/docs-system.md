@@ -18,7 +18,7 @@ AGENTS.md              the one instruction file: project rules, commands,
 CLAUDE.md              one line: @AGENTS.md   (so Claude Code loads it too)
 docs/
   README.md            routing table + rules (the manifest)
-  history.md           recent milestones + "Uncommitted work"
+  history.md           recent milestones + "Recent changes"
   history/             milestones-archive.md, commit-index.md
   <domain>/README.md   per-folder routing table, one row per file
   <domain>/*.md        the docs themselves
@@ -44,7 +44,7 @@ Two parts, in this order.
 
 - *Where a fact goes:* current behavior to the owning domain doc; a
   user-visible capability or limit to `features/`; a just-made change to
-  `history.md` (Uncommitted work, 1–3 lines); decisions, plans and research to
+  `history.md` (Recent changes, 1–3 lines); decisions, plans and research to
   `superpowers/`, `integrations/` or the domain's plan doc; follow-up work to
   `issues/`.
 - *Editing:* find the owning doc in the table, edit it, keep it accurate
@@ -69,7 +69,9 @@ the doc.
 ## History
 
 - `history.md`: newest milestone first, each entry 1–3 lines, plus an
-  "Uncommitted work" section for changes not yet committed.
+  "Recent changes" section. Write the entry before the commit so it lands with
+  the work; start it with a short unique title and no hash. Find the commit with
+  `git log -S"<title>" -- docs/history.md`.
 - When it passes ~150 lines, move the oldest milestones to
   `history/milestones-archive.md`. The commit index lives in
   `history/commit-index.md`.
@@ -78,7 +80,7 @@ the doc.
 
 1. Code works; the project's build, test and lint commands pass.
 2. Affected docs are updated using the routing table; new docs are linked.
-3. `docs/history.md` has an entry under "Uncommitted work".
+3. `docs/history.md` has an entry under "Recent changes" (unique title, no hash).
 4. Touched docs are within the size budget.
 5. No server, worker or watcher started for the task is left running.
 
@@ -90,7 +92,7 @@ the doc.
 2. Create `docs/README.md` with the Rules block above and an empty routing table.
 3. Group existing docs by domain folder, write a README table for each folder,
    and add one row per folder to the manifest.
-4. Create `docs/history.md` with the rules note and "Uncommitted work" and
+4. Create `docs/history.md` with the rules note and "Recent changes" and
    "Milestones" headings.
 5. Split any doc over budget; mark old plans and research `historical`.
 6. Check that every doc is reachable from `AGENTS.md` through the READMEs and

@@ -12,7 +12,7 @@ links here and nothing else needs to be read first.
 | --- | --- |
 | How the system behaves now | the owning domain doc (table below), `status: current` |
 | A user-visible capability or limit | `features/<capability>.md` or `features/boundaries.md` |
-| A change that was just made | `history.md`, "Uncommitted work", 1–3 lines |
+| A change that was just made | `history.md`, "Recent changes", 1–3 lines |
 | A decision, plan or research | `superpowers/`, `integrations/` or the domain's plan doc |
 | Known follow-up work | `issues/` |
 
@@ -47,7 +47,7 @@ open for a given change.
 | Area | Open it for | Edit it when | Status |
 | --- | --- | --- | --- |
 | [features/](features/README.md) | what the product does, per capability (account, library, audio, models, curation, sharing, collections) and its limits | user-visible behavior changes | current |
-| [history.md](history.md) | recent milestones; older ones in `history/milestones-archive.md`, every commit in `history/commit-index.md` | every change (uncommitted section) | log |
+| [history.md](history.md) | recent milestones; older ones in `history/milestones-archive.md`, every commit in `history/commit-index.md` | every change (recent changes) | log |
 | [architecture/](architecture/README.md) | module boundaries, delivery checklist, container deployment | structure, workers, Docker or Compose change | current |
 | [api/](api/README.md) | OpenAPI, DTO, status-code and error-envelope rules | the HTTP contract or error codes change | current |
 | [books/](books/README.md) | `book-and-audio-workflow.md` runtime invariants, chapter curation design, segmentation check | upload, parsing, deletion, sharing, collections or curation change | current |
