@@ -1,7 +1,7 @@
 # TTS model catalogue maintenance guide
 
-> **Only Qwen3-TTS 0.6B is restored.** `LOCAL_TTS_MODEL_DEFINITIONS` holds that
-> one entry. Piper, Kokoro-82M and Chatterbox Turbo rows, adapters, and Docker
+> **Only Silero TTS is enabled.** `LOCAL_TTS_MODEL_DEFINITIONS` holds that
+> one entry (`local.silero-tts`). Qwen3-TTS, Piper, Kokoro-82M and Chatterbox Turbo rows, adapters, and Docker
 > services are commented out or removed, not deleted. See
 > [local-tts-models-removed.md](local-tts-models-removed.md) for the full
 > restoration record and [the issue record](../issues/local-tts-models-disabled.md)
@@ -52,8 +52,8 @@ whenever a user saves it or starts a generation.
 | Fish   | `fish.s2.1-pro-free`      | `FISH_TTS_MODEL_DEFINITIONS` | `TTS_FISH_S2_1_PRO_FREE_ENABLED` |
 | Fish   | `fish.s2.1-pro`           | `FISH_TTS_MODEL_DEFINITIONS` | `TTS_FISH_S2_1_PRO_ENABLED`      |
 
-The four local model rows (`local.piper.en-us-amy`, `local.kokoro-82m`,
-`local.qwen3-tts-0.6b`, `local.chatterbox-turbo`) are commented out in
+The removed local model rows (`local.piper.en-us-amy`, `local.kokoro-82m`,
+`local.qwen3-tts-0.6b`, `local.chatterbox-turbo`) are no longer in
 `LOCAL_TTS_MODEL_DEFINITIONS`; see the disabled-local-TTS note above.
 
 Keep IDs stable. An ID is stored on `Audio.modelKey`, so renaming one breaks
@@ -166,8 +166,8 @@ is missing, it detects the primary language from cleaned chapter text with
 with each chapter text segment, and each adapter interprets it only when its
 own provider supports it:
 
-- Qwen translates its supported primary tags (`en`, `ru`, `zh`, and so on) to
-  Qwen language names. Missing or unsupported metadata sends `Auto`.
+- Silero translates `ru` and `en` to Silero language names. Missing or
+  unsupported metadata is rejected, because Silero cannot detect a language.
 - Piper uses its configured English/missing-language default (the supplied
   default is `en_US-hfc_male-medium`) and `ru_RU-denis-medium` for Russian.
   Its wrapper downloads a requested voice to the persistent Piper volume when

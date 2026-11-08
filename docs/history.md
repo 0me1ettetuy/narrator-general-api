@@ -7,6 +7,34 @@ subject alone.
 
 **Scope:** 26 August–5 November 2026, through book collections.
 
+## Uncommitted work
+
+Recorded without commit IDs; move to the milestones and the complete index
+when committed.
+
+### 8 November — Silero TTS replaces Qwen3-TTS, with selectable voices
+
+- Removed Qwen3-TTS: adapter, spec, `qwen3-tts` Compose service, its volumes,
+  `TTS_LOCAL_QWEN3_TTS_0_6B_*` env keys and the `docker/qwen3-tts-pascal`
+  Dockerfile. Reason: a 4 GB Pascal (sm_61) GPU cannot run the 1.7B model, and
+  on CPU one segment exceeded the 300 s idle timeout. Recorded in
+  `docs/tts/local-tts-models-removed.md`.
+- Added Silero TTS (Russian v5, English v3), CPU only: `SileroTtsAdapter`,
+  registry entry `local.silero-tts`, `silero-tts` Compose service built from
+  `docker/silero-tts` (models baked into the image), and the
+  `TTS_LOCAL_SILERO_TTS_*` env keys. Books without a Russian or English
+  language now fail with a clear error instead of using a guessed language.
+- Local models now segment chapters at 600 characters (`getSegmentMaxCharacters`);
+  Fish keeps 4,000.
+- Added fixed, read-only local voices: `voices` on `GET /tts/models` (5 Russian,
+  5 English), an optional `voiceId` on both generate endpoints validated against
+  the book's language, snapshotted on `Audio.voice`. The Silero server rejects
+  unknown speakers.
+- Added a "Keeping docs in sync" rule to `CLAUDE.md` and `AGENTS.md` and linked
+  `docs/tts/local-tts-docker.md` from `docs/tts/README.md`.
+- Deleted the dead Qwen audio rows, chunks and jobs from the dev database and
+  pointed the dev user's default model at `local.silero-tts`.
+
 ## Milestones
 
 ### 5 November — book collections

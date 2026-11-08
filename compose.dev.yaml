@@ -26,10 +26,10 @@ services:
       file: compose.yaml
       service: minio-init
 
-  qwen3-tts:
+  silero-tts:
     extends:
       file: compose.yaml
-      service: qwen3-tts
+      service: silero-tts
 
 
   migrate:

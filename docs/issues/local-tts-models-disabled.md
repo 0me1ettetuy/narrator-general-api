@@ -2,7 +2,7 @@
 
 ## Status
 
-Update: Qwen3-TTS 0.6B has been restored (see [docs/tts/local-tts-docker.md](docs/tts/local-tts-docker.md)). Piper, Kokoro-82M and Chatterbox Turbo remain disabled, and the rest of this record still describes them.
+Update: Qwen3-TTS was removed again (a 4 GB Pascal GPU cannot run it) and Silero TTS (ru/en, CPU) replaced it; see [docs/tts/local-tts-docker.md](../tts/local-tts-docker.md). Piper, Kokoro-82M and Chatterbox Turbo remain disabled, and the rest of this record still describes them.
 
 Deferred. Local TTS (Piper, Kokoro-82M, Qwen3-TTS, Chatterbox Turbo) was fully
 implemented and working — adapters, health checks, Docker services, and a
@@ -17,10 +17,10 @@ their UI surface alongside it.
 
 ## What this means today
 
-- `GET /tts/models` lists Qwen3-TTS only when `TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED` is true and its health check passes.
+- `GET /tts/models` lists Silero TTS only when `TTS_LOCAL_SILERO_TTS_ENABLED` is true and its health check passes.
 - Requesting a Piper, Kokoro-82M or Chatterbox `modelId` returns `404 TTS_MODEL_NOT_FOUND`.
 - No Docker container starts for Piper, Kokoro-82M or Chatterbox, even if `.env` sets their `TTS_LOCAL_*_ENABLED`.
-- The frontend shows Qwen3-TTS on the Models page; `TtsSelector` shows a local model as a disabled label.
+- The frontend shows Silero TTS on the Models page; `TtsSelector` shows a local model as a disabled label.
 
 ## Full restoration record
 

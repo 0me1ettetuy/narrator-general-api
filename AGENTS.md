@@ -147,3 +147,10 @@ backend code. For the detailed conventions and checklist, start at
 - Do not leave a server, watch process, worker, or Docker stack running unless
   explicitly requested. If one remains active, report its command, port, and
   stop command.
+
+## Keeping docs in sync
+
+Docs form a tree: this file and `AGENTS.md` link to `docs/README.md` and the
+READMEs, which link every other doc. With each change, update `docs/history.md`
+(uncommitted section until committed) and the affected docs, and link any new
+doc from its folder's README so nothing is orphaned.

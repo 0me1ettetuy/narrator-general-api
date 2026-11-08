@@ -384,8 +384,8 @@ key.
 ### How to use it in the UI
 
 1. Open **Models** in the private sidebar.
-2. Local cards show `READY`, `UNAVAILABLE`, or `DISABLED`. Only Qwen3-TTS 0.6B is
-   restored; it is off by default and needs an NVIDIA GPU on the Docker host.
+2. Local cards show `READY`, `UNAVAILABLE`, or `DISABLED`. Only Silero TTS
+   (Russian + English) is enabled; it is off by default and runs on CPU.
 3. To use Fish Audio, enter a personal key in the Fish setup card. The form
    validates it before Fish model cards are displayed.
 4. Choose a ready card. The selected card becomes the default for future
@@ -428,11 +428,13 @@ key.
   at chapter-audio creation. Later selection/catalogue changes cannot mix
   voices in an in-progress chapter or its retries.
 
-#### Local models (Qwen3-TTS restored)
+#### Local models (Silero TTS)
 
-Qwen3-TTS 0.6B is restored and selectable when `TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED`
-is true and its health check passes. Piper, Kokoro-82M and Chatterbox Turbo
-remain disabled: `GET /tts/models` omits them, and the frontend shows no card
+Silero TTS (Russian + English) is selectable when `TTS_LOCAL_SILERO_TTS_ENABLED`
+is true and its health check passes. Qwen3-TTS, Piper, Kokoro-82M and Chatterbox Turbo
+are removed or disabled. A local model lists fixed voices in `GET /tts/models`
+(`voices`, per language); generate requests may pass `voiceId`, which must belong
+to the book's language (400 otherwise) and is snapshotted on the audio row: `GET /tts/models` omits them, and the frontend shows no card
 for them.
 
 Full restoration record (exact code locations, the removed Docker Compose and

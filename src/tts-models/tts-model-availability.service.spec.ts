@@ -10,6 +10,7 @@ const enabledModel: ConfiguredLocalTtsModel = {
   healthUrl: 'http://localhost:9100/health',
   synthesisUrl: 'http://localhost:9100/',
   healthStrategy: 'HTTP_OK',
+  voices: [],
 };
 
 describe('TtsModelAvailabilityService', () => {

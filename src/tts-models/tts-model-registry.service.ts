@@ -7,17 +7,31 @@ import type {
   LocalTtsModelDefinition,
 } from './types/tts-model.type.js';
 
-// Only Qwen3-TTS is restored. Piper, Kokoro and Chatterbox stay disabled; see
-// docs/tts/local-tts-models-removed.md.
+// Only Silero TTS is enabled. Qwen3-TTS, Piper, Kokoro and Chatterbox are
+// removed; see docs/tts/local-tts-models-removed.md.
 const LOCAL_TTS_MODEL_DEFINITIONS: LocalTtsModelDefinition[] = [
   {
-    id: 'local.qwen3-tts-0.6b',
-    provider: 'local-qwen3-tts',
-    displayName: 'Qwen3-TTS 0.6B',
-    enabledConfigKey: 'TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED',
-    healthUrlConfigKey: 'TTS_LOCAL_QWEN3_TTS_0_6B_HEALTH_URL',
-    synthesisUrlConfigKey: 'TTS_LOCAL_QWEN3_TTS_0_6B_URL',
+    id: 'local.silero-tts',
+    provider: 'local-silero-tts',
+    displayName: 'Silero TTS (RU/EN)',
+    enabledConfigKey: 'TTS_LOCAL_SILERO_TTS_ENABLED',
+    healthUrlConfigKey: 'TTS_LOCAL_SILERO_TTS_HEALTH_URL',
+    synthesisUrlConfigKey: 'TTS_LOCAL_SILERO_TTS_URL',
     healthStrategy: 'JSON_STATUS_HEALTHY',
+    // Single source of truth for the voices users can pick. The Silero server
+    // validates the id against the speakers its model actually has.
+    voices: [
+      { id: 'xenia', language: 'ru', displayName: 'Xenia' },
+      { id: 'kseniya', language: 'ru', displayName: 'Kseniya' },
+      { id: 'baya', language: 'ru', displayName: 'Baya' },
+      { id: 'aidar', language: 'ru', displayName: 'Aidar' },
+      { id: 'eugene', language: 'ru', displayName: 'Eugene' },
+      { id: 'en_0', language: 'en', displayName: 'English 1' },
+      { id: 'en_1', language: 'en', displayName: 'English 2' },
+      { id: 'en_2', language: 'en', displayName: 'English 3' },
+      { id: 'en_3', language: 'en', displayName: 'English 4' },
+      { id: 'en_4', language: 'en', displayName: 'English 5' },
+    ],
   },
 ];
 
@@ -72,6 +86,7 @@ export class TtsModelRegistryService {
         healthUrl: null,
         synthesisUrl: null,
         healthStrategy: definition.healthStrategy,
+        voices: definition.voices,
       };
     }
 
@@ -88,6 +103,7 @@ export class TtsModelRegistryService {
       healthUrl,
       synthesisUrl,
       healthStrategy: definition.healthStrategy,
+      voices: definition.voices,
     };
   }
 

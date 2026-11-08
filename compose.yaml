@@ -104,8 +104,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:? Set POSTGRES_USER}:${POSTGRES_PASSWORD:? Set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:? Set POSTGRES_DB}
       REDIS_URL: redis://redis:6379
       STORAGE_INTERNAL_ENDPOINT: ${STORAGE_INTERNAL_ENDPOINT:-}
-      TTS_LOCAL_QWEN3_TTS_0_6B_HEALTH_URL: http://qwen3-tts:8001/health
-      TTS_LOCAL_QWEN3_TTS_0_6B_URL: http://qwen3-tts:8001
+      TTS_LOCAL_SILERO_TTS_HEALTH_URL: http://silero-tts:8001/health
+      TTS_LOCAL_SILERO_TTS_URL: http://silero-tts:8001
     depends_on:
       db:
         condition: service_healthy
@@ -154,35 +154,27 @@ services:
       redis:
         condition: service_healthy
 
-  qwen3-tts:
-    # shortcut: unpinned image tag, pin the digest once the GPU spike (plan Task 1) passes
-    image: ${TTS_LOCAL_QWEN3_TTS_0_6B_IMAGE:-ghcr.io/malaiwah/qwen3-tts-server:latest}
-    container_name: narrator-qwen3-tts
-    profiles: ['${TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED:-false}']
+  silero-tts:
+    # CPU only (no GPU needed); models are baked into the image.
+    build:
+      context: docker/silero-tts
+    image: narrator-silero-tts:local
+    container_name: narrator-silero-tts
+    profiles: ['${TTS_LOCAL_SILERO_TTS_ENABLED:-false}']
     restart: unless-stopped
-    environment:
-      QWEN3_TTS_MODEL_ID: Qwen/Qwen3-TTS-12Hz-0.6B-Base
-      QWEN3_TTS_VOICES_DIR: /data/voices
-      HF_HOME: /root/.cache/huggingface
     ports:
-      - '127.0.0.1:${TTS_LOCAL_QWEN3_TTS_0_6B_PUBLISHED_PORT:-8001}:8001'
-    volumes:
-      - narrator_qwen3_tts_data:/data
-      - narrator_qwen3_tts_huggingface_cache:/root/.cache/huggingface
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+      - '127.0.0.1:${TTS_LOCAL_SILERO_TTS_PUBLISHED_PORT:-8001}:8001'
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:8001/health']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
 volumes:
   narrator_postgres_data:
   narrator_redis_data:
   narrator_minio_data:
-  narrator_qwen3_tts_data:
-  narrator_qwen3_tts_huggingface_cache:
 
 networks:
   default:

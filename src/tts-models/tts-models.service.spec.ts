@@ -25,6 +25,10 @@ describe('TtsModelsService', () => {
           healthUrl: 'http://localhost:9100/health',
           synthesisUrl: 'http://localhost:9100/',
           healthStrategy: 'HTTP_OK',
+          voices: [
+            { id: 'xenia', language: 'ru', displayName: 'Xenia' },
+            { id: 'en_0', language: 'en', displayName: 'English 1' },
+          ],
         },
       ]),
       getFishModels: jest.fn().mockReturnValue([
@@ -109,6 +113,10 @@ describe('TtsModelsService', () => {
               status: 'READY',
               selectable: true,
               reasonCode: null,
+              voices: [
+                { id: 'xenia', language: 'ru', displayName: 'Xenia' },
+                { id: 'en_0', language: 'en', displayName: 'English 1' },
+              ],
             },
           ],
         },
@@ -147,6 +155,7 @@ describe('TtsModelsService', () => {
           status: 'READY',
           selectable: true,
           reasonCode: null,
+          voices: [],
         },
       ],
     });
@@ -226,6 +235,42 @@ describe('TtsModelsService', () => {
       id: 'local.piper.en-us-amy',
       source: 'LOCAL',
       providerModel: null,
+    });
+  });
+
+  describe('resolveLocalVoiceId', () => {
+    function createService() {
+      return new TtsModelsService(
+        prisma,
+        createRegistry(),
+        availableLocalModel,
+        {} as unknown as FishCredentialService,
+      );
+    }
+
+    it('accepts a voice listed for the book language, and none means the default', () => {
+      const service = createService();
+
+      expect(
+        service.resolveLocalVoiceId('local.piper.en-us-amy', 'ru-RU', 'xenia'),
+      ).toBe('xenia');
+      expect(
+        service.resolveLocalVoiceId('local.piper.en-us-amy', 'en', undefined),
+      ).toBeNull();
+    });
+
+    it('rejects a voice of another language or an unknown voice', () => {
+      const service = createService();
+
+      expect(() =>
+        service.resolveLocalVoiceId('local.piper.en-us-amy', 'en', 'xenia'),
+      ).toThrow('Voice is not available');
+      expect(() =>
+        service.resolveLocalVoiceId('local.piper.en-us-amy', null, 'en_0'),
+      ).toThrow('Voice is not available');
+      expect(() =>
+        service.resolveLocalVoiceId('local.piper.en-us-amy', 'en', 'nope'),
+      ).toThrow('Voice is not available');
     });
   });
 });

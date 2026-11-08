@@ -1,24 +1,28 @@
 # Local TTS Docker toggles
 
-Qwen3-TTS 0.6B is restored. Piper, Kokoro-82M and Chatterbox Turbo are still disabled.
+Silero TTS (Russian + English) is the only enabled local model. It runs on CPU,
+so no GPU is needed. Qwen3-TTS, Piper, Kokoro-82M and Chatterbox Turbo are
+removed or disabled; see [local-tts-models-removed.md](local-tts-models-removed.md).
 
-## Enabling Qwen3-TTS
+## Enabling Silero TTS
 
-1. The Docker host needs an NVIDIA GPU, the NVIDIA driver, and `nvidia-container-toolkit` (`sudo nvidia-ctk runtime configure --runtime=docker`, then restart Docker). Check with `docker run --rm --gpus all ubuntu nvidia-smi`.
-2. In `.env`, set `TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED="true"`. Other `TTS_LOCAL_QWEN3_*` keys are in `.env.example`.
-3. Run `docker compose up -d --build`. Weights download on first start into the `narrator_qwen3_tts_huggingface_cache` volume.
-4. `GET /tts/models` should list Qwen3-TTS as available.
+1. In `.env`, set `TTS_LOCAL_SILERO_TTS_ENABLED="true"`. The other
+   `TTS_LOCAL_SILERO_TTS_*` keys are in `.env.example`.
+2. Run `docker compose up -d --build`. The `silero-tts` service builds from
+   `docker/silero-tts`; the models (`ru` v5, `en` v3) are baked into the image.
+3. `GET /tts/models` should list Silero TTS as available.
 
-Not yet done: the image is not digest-pinned, and 4 GB VRAM has not been tested. See the GPU spike in `docs/superpowers/plans/2026-11-05-local-qwen3-tts.md`.
+Notes:
 
-- [Full restoration record](local-tts-models-removed.md) — exactly what was
-  commented out, renamed, or deleted, and how to bring each piece back,
-  including the Docker Compose service definitions and `.env.example` block
-  this document used to describe.
-- [Why it was disabled](../issues/local-tts-models-disabled.md)
+- Voices the user can pick live in `LOCAL_TTS_MODEL_DEFINITIONS` (5 Russian, 5 English).
+  Without a pick the engine default is used (ru `xenia`, en `en_0`), or
+  `TTS_LOCAL_SILERO_TTS_VOICE` if set. The Silero server rejects unknown speakers.
+- Silero cannot detect a language: books without Russian or English metadata fail
+  with a clear error instead of being narrated with the wrong voice.
+- Local models split chapters into 600-character segments (Fish uses 4,000).
+- Not yet done: the base image tags and pip versions are pinned but the model
+  files are fetched from `models.silero.ai` without a checksum. Check the Silero
+  license (CC BY-NC vs MIT is unclear) before commercial use.
 
-The operating instructions this document previously held (enabling a model,
-hardware requirements, image pinning, voice-selection behavior per engine)
-are preserved in this file's git history and remain accurate once local
-models are restored; they are not repeated here to avoid documenting
-behavior that does not currently exist.
+- [Restoration record](local-tts-models-removed.md)
+- [Why local models were disabled](../issues/local-tts-models-disabled.md)

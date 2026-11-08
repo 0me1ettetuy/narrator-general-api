@@ -104,13 +104,13 @@ book-detail endpoint exposes chapter audio status and progress.
 
 ## TTS adapters and models
 
-Only Qwen3-TTS 0.6B is restored as a local model (off by default; needs an NVIDIA GPU and the NVIDIA Container Toolkit on the Docker host). Piper, Kokoro-82M and Chatterbox Turbo stay disabled. Fish Audio is the other provider. `src/tts/adapters/` still contains the
-narrow shared TTS adapter interface; the four local adapter files and their
+Only Silero TTS (Russian + English, CPU only, no GPU needed, off by default) is enabled as a local model. Qwen3-TTS, Piper, Kokoro-82M and Chatterbox Turbo are removed or disabled. Fish Audio is the other provider. `src/tts/adapters/` contains the
+narrow shared TTS adapter interface and the Silero adapter; the Piper, Kokoro and Chatterbox adapter files and their
 registry entries are commented out in place, not deleted. See
 [`docs/tts/local-tts-models-removed.md`](docs/tts/local-tts-models-removed.md)
 for the full restoration record and
 [`docs/issues/local-tts-models-disabled.md`](docs/issues/local-tts-models-disabled.md)
-for why. `TtsAdapterResolverService` resolves Fish and Qwen3; a local `modelId` with no adapter or registry entry returns `404 TTS_MODEL_NOT_FOUND`.
+for why. `TtsAdapterResolverService` resolves Fish and Silero; a local `modelId` with no adapter or registry entry returns `404 TTS_MODEL_NOT_FOUND`.
 
 - Choose a ready model with `PUT /tts/models/selection`. It stores the user's
   nullable `defaultTtsModelKey` preference. `GET /tts/models` returns it as
@@ -122,7 +122,7 @@ for why. `TtsAdapterResolverService` resolves Fish and Qwen3; a local `modelId` 
   than silently falling back to a guessed model.
 - Chapter synthesis has two BullMQ queues chosen by the snapshotted model:
   `fish-chapter-tts` (concurrency `TTS_FISH_CONCURRENCY`, default 2) and
-  `chapter-tts`, which carries the local Qwen3 jobs, one at a time. Fish `429`/`5xx` responses are retried in-process
+  `chapter-tts`, which carries the local Silero jobs, one at a time. Fish `429`/`5xx` responses are retried in-process
   (honouring `Retry-After`, otherwise 2/4/8/16 s) before the job attempt
   fails.
 - Fish keys belong to a user, are AES-256-GCM encrypted in Postgres, and are
@@ -146,7 +146,7 @@ for why. `TtsAdapterResolverService` resolves Fish and Qwen3; a local `modelId` 
   `ChapterCurationService`) — null if the voice has since been removed
   entirely, independent of the immutable snapshotted `voice` id.
 
-`GET /tts/models` returns the `local` group (Qwen3 when enabled), `selectedModelId`, and the
+`GET /tts/models` returns the `local` group (Silero when enabled), `selectedModelId`, and the
 current user's safe Fish credential state (`MISSING`, `VALID`, `INVALID`, or
 `UNKNOWN`). Fish model cards appear only for a valid key. The API never returns
 the key, even partly. Use `PUT /tts/models/providers/fish-audio/credential` to
@@ -158,7 +158,7 @@ deployment secret `TTS_CREDENTIAL_ENCRYPTION_KEY` to the output of
 `openssl rand -base64 32` before users can save credentials.
 
 `COMPOSE_PROFILES=true` is fixed and never changes; Compose starts MinIO only
-when `MINIO_ENABLED=true` is also set. Qwen3-TTS runs under the `qwen3-tts` Compose profile, switched by `TTS_LOCAL_QWEN3_TTS_0_6B_ENABLED`.
+when `MINIO_ENABLED=true` is also set. Silero TTS runs under the `silero-tts` Compose profile, switched by `TTS_LOCAL_SILERO_TTS_ENABLED`. Local models use 600-character chunks (`getSegmentMaxCharacters`), Fish keeps 4,000.
 
 ## Guardrails
 
@@ -180,7 +180,7 @@ when `MINIO_ENABLED=true` is also set. Qwen3-TTS runs under the `qwen3-tts` Comp
   change index.
 - `docs/architecture/backend-architecture.md` — module and worker boundaries.
 - `docs/api/api-contracts-and-errors.md` — OpenAPI/error requirements.
-- `docs/tts/local-tts-models-removed.md` — all local models except Qwen3-TTS are disabled; full
+- `docs/tts/local-tts-models-removed.md` — all local models except Silero TTS are removed or disabled; includes the Qwen3-TTS removal notes; full
   restoration record (what was commented/removed and how to bring it back).
 - `docs/tts/tts-model-catalogue.md` — source of truth, toggles, and steps for
   adding a local or Fish model.
@@ -188,3 +188,10 @@ when `MINIO_ENABLED=true` is also set. Qwen3-TTS runs under the `qwen3-tts` Comp
   work.
 - `docs/books/chapter-curation-plan.md` — EPUB chapter classification, editing,
   and narration-selection design.
+
+## Keeping docs in sync
+
+Docs form a tree: this file and `AGENTS.md` link to `docs/README.md` and the
+READMEs, which link every other doc. With each change, update `docs/history.md`
+(uncommitted section until committed) and the affected docs, and link any new
+doc from its folder's README so nothing is orphaned.

@@ -3,6 +3,12 @@ import type { LocalTtsModelStatus } from '../types/tts-model.type.js';
 
 export type TtsModelSource = 'LOCAL' | 'FISH';
 
+export type TtsLocalVoiceResponse = {
+  id: string;
+  language: 'ru' | 'en';
+  displayName: string;
+};
+
 export type TtsModelResponse = {
   id: string;
   provider: string;
@@ -11,6 +17,8 @@ export type TtsModelResponse = {
   status: LocalTtsModelStatus;
   selectable: boolean;
   reasonCode: string | null;
+  // Pickable fixed voices; empty for Fish, whose voices live on the credential.
+  voices: TtsLocalVoiceResponse[];
 };
 
 export type TtsModelGroupResponse = {

@@ -2,7 +2,17 @@
 
 ## Status
 
-Update: Qwen3-TTS 0.6B has been restored (see [docs/tts/local-tts-docker.md](docs/tts/local-tts-docker.md)). Piper, Kokoro-82M and Chatterbox Turbo remain disabled, and the rest of this record still describes them.
+Update 2026-11-08: Qwen3-TTS was removed again and replaced by Silero TTS
+(Russian + English, CPU only; see [local-tts-docker.md](local-tts-docker.md)).
+Why Qwen went: the stock image's torch (cu128) has no kernels for Pascal
+(sm_61) GPUs; a rebuilt cu126 image ran on a GTX 1050 Ti, but the 1.7B model
+(3.87 GiB) ran out of memory on 4 GB, the 0.6B model needs its own speaker
+embeddings (the image's built-in voices are 1.7B-only), and on CPU a single
+segment took longer than the 300 s idle timeout. Restoring it needs a GPU with
+about 8 GB, Turing or newer. The adapter, spec, Compose service and env keys are
+deleted; recover them from git history (`src/tts/adapters/qwen3-tts.adapter.ts`
+before this change). Piper, Kokoro-82M and Chatterbox Turbo remain disabled,
+and the rest of this record still describes them.
 
 Deferred. Local TTS support (Piper, Kokoro-82M, Qwen3-TTS, Chatterbox Turbo)
 was fully built and working, but is now disabled so the product can focus on

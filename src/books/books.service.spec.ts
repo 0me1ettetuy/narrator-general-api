@@ -122,6 +122,7 @@ describe('BooksService', () => {
   const storageService = storage as unknown as StorageService;
   const ttsModelsService = {
     getSelectableModel: jest.fn(),
+    resolveLocalVoiceId: jest.fn().mockReturnValue(null),
   } as unknown as TtsModelsService;
   const fishVoices = {
     resolveVoiceReferenceId: jest.fn(),

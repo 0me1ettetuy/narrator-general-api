@@ -6,6 +6,12 @@ export const LOCAL_TTS_MODEL_STATUSES = [
 
 export type LocalTtsModelStatus = (typeof LOCAL_TTS_MODEL_STATUSES)[number];
 
+export type LocalTtsVoice = {
+  id: string;
+  language: 'ru' | 'en';
+  displayName: string;
+};
+
 export type LocalTtsModelDefinition = {
   id: string;
   provider: string;
@@ -14,6 +20,8 @@ export type LocalTtsModelDefinition = {
   healthUrlConfigKey: string;
   synthesisUrlConfigKey: string;
   healthStrategy: 'HTTP_OK' | 'JSON_STATUS_HEALTHY' | 'JSON_STATUS_OK';
+  // Fixed, read-only voices; the user picks one per request. Empty = engine default only.
+  voices: LocalTtsVoice[];
 };
 
 export type ConfiguredLocalTtsModel = Omit<

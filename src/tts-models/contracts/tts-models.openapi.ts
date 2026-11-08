@@ -1,5 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+export class TtsLocalVoiceResponseDto {
+  @ApiProperty({ example: 'xenia' })
+  id: string;
+
+  @ApiProperty({ enum: ['ru', 'en'] })
+  language: string;
+
+  @ApiProperty({ example: 'Xenia' })
+  displayName: string;
+}
+
 export class TtsModelResponseDto {
   @ApiProperty({ example: 'local.piper.en-us-amy' })
   id: string;
@@ -24,6 +35,9 @@ export class TtsModelResponseDto {
     enum: ['MODEL_DISABLED', 'MODEL_SERVICE_UNREACHABLE'],
   })
   reasonCode: string | null;
+
+  @ApiProperty({ type: () => [TtsLocalVoiceResponseDto] })
+  voices: TtsLocalVoiceResponseDto[];
 }
 
 export class TtsModelGroupResponseDto {

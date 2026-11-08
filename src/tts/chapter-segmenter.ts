@@ -1,5 +1,16 @@
 export const DEFAULT_TTS_SEGMENT_MAX_CHARACTERS = 4_000;
 
+// Local engines return no bytes until a whole segment is synthesized, so a
+// segment must finish inside the idle timeout on slow CPUs, and Silero degrades
+// on long inputs. ~600 chars ≈ 40-60s of audio.
+export const LOCAL_TTS_SEGMENT_MAX_CHARACTERS = 600;
+
+export function getSegmentMaxCharacters(modelKey?: string | null): number {
+  return modelKey?.startsWith('local.')
+    ? LOCAL_TTS_SEGMENT_MAX_CHARACTERS
+    : DEFAULT_TTS_SEGMENT_MAX_CHARACTERS;
+}
+
 export class ChapterSegmenter {
   constructor(
     private readonly maxCharacters = DEFAULT_TTS_SEGMENT_MAX_CHARACTERS,

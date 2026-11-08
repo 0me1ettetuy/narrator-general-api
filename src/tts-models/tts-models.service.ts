@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -61,6 +62,7 @@ export class TtsModelsService {
           status: model.enabled ? 'READY' : 'DISABLED',
           selectable: model.enabled,
           reasonCode: model.enabled ? null : 'MODEL_DISABLED',
+          voices: [],
         })),
       });
     }
@@ -140,6 +142,35 @@ export class TtsModelsService {
     };
   }
 
+  /**
+   * A local voice must be one the model lists for the book's language; there is
+   * no silent fallback. No requested voice means the engine's own default.
+   */
+  resolveLocalVoiceId(
+    modelId: string,
+    bookLanguage: string | null,
+    voiceId: string | null | undefined,
+  ): string | null {
+    if (!voiceId) {
+      return null;
+    }
+
+    const language = bookLanguage?.trim().toLowerCase().split(/[-_]/, 1)[0];
+    const voice = this.registry
+      .getLocalModels()
+      .find((candidate) => candidate.id === modelId)
+      ?.voices.find((candidate) => candidate.id === voiceId);
+
+    if (!voice || voice.language !== language) {
+      throw new BadRequestException({
+        code: API_ERROR_CODES.validationFailed,
+        message: 'Voice is not available for this model and book language',
+      });
+    }
+
+    return voice.id;
+  }
+
   async getSelectableLocalModel(
     modelId: string,
   ): Promise<ConfiguredLocalTtsModel> {
@@ -173,6 +204,7 @@ export class TtsModelsService {
             displayName: model.displayName,
             source: 'LOCAL',
             ...availability,
+            voices: model.voices,
           };
         }),
     );

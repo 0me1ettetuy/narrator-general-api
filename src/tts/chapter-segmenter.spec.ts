@@ -1,7 +1,23 @@
 import {
   ChapterSegmenter,
   DEFAULT_TTS_SEGMENT_MAX_CHARACTERS,
+  LOCAL_TTS_SEGMENT_MAX_CHARACTERS,
+  getSegmentMaxCharacters,
 } from './chapter-segmenter.js';
+
+describe('getSegmentMaxCharacters', () => {
+  it('uses the small limit for local models and the default for others', () => {
+    expect(getSegmentMaxCharacters('local.silero-tts')).toBe(
+      LOCAL_TTS_SEGMENT_MAX_CHARACTERS,
+    );
+    expect(getSegmentMaxCharacters('fish.s2.1-pro-free')).toBe(
+      DEFAULT_TTS_SEGMENT_MAX_CHARACTERS,
+    );
+    expect(getSegmentMaxCharacters(null)).toBe(
+      DEFAULT_TTS_SEGMENT_MAX_CHARACTERS,
+    );
+  });
+});
 
 describe('ChapterSegmenter', () => {
   it('packs complete paragraphs together while they fit', () => {

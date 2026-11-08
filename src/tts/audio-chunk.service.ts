@@ -2,7 +2,10 @@ import { createHash, randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { temporalNow } from '../prisma/temporal.js';
-import { ChapterSegmenter } from './chapter-segmenter.js';
+import {
+  ChapterSegmenter,
+  getSegmentMaxCharacters,
+} from './chapter-segmenter.js';
 
 type ExistingAudioChunk = {
   status: 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
@@ -16,8 +19,6 @@ export type AudioChunkPlan = {
 
 @Injectable()
 export class AudioChunkService {
-  private readonly chapterSegmenter = new ChapterSegmenter();
-
   constructor(private readonly prisma: PrismaService) {}
 
   async ensurePlan(audioId: string): Promise<AudioChunkPlan> {
@@ -60,7 +61,9 @@ export class AudioChunkService {
         throw new Error('Audio chapter not found');
       }
 
-      const segmentTexts = this.chapterSegmenter.segment(chapter.text);
+      const segmentTexts = new ChapterSegmenter(
+        getSegmentMaxCharacters(audio.modelKey),
+      ).segment(chapter.text);
 
       if (!segmentTexts.length) {
         throw new Error('Chapter contains no text to synthesize');

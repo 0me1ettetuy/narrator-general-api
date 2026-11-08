@@ -46,7 +46,7 @@ export abstract class OpenAiCompatibleLocalTtsAdapter implements TtsAdapter {
       DEFAULT_LOCAL_TTS_IDLE_TIMEOUT_MS,
     );
     const timeout = startIdleTimeout(controller, idleTimeoutMs);
-    const voice = this.getVoice();
+    const voice = this.getVoice(input);
 
     try {
       const response = await fetch(this.getSynthesisUrl(), {
@@ -124,7 +124,7 @@ export abstract class OpenAiCompatibleLocalTtsAdapter implements TtsAdapter {
   /**
    * Local engines share the OpenAI-compatible base payload but may expose
    * additional, provider-specific fields. Keep those fields in the concrete
-   * adapter so a Qwen option cannot accidentally be sent to Piper, Kokoro, or
+   * adapter so one engine's option cannot accidentally be sent to another engine such as Piper, Kokoro, or
    * Chatterbox.
    */
   protected getProviderRequestFields(
@@ -134,7 +134,10 @@ export abstract class OpenAiCompatibleLocalTtsAdapter implements TtsAdapter {
     return {};
   }
 
-  protected getVoice(): string {
+  protected getVoice(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- subclasses may read the input
+    _input: TtsSynthesisInput,
+  ): string {
     return (
       this.configService
         .get<string>(this.configuration.voiceConfigKey)

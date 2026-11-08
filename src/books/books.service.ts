@@ -15,7 +15,10 @@ import {
   StorageService,
 } from '../storage/storage.service.js';
 import { FishVoiceService } from '../tts-models/fish-voice.service.js';
-import { TtsModelsService } from '../tts-models/tts-models.service.js';
+import {
+  type SelectableTtsModel,
+  TtsModelsService,
+} from '../tts-models/tts-models.service.js';
 import type {
   ChapterAudioAccessResponse,
   BatchChapterAudioResponse,
@@ -350,6 +353,7 @@ export class BooksService {
     bookId: string,
     chapterId: string,
     modelId: string | null,
+    requestedVoiceId: string | null = null,
   ): Promise<QueueChapterAudioResponse> {
     const book = await this.prisma.db.orm.public.Book.where({
       id: bookId,
@@ -381,7 +385,12 @@ export class BooksService {
       userId,
       modelId,
     );
-    const voiceId = await this.getVoiceSnapshot(userId, selectedModel.source);
+    const voiceId = await this.getVoiceSnapshot(
+      userId,
+      selectedModel,
+      book.language,
+      requestedVoiceId,
+    );
 
     const queued = await this.createOrReuseChapterAudioJob(
       book.id,
@@ -410,6 +419,7 @@ export class BooksService {
     userId: string,
     bookId: string,
     chapterIds: string[],
+    requestedVoiceId: string | null = null,
   ): Promise<BatchChapterAudioResponse> {
     const book = await this.getOwnedBook(userId, bookId);
     const chapters = await this.getSelectedChapters(book.id, chapterIds);
@@ -417,7 +427,12 @@ export class BooksService {
       userId,
       null,
     );
-    const voiceId = await this.getVoiceSnapshot(userId, selectedModel.source);
+    const voiceId = await this.getVoiceSnapshot(
+      userId,
+      selectedModel,
+      book.language,
+      requestedVoiceId,
+    );
 
     await this.assertAudioModelsAreCompatible(chapters, selectedModel.id);
 
@@ -1126,11 +1141,27 @@ export class BooksService {
 
   private async getVoiceSnapshot(
     userId: string,
-    source: 'LOCAL' | 'FISH',
+    model: SelectableTtsModel,
+    bookLanguage: string | null,
+    requestedVoiceId: string | null,
   ): Promise<string | null> {
-    return source === 'FISH'
-      ? this.fishVoices.resolveVoiceReferenceId(userId)
-      : null;
+    if (model.source === 'FISH') {
+      // Fish voices come from the user's own saved selection, not the request.
+      if (requestedVoiceId) {
+        throw new BadRequestException({
+          code: API_ERROR_CODES.validationFailed,
+          message: 'Fish Audio voices are chosen on the Models page',
+        });
+      }
+
+      return this.fishVoices.resolveVoiceReferenceId(userId);
+    }
+
+    return this.ttsModelsService.resolveLocalVoiceId(
+      model.id,
+      bookLanguage,
+      requestedVoiceId,
+    );
   }
 
   // Public: also used by ChapterCurationService, which composes this

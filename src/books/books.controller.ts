@@ -214,6 +214,7 @@ export class BooksController {
       params.bookId,
       params.chapterId,
       dto?.modelId ?? null,
+      dto?.voiceId ?? null,
     );
   }
 
@@ -241,6 +242,7 @@ export class BooksController {
       request.user.sub,
       params.bookId,
       dto.chapterIds,
+      dto.voiceId ?? null,
     );
   }
 
