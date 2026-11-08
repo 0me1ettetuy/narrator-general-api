@@ -1,5 +1,7 @@
 # Books documentation
 
+- [Book and audio workflow](book-and-audio-workflow.md) — runtime invariants for
+  upload, parsing, deletion, sharing, collections and chapter audio (current).
 - [Chapter curation plan](chapter-curation-plan.md) — parser classification,
   durable roles/inclusion, manual outline repair, and audio invariants.
 - [Chapter 3 segmentation check](chapter-3-segmentation.md) — a captured local

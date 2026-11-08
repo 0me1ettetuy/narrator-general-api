@@ -5,12 +5,34 @@ milestones and backed by a complete chronological commit index. It documents
 what entered the repository, rather than the intent suggested by a commit
 subject alone.
 
-**Scope:** 26 August–5 November 2026, through book collections.
+**Scope:** 26 August–8 November 2026, through Silero TTS.
+
+**Rules.** Newest milestone first; each entry is 1–3 lines (detail belongs in
+the owning doc). Add work in "Uncommitted work". When this file passes about
+150 lines, move the oldest milestones to `history/milestones-archive.md`.
 
 ## Uncommitted work
 
-Recorded without commit IDs; move to the milestones and the complete index
-when committed.
+- Docs tree audit: added `docs/superpowers/README.md` (plans and specs index,
+  marks the Qwen3-TTS plan superseded) and linked it, the root `README.md` and
+  `prisma-next.md` from `docs/README.md`, so every markdown file is reachable
+  from `CLAUDE.md`/`AGENTS.md`.
+- Docs audit fixes: removed stale statements about the local voice picker
+  (`TtsSelector` now has a Silero voice dropdown), the server-owned Fish key
+  (`fish-audio.md`), the single `minio` Compose profile
+  (`container-deployment.md`), and a garbled local-models paragraph in the
+  feature catalogue; documented `voiceId` in the catalogue guide.
+- Docs restructure: `AGENTS.md` is the single instruction file and `CLAUDE.md`
+  only imports it; the workflow and TTS sections moved to
+  `docs/books/book-and-audio-workflow.md` and `docs/tts/tts-runtime-rules.md`;
+  `docs/README.md` is now a routing table with creation, editing and size-budget
+  rules; the 800-line feature catalogue is split into one file per capability
+  under `docs/features/`; history split into recent entries, a milestones
+  archive and a commit index under `docs/history/`; Definition of done added to
+  `AGENTS.md`; `docs/docs-system.md` documents the whole system for reuse in
+  other repos.
+
+## Milestones
 
 ### 8 November — Silero TTS replaces Qwen3-TTS, with selectable voices
 
@@ -34,8 +56,6 @@ when committed.
   `docs/tts/local-tts-docker.md` from `docs/tts/README.md`.
 - Deleted the dead Qwen audio rows, chunks and jobs from the dev database and
   pointed the dev user's default model at `local.silero-tts`.
-
-## Milestones
 
 ### 5 November — book collections
 
@@ -72,238 +92,7 @@ when committed.
   blocks every other user's chapters. Fish `429`/`5xx` responses are now
   retried in-process with `Retry-After` or exponential backoff.
 
-### 2 November — independent MinIO Compose switch
+## Older history
 
-- Added a dedicated `MINIO_ENABLED` flag so the MinIO container turns on the
-  same way each local TTS model does: via its own flag resolving to the
-  active `true` Compose profile. `COMPOSE_PROFILES` is now a fixed `"true"`
-  that never changes, instead of a value hand-edited to `"minio,true"`
-  whenever local storage was selected.
-
-### 31 October — production-style container runtime
-
-- Added a reusable multi-stage backend image that contains the compiled Nest
-  API, standalone worker entry point, runtime dependencies, and ffmpeg for
-  chapter-audio merging.
-- Expanded default Compose startup from infrastructure-only to Postgres, Redis,
-  one-off schema update, API, and worker. API/worker wait for the database
-  schema update to complete; MinIO and local TTS engines remain opt-in
-  profiles.
-- Added a public/internal MinIO endpoint split. Signed URLs retain the
-  browser-reachable endpoint while API/worker storage operations use the
-  Docker-network endpoint.
-- Pinned the repository package-manager declaration to pnpm 10.29.2 so local
-  and Docker dependency installation use the same toolchain.
-- Added a standalone `compose.dev.yaml` command that extends the shared
-  infrastructure/service definitions while running API and worker as Nest
-  source watchers in development containers.
-- Added a Docker development image stage with ffmpeg, a source bind mount, and
-  an isolated container `node_modules` volume. It retains the same `.env`,
-  database/Redis volumes, MinIO behavior, and optional local-TTS profiles as
-  the default stack.
-
-### 1 November — local Compose build policy
-
-- Set the named local API and MinIO images to Compose's explicit build policy,
-  so `docker compose up -d` builds the current checkout instead of first
-  attempting to pull `narrator-api:local` or `narrator-minio:local` from a
-  container registry.
-- Kept the worker on the locally built API image without any registry pull.
-
-### 26–31 August — Nest foundation and persistence
-
-- Created the Nest application, TypeScript path alias, linting, formatting,
-  editor settings, configuration module, CORS, validation, request logging,
-  and global exception filters.
-- Added the first Postgres Compose service and then replaced the initial
-  experimental Prisma setup with the Prisma 8 contract, generated contract
-  lifecycle, `PrismaModule`, and `PrismaService`.
-- Removed the generated Prisma contract artifacts from source control after
-  establishing the generation workflow.
-
-### 7 September–12 October — secure browser authentication
-
-- Defined user/auth persistence and safe response contracts, then introduced
-  the `AuthModule`, `UsersModule`, password hashing, JWT issue/validation,
-  login, registration, refresh, logout, current-user, and CSRF endpoints.
-- Added local, access-JWT, and refresh-JWT guards/strategies; refresh-token
-  cookie handling; normalized email; access/refresh session services; and
-  OpenAPI metadata for auth.
-- Corrected CSRF failures to remain HTTP `403` instead of being converted to
-  `500`, and introduced stable API error codes and an invalid-credentials
-  exception.
-
-### 13–16 October — contracts, documentation, books, and direct upload
-
-- Added backend contribution guidance plus architecture, API-contract, and
-  delivery documentation. Generated Prisma contract files became ignored
-  local artifacts.
-- Added the first `Book`, `Chapter`, `Audio`, and durable job persistence
-  model shapes.
-- Created the Books and Storage modules. The authenticated books API can list
-  user books and create a signed, direct object-storage upload intent; the
-  browser uploads an EPUB without passing its bytes through the API server.
-
-### 19–21 October — durable EPUB parsing and chapter audio pipeline
-
-- Added Redis Compose configuration, a BullMQ jobs module, a separate Nest
-  worker bootstrap, and queue test mocks.
-- Added EPUB spine parsing, ordered cleaned chapter extraction, and the
-  background parse processor triggered after the browser confirms an upload.
-- Added text segmentation, temporary audio-part persistence, streaming TTS
-  output to S3-compatible storage, ffmpeg audio merging, retry-aware worker
-  processors, final audio records, progress/status contracts, and direct
-  playback URLs.
-- Generalized storage configuration from R2 naming to S3-compatible naming,
-  and added an optional MinIO local-storage Compose profile.
-
-### 25 October — model catalogue, local engines, and private Fish credentials
-
-- Added Docker/profile definitions and runtime health checks for optional
-  Piper, Kokoro, Qwen3-TTS, and Chatterbox local engines.
-- Added a model registry and model-list API, TTS adapter abstraction, local
-  adapter implementations, resolver logic, safe availability states, and a
-  queue-time/worker-time readiness check.
-- Added per-user Fish Audio credentials encrypted at rest, save/validate and
-  removal endpoints, credential state in the model list, and a per-user saved
-  default TTS-model selection. A queued audio record retains its resolved
-  model key so retries do not silently change providers.
-
-### 26–28 October — book presentation, curation, and documentation structure
-
-- EPUB parsing now extracts a supported cover, stores it in object storage,
-  and persists private cover metadata for the book API.
-- Added batch chapter-audio queueing so selected/all eligible chapters can be
-  generated in one request.
-- Added chapter classification, narration/content tagging, text/title edits,
-  merge/delete/reorder curation operations, and the supporting database
-  schema, contracts, and tests.
-- Reorganized documentation by domain and added model-specific Docker toggles
-  so each local engine starts only when its own `*_ENABLED=true` value is set.
-
-### 30 October — Fish voice catalogue and stable voice snapshots
-
-- Added an initial user-owned Fish voice library with authenticated add,
-  selection, and deletion endpoints; ownership checks prevent users from
-  changing another user's custom voice.
-- Replaced the single Sarah/Adrian configuration toggle with the ordered
-  `FISH_DEFAULT_VOICES` deployment list. The first enabled configured voice is
-  the fallback when a user has no chosen voice.
-- Introduced a durable shared `FishVoice` catalogue. It contains both global
-  `DEFAULT` voices and user-owned `CUSTOM` voices, while a user's selection can
-  point to either. Startup synchronizes configured defaults without deleting
-  historical rows; removed configuration entries are disabled instead.
-- Chapter generation snapshots the resolved Fish reference ID in `Audio.voice`,
-  so later preference or catalogue changes cannot mix voices in an active job
-  or its retries.
-
-### 31 October — EPUB language metadata and language-aware local narration
-
-- EPUB parsing now preserves declared BCP 47 book language metadata, persists
-  it on `Book`, and exposes it through the book API for the book page.
-- The worker passes that language to TTS adapters. Qwen maps BCP 47 values to
-  its language names (or `Auto`); Piper selects a male English/Russian voice;
-  Kokoro uses a male English voice and explicitly rejects Russian because the
-  bundled model has no Russian voice.
-- Added the additive nullable database migration, adapter/parser tests, and
-  deployment documentation for the language/voice behavior.
-- EPUB metadata remains the primary language source. When it is empty, the
-  parser now uses `franc` on cleaned chapter text and stores its normalized
-  primary language tag as a fallback.
-
-### 31 October — replaceable book covers
-
-- Added authenticated cover-upload intent and confirmation endpoints for ready
-  books. The browser uploads the replacement image directly to private
-  S3-compatible storage rather than sending its bytes through Nest.
-- A replacement overwrites the existing book cover object key. The API checks
-  the final object MIME type and size before persisting its metadata and a new
-  `updatedAt` value, allowing clients to invalidate their signed-cover cache.
-- Books without an EPUB cover use a deterministic custom-cover key on first
-  upload; later replacements reuse that same object.
-
-### 31 October — author metadata on library results
-
-- The paginated books response now includes its ordered EPUB author metadata,
-  allowing library cards to present authors without fetching every book detail.
-- The service uses one bounded author query for the IDs on the current page,
-  then groups those rows in memory. This avoids an N+1 query per book while
-  keeping pagination unchanged.
-
-## Complete commit index
-
-| Date       | Commit    | Recorded change                                                                                                                           |
-| ---------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-08-26 | `c12a678` | Created the Nest application baseline.                                                                                                    |
-| 2026-08-26 | `e0871a2` | Added the TypeScript `@` import alias.                                                                                                    |
-| 2026-08-26 | `6814011` | Added formatting, linting, and editor configuration.                                                                                      |
-| 2026-08-29 | `f8e8c88` | Added configuration-module setup.                                                                                                         |
-| 2026-08-29 | `29a236c` | Added the initial Prisma configuration and schema files.                                                                                  |
-| 2026-08-29 | `58ec241` | Added the Postgres Compose service.                                                                                                       |
-| 2026-08-29 | `4f69942` | Added global request validation.                                                                                                          |
-| 2026-08-30 | `6a2a78a` | Added global exception filters.                                                                                                           |
-| 2026-08-30 | `7a50ea6` | Added application logging configuration.                                                                                                  |
-| 2026-08-30 | `75c25d9` | Added request-logging middleware.                                                                                                         |
-| 2026-08-30 | `319e605` | Added CORS configuration.                                                                                                                 |
-| 2026-08-30 | `d615c6f` | Corrected logging setup and removed the first Prisma attempt.                                                                             |
-| 2026-08-30 | `1aa02f3` | Wired the Prisma 8 contract/runtime integration.                                                                                          |
-| 2026-08-31 | `1d110ae` | Adjusted test/build setup around Prisma generation.                                                                                       |
-| 2026-09-07 | `ae1c3ff` | Added authentication dependencies.                                                                                                        |
-| 2026-09-07 | `4cd97e9` | Added auth/user schema, DTOs, and response contracts.                                                                                     |
-| 2026-09-12 | `2b5e3a1` | Added Auth/Users modules and base services/controllers.                                                                                   |
-| 2026-09-22 | `053cc50` | Implemented JWT/CSRF/cookie authentication flow.                                                                                          |
-| 2026-09-22 | `b80fa30` | Refined the authentication implementation and persistence wiring.                                                                         |
-| 2026-10-06 | `832e7e5` | Added auth OpenAPI metadata and base contract refinements.                                                                                |
-| 2026-10-12 | `e5c8227` | Preserved invalid-CSRF responses as `403`.                                                                                                |
-| 2026-10-13 | `2d72f29` | Added stable API error codes and invalid-credential handling.                                                                             |
-| 2026-10-13 | `0e845d1` | Added backend agent guidance and initial architecture/API docs.                                                                           |
-| 2026-10-13 | `80236bf` | Added initial book/chapter/audio/job schema shapes.                                                                                       |
-| 2026-10-13 | `c03c3a4` | Ignored generated Prisma contract artifacts.                                                                                              |
-| 2026-10-16 | `aafe455` | Added Books and S3-compatible Storage modules.                                                                                            |
-| 2026-10-16 | `a6d8ea6` | Added signed EPUB-upload and upload-confirmation endpoints.                                                                               |
-| 2026-10-19 | `2d766a9` | Added Redis infrastructure configuration.                                                                                                 |
-| 2026-10-19 | `89a30f9` | Added BullMQ jobs foundation and standalone worker bootstrap.                                                                             |
-| 2026-10-19 | `5734d2e` | Added EPUB parser service and parser tests.                                                                                               |
-| 2026-10-19 | `4400fbe` | Added background EPUB parsing worker flow.                                                                                                |
-| 2026-10-19 | `a356aae` | Documented direct-upload lifecycle and updated cookie behavior.                                                                           |
-| 2026-10-19 | `8e17390` | Added chapter segmentation and initial TTS module/services.                                                                               |
-| 2026-10-19 | `bea8e13` | Added audio chunks, merge service, and synthesis processor.                                                                               |
-| 2026-10-19 | `1556e17` | Completed final chapter-audio merge processing.                                                                                           |
-| 2026-10-20 | `b7f197c` | Expanded persistent TTS pipeline schema/contracts/workflow.                                                                               |
-| 2026-10-20 | `4b90f39` | Streamed Fish audio responses into object storage.                                                                                        |
-| 2026-10-20 | `dc3b0e1` | Renamed storage environment configuration for S3 compatibility.                                                                           |
-| 2026-10-21 | `23e00a5` | Added optional MinIO local-storage deployment.                                                                                            |
-| 2026-10-25 | `260d9ae` | Added local TTS container/model availability foundation.                                                                                  |
-| 2026-10-25 | `2749fe2` | Added local TTS adapters and model-aware audio queueing.                                                                                  |
-| 2026-10-25 | `941dcc5` | Added encrypted per-user Fish Audio credentials.                                                                                          |
-| 2026-10-25 | `d2b796f` | Added saved user TTS-model selection and catalogue docs.                                                                                  |
-| 2026-10-26 | `05cf283` | Added EPUB cover extraction and object-storage metadata.                                                                                  |
-| 2026-10-26 | `7f37b3a` | Added batch selected/all chapter audio generation.                                                                                        |
-| 2026-10-27 | `c1efad6` | Added chapter curation API groundwork and design documentation.                                                                           |
-| 2026-10-28 | `d50f899` | Implemented persisted chapter classification and curation actions.                                                                        |
-| 2026-10-28 | `eecea24` | Added per-model local-TTS toggles and reorganized docs.                                                                                   |
-| 2026-10-30 | `affc5bc` | Added the backend change-history document and linked it from project guidance.                                                            |
-| 2026-10-30 | `5904932` | Added a multi-voice Fish library, selection API, and per-chapter voice snapshot.                                                          |
-| 2026-10-30 | `a818529` | Replaced the user-only voice list with a safely synchronized default/custom Fish voice catalogue and `FISH_DEFAULT_VOICES` configuration. |
-| 2026-10-31 | `fb36b48` | Persisted EPUB language metadata and made Qwen/Piper/Kokoro narration language-aware.                                                     |
-| 2026-10-31 | `041ced4` | Added metadata-missing EPUB language detection from parsed chapter text.                                                                  |
-| 2026-10-31 | `e6602e0` | Added direct replacement uploads for private book covers using the existing object key.                                                   |
-| 2026-10-31 | `d0d31f8` | Added ordered author metadata to paginated book-list results with one bounded secondary query.                                            |
-| 2026-10-31 | `149deee` | Added the production-style backend image/Compose runtime, automatic schema update, and deployment documentation.                          |
-| 2026-10-31 | `2c453fb` | Added a standalone Docker watcher setup for the API and worker.                                                                           |
-| 2026-11-01 | `19efe19` | Made local API/MinIO images build locally instead of attempting a registry pull.                                                          |
-| 2026-11-02 | `5eb79ff` | Added `MINIO_ENABLED`; `COMPOSE_PROFILES` is now a fixed `"true"`.                                                                        |
-| 2026-11-03 | `3a0e0bc` | Rejected chapter audio without an explicitly selected TTS model or Fish voice instead of falling back.                                    |
-| 2026-11-03 | `b7c3939` | Added safe book deletion: `Book.deletedAt`, prefix storage cleanup, and deleted-book guards.                                              |
-| 2026-11-03 | `363e89b` | Split chapter TTS into Fish (parallel) and local queues and retried Fish 429/5xx with backoff.                                            |
-| 2026-11-05 | `b3fae68` | Added the book collections spec and backend plan.                                                                                         |
-| 2026-11-05 | `3256595` | Added collection tables, the migration, and the collection error codes.                                                                   |
-| 2026-11-05 | `a613aea` | Kept saved book references as ghosts when a book goes private; moved book summary mapping into a shared mapper.                           |
-| 2026-11-05 | `72676b4` | Added collection reads, creation, and deletion.                                                                                           |
-| 2026-11-05 | `536b5ed` | Added adding, removing, and reordering collection books.                                                                                  |
-| 2026-11-05 | `4e5e5fb` | Added collection publishing and saved collections in the library.                                                                         |
-| 2026-11-05 | `3d65e8f` | Exposed the collections API through the controller and module.                                                                            |
-| 2026-11-05 | `64ffa72` | Recorded book collections and ghosts in the project guidance.                                                                             |
-| 2026-11-05 | `afe428a` | Restored the Qwen3-TTS 0.6B adapter and registry entry; unsupported book languages now fail instead of using Auto. |
-| 2026-11-05 | `347a4e3` | Added the `qwen3-tts` GPU Compose service and its env keys, off by default. |
-| 2026-11-05 | `be884a8` | Recorded the Qwen3-TTS restoration and added its implementation plan. |
+- [Milestones archive](history/milestones-archive.md) — milestones before the ones above.
+- [Complete commit index](history/commit-index.md) — every committed change, by date and hash.

@@ -168,6 +168,10 @@ own provider supports it:
 
 - Silero translates `ru` and `en` to Silero language names. Missing or
   unsupported metadata is rejected, because Silero cannot detect a language.
+  Its selectable voices are the `voices` list on the model definition (5
+  Russian, `en_0`..`en_4` English); a request's `voiceId` is validated against
+  that list and the book language, then snapshotted on `Audio.voice`.
+- The Piper and Kokoro rules below apply only if those models are restored.
 - Piper uses its configured English/missing-language default (the supplied
   default is `en_US-hfc_male-medium`) and `ru_RU-denis-medium` for Russian.
   Its wrapper downloads a requested voice to the persistent Piper volume when
@@ -194,7 +198,8 @@ Frontend gets GET /tts/models (including selectedModelId)
 ```
 
 A chapter-audio request may include `{ "modelId": "..." }` as a one-request
-override. It does not change the saved selection. Changing a saved selection
+override, and, for a local model, `{ "voiceId": "..." }` to pick one of its
+listed voices (rejected for Fish). It does not change the saved selection. Changing a saved selection
 only affects future audio jobs; queued and completed audio keep their
 `Audio.modelKey`. A user with neither an override nor a saved selection gets
 rejected with `ttsModelNotSelected`; there is no fallback model.

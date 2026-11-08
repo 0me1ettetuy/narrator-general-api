@@ -3,6 +3,9 @@
 This report uses the production `ChapterSegmenter` locally against the
 2,150-word chapter `3. Передышка`. It makes no TTS, Redis, or R2 request.
 
+> Captured with the original 4,000-character limit. Local TTS models now use
+> 600-character segments (`getSegmentMaxCharacters`); Fish still uses 4,000.
+
 ## Input
 
 - Chapter text: 13,242 characters / 2,150 words

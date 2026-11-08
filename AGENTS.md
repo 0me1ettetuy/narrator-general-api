@@ -15,6 +15,75 @@ backend code. For the detailed conventions and checklist, start at
   product behavior or a feature boundary.
 - [Change history](docs/history.md) when tracing when and how an existing
   capability entered the backend.
+- [Book and audio workflow](docs/books/book-and-audio-workflow.md) when
+  changing upload, parsing, deletion, sharing, collections or chapter audio.
+- [TTS runtime rules](docs/tts/tts-runtime-rules.md) when changing model
+  selection, queues, Fish keys/voices or Silero TTS.
+
+## What this service is
+
+Narrator is a modular Nest API with a separate Nest worker process:
+
+```text
+React frontend → Nest API → PostgreSQL
+                     │
+                     └→ Redis/BullMQ → Nest worker → TTS providers / S3 storage
+```
+
+Keep this a modular monolith. Long-running EPUB parsing and TTS work belongs in
+the durable job/worker flow, never in an HTTP request handler.
+
+## Main commands
+
+```bash
+pnpm build
+pnpm test --runInBand
+pnpm format:check
+pnpm exec prisma db update
+pnpm start:dev
+pnpm worker:dev
+```
+
+Start local infrastructure with:
+
+```bash
+docker compose up -d db redis
+```
+
+For the production-style full backend stack, see
+[container deployment](docs/architecture/container-deployment.md). It runs
+Postgres, Redis, API, worker, and enabled optional services with
+`docker compose up -d --build`.
+
+For API/worker watchers inside Docker, run the standalone development setup:
+
+```bash
+docker compose -f compose.dev.yaml up -d --build
+```
+
+Do not leave development servers, workers, or Compose services running after a
+task unless explicitly requested.
+
+## Contracts and generated files
+
+- `src/prisma/contract.prisma` is the database schema source of truth.
+- `src/prisma/contract.json` and `src/prisma/contract.d.ts` are generated and
+  ignored. Never edit or commit them.
+- API DTOs, response contracts, and Swagger decorators are the source of the
+  OpenAPI contract at `/openapi-json`.
+- After a backend API change, regenerate the frontend client in `narrator-fe`
+  with `pnpm api:generate`.
+- Use explicit DTOs and stable `API_ERROR_CODES`; do not expose ORM rows.
+
+## Guardrails
+
+- Keep access-token auth, refresh-cookie handling, CSRF, CORS, validation,
+  throttling, and ownership checks intact.
+- Store binary files in configured S3-compatible object storage and metadata in
+  Postgres.
+- Do not log credentials, cookies, bearer tokens, source chapter text, or raw
+  provider errors.
+- Do not commit generated artifacts or secrets.
 
 ## Core principles
 
@@ -148,9 +217,22 @@ backend code. For the detailed conventions and checklist, start at
   explicitly requested. If one remains active, report its command, port, and
   stop command.
 
-## Keeping docs in sync
+## Definition of done
 
-Docs form a tree: this file and `AGENTS.md` link to `docs/README.md` and the
-READMEs, which link every other doc. With each change, update `docs/history.md`
-(uncommitted section until committed) and the affected docs, and link any new
-doc from its folder's README so nothing is orphaned.
+A task is done only when all of these hold:
+
+1. The code works: `pnpm build`, `pnpm test` and `pnpm format:check` pass.
+2. Docs are synced: each affected doc is updated using the routing table in
+   [`docs/README.md`](docs/README.md), and every new doc is linked from its
+   folder README.
+3. `docs/history.md` has an entry for the change under "Uncommitted work".
+4. Every doc you touched is within the size budget in `docs/README.md`; if one
+   is over, split it before finishing.
+5. No server, worker or Compose stack you started is left running.
+
+## Documentation rules
+
+Docs are a tree: this file links `docs/README.md`, whose routing table says
+what every doc holds and when to edit it. Before adding or editing a doc, read
+the rules at the top of `docs/README.md` (where facts go, how to create a
+note, size budget, status tags).

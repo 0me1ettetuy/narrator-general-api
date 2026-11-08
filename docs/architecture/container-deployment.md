@@ -36,10 +36,15 @@ data.
 
 ## Optional profiles
 
-The default starts the complete backend. The only optional profile is
-`minio`, for local object storage. (Local TTS models previously had their own
-Compose profiles here; they are disabled — see
-[`docs/tts/local-tts-models-removed.md`](../tts/local-tts-models-removed.md).)
+The default starts the complete backend. Optional profiles:
+
+- `minio` — local object storage.
+- `silero-tts` — the CPU Silero TTS server (`docker/silero-tts`), switched on by
+  `TTS_LOCAL_SILERO_TTS_ENABLED="true"`; see
+  [`docs/tts/local-tts-docker.md`](../tts/local-tts-docker.md).
+
+The other local TTS models are disabled — see
+[`docs/tts/local-tts-models-removed.md`](../tts/local-tts-models-removed.md).
 
 The commented MinIO section in `.env.example` sets `MINIO_ENABLED="true"`
 and provides the required container-only `STORAGE_INTERNAL_ENDPOINT`.

@@ -1,24 +1,14 @@
 # Text-to-speech documentation
 
-## Current implementation and operation
+| Doc | Holds | Edit it when | Status |
+| --- | --- | --- | --- |
+| [tts-runtime-rules.md](tts-runtime-rules.md) | model selection, queues, Fish keys and voices, Silero rules | any of those behaviors change | current |
+| [tts-model-catalogue.md](tts-model-catalogue.md) | code-owned model definitions, env toggles, availability, adding a model | the model list, toggles or voices change | current |
+| [local-tts-docker.md](local-tts-docker.md) | enabling Silero TTS, env keys, voices, 600-character segments | Silero Docker setup changes | current |
+| [fish-audio.md](fish-audio.md) | direct Fish API request notes | the Fish request shape changes | current |
+| [fish-audio-r2-streaming-plan.md](fish-audio-r2-streaming-plan.md) | streamed-provider-output design and rationale | never; delete when no longer useful | historical |
+| [local-tts-models-removed.md](local-tts-models-removed.md) | restoration record for the removed or disabled local models (Qwen3-TTS, Piper, Kokoro, Chatterbox); [why](../issues/local-tts-models-disabled.md) | a local model is removed or restored | historical |
+| [tts-models-and-user-keys-plan.md](tts-models-and-user-keys-plan.md) | original model and user-key decision record | never; use the catalogue guide for current rules | historical |
 
-- [TTS model catalogue maintenance](tts-model-catalogue.md) — code-owned model
-  definitions, env toggles, availability, adapters, and required checks.
-- [Local TTS Docker toggles](local-tts-docker.md) — enabling Silero TTS, its
-  env keys, voices, and the 600-character local segment size.
-- [Local TTS models: removed, to be restored later](local-tts-models-removed.md)
-  — only Silero TTS is enabled; Qwen3-TTS, Piper, Kokoro-82M and Chatterbox Turbo are
-  removed or disabled. This is the full restoration record. [Why](../issues/local-tts-models-disabled.md).
-- [Fish Audio notes](fish-audio.md) — current direct Fish model research and
-  request notes.
-- [Fish Audio to R2 streaming plan](fish-audio-r2-streaming-plan.md) — the
-  implemented streamed-provider-output design and its rationale.
-
-## Historical design record
-
-- [TTS models and user-owned Fish Audio keys plan](tts-models-and-user-keys-plan.md)
-  — original decision record and implementation status. Use the catalogue guide
-  above for current maintenance instructions.
-
-See the [feature catalogue](../features/README.md) for the user flow from model
-selection through durable chapter audio generation.
+The user flow from model selection to durable audio is in the
+[feature catalogue](../features/voice-models.md).

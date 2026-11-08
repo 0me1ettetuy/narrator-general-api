@@ -5,7 +5,9 @@ Last verified: 2026-10-20.
 ## What we are using now
 
 Narrator calls **Fish Audio directly** from its background worker with the
-server-owned `FISH_AUDIO_API_KEY`. The browser never receives this key.
+the signed-in user's own Fish API key (AES-256-GCM encrypted in Postgres; there
+is no server-wide `FISH_AUDIO_API_KEY`). The browser never receives the key
+back.
 
 The worker reads Fish's chunked MP3 response as it arrives and forwards it to
 a multipart R2 upload. It permits a five-minute period with no response/audio

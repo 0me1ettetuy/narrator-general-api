@@ -20,7 +20,7 @@ their UI surface alongside it.
 - `GET /tts/models` lists Silero TTS only when `TTS_LOCAL_SILERO_TTS_ENABLED` is true and its health check passes.
 - Requesting a Piper, Kokoro-82M or Chatterbox `modelId` returns `404 TTS_MODEL_NOT_FOUND`.
 - No Docker container starts for Piper, Kokoro-82M or Chatterbox, even if `.env` sets their `TTS_LOCAL_*_ENABLED`.
-- The frontend shows Silero TTS on the Models page; `TtsSelector` shows a local model as a disabled label.
+- The frontend shows Silero TTS on the Models page; `TtsSelector` lists Silero's fixed voices for the book's language (`voices` in `GET /tts/models`, `voiceId` on generate).
 
 ## Full restoration record
 
