@@ -209,6 +209,7 @@ model Book {
   user          User               @relation(fields: [userId], references: [id])
   authors       BookAuthor[]
   chapters      Chapter[]
+  images        BookImage[]
   jobs          Job[]
   libraryEntries BookLibraryEntry[]
   collectionBooks CollectionBook[]
@@ -320,6 +321,21 @@ model Chapter {
   @@unique([bookId, position])
   @@index([bookId, removedAt, position])
   @@map("chapter")
+}
+
+model BookImage {
+  id        String   @id @default(uuid())
+  bookId    String
+  objectKey String   @unique
+  mimeType  String
+  size      Int
+  alt       String?
+  createdAt DateTime @default(now())
+
+  book Book @relation(fields: [bookId], references: [id])
+
+  @@index([bookId])
+  @@map("book_image")
 }
 
 model Audio {

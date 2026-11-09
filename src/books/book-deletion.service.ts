@@ -115,6 +115,7 @@ export class BookDeletionService {
 
       await transaction.orm.public.Job.where({ bookId }).deleteAndCount();
       await transaction.orm.public.Chapter.where({ bookId }).deleteAndCount();
+      await transaction.orm.public.BookImage.where({ bookId }).deleteAndCount();
       await transaction.orm.public.BookAuthor.where({
         bookId,
       }).deleteAndCount();

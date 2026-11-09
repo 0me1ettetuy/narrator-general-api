@@ -19,6 +19,7 @@ type Row = Record<string, unknown>;
 type TableName =
   | 'Book'
   | 'BookAuthor'
+  | 'BookImage'
   | 'BookLibraryEntry'
   | 'CollectionBook'
   | 'Chapter'
@@ -29,6 +30,7 @@ type TableName =
 const FOREIGN_KEYS: Partial<Record<TableName, [TableName, string][]>> = {
   Book: [
     ['BookAuthor', 'bookId'],
+    ['BookImage', 'bookId'],
     ['BookLibraryEntry', 'bookId'],
     ['CollectionBook', 'bookId'],
     ['Chapter', 'bookId'],
@@ -121,6 +123,7 @@ describe('BookDeletionService', () => {
     return [
       ...tables.Book.filter((book) => book.id === bookId),
       ...tables.BookAuthor.filter((author) => author.bookId === bookId),
+      ...tables.BookImage.filter((image) => image.bookId === bookId),
       ...tables.BookLibraryEntry.filter((entry) => entry.bookId === bookId),
       ...tables.CollectionBook.filter((row) => row.bookId === bookId),
       ...tables.Chapter.filter((chapter) => chapter.bookId === bookId),
@@ -147,6 +150,10 @@ describe('BookDeletionService', () => {
         },
       ],
       BookAuthor: [{ id: 'author-id', bookId: 'book-id' }],
+      BookImage: [
+        { id: 'image-id', bookId: 'book-id' },
+        { id: 'other-image-id', bookId: 'other-book-id' },
+      ],
       BookLibraryEntry: [
         { id: 'entry-id', userId: 'other-user-id', bookId: 'book-id' },
       ],
@@ -194,6 +201,7 @@ describe('BookDeletionService', () => {
         public: {
           Book: createTable('Book'),
           BookAuthor: createTable('BookAuthor'),
+          BookImage: createTable('BookImage'),
           BookLibraryEntry: createTable('BookLibraryEntry'),
           CollectionBook: createTable('CollectionBook'),
           Chapter: createTable('Chapter'),
@@ -227,7 +235,7 @@ describe('BookDeletionService', () => {
       'books/user-id/book-id/',
     );
     expect(rowsFor('book-id')).toEqual([]);
-    expect(rowsFor('other-book-id')).toHaveLength(3);
+    expect(rowsFor('other-book-id')).toHaveLength(4);
   });
 
   it('stops chapter generation before removing any files', async () => {
