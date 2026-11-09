@@ -12,6 +12,10 @@ are authoritative for current behavior.
   Qwen3-TTS was removed and replaced by Silero TTS; see
   [local models removed](../tts/local-tts-models-removed.md).
 
+- [EPUB chapter images plan](plans/2026-11-09-epub-chapter-images.md) — store
+  EPUB images, mark them in chapter text with `[[img_<uuid>]]`, show them in
+  the reader, never narrate them. Covers backend and frontend.
+
 ## Specs
 
 - [Book collections design](specs/2026-11-05-book-collections-design.md) —
