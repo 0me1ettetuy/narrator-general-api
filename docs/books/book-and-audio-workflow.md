@@ -12,10 +12,14 @@ agent must preserve when changing the code.
    or detects a fallback language from chapter text, and extracts a supported
    cover when available. It saves cover bytes to
    `books/{userId}/{bookId}/cover/` in object storage, and saves cleaned
-   chapter text, language, and private cover metadata in Postgres.
+   chapter text, language, and private cover metadata in Postgres. Chapter
+   images go to `books/{userId}/{bookId}/images/` with a `book_image` row, and
+   the chapter text carries `[[img_<id>]]` markers (see
+   [EPUB parsing](../features/epub-parsing.md)).
 5. `POST /books/:bookId/chapters/:chapterId/audio` creates/resumes one durable
    chapter-audio job and returns `202`.
-6. The worker segments chapter text, stores completed temporary MP3 parts in
+6. The worker segments chapter text (`ChapterSegmenter` strips the image
+   markers first, so they are never narrated), stores completed temporary MP3 parts in
    object storage, merges them with ffmpeg, saves final audio, then cleans up
    temporary parts.
 7. `DELETE /books/:bookId` (`BookDeletionService`) works in any state. It sets

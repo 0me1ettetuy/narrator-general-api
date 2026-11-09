@@ -16,6 +16,9 @@ title, no hashes; find its commit with `git log -S"<title>" -- docs/history.md`
 
 ## Recent changes
 
+- Chapter images: parsing keeps EPUB images in storage (`book_image`), marks them
+  in chapter text as `[[img_<id>]]`, returns signed URLs in chapter detail and
+  strips the markers before narration. Only newly parsed books get images.
 - Regenerate chapter audio: `POST /books/:bookId/audio` accepts
   `regenerate: true`, which deletes a `READY` chapter's chunks and files and
   re-queues it with the selected model (`resetReadyChapterAudio`); a model

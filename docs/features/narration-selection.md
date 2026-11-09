@@ -33,6 +33,9 @@ front matter or references in its outline while excluding them from the common
   with the selected model and voice, and the worker re-plans and
   re-synthesizes from the current chapter text. The book page sends this
   after a confirmation when ready chapters are selected.
+- Image markers (`[[img_<id>]]`) in chapter text are removed before the text is
+  split into audio chunks, so they are never narrated. A chapter made only of
+  markers has nothing to synthesize and fails with the usual empty-text error.
 - There is no hidden automatic "whole book" server job yet. Batch generation
   is a convenience loop over durable chapter jobs, so chapters can complete,
   fail, retry, or be deleted independently.

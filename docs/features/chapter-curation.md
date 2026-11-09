@@ -67,6 +67,9 @@ MAIN | FRONT_MATTER | NAVIGATION | REFERENCE | BACK_MATTER | OTHER
   confirmation; the service deletes its final/temporary objects and records
   before applying the outline change. This prevents audio from describing old
   text.
+- Image markers (`[[img_<id>]]`) are part of the chapter text. A merge keeps
+  them, and deleting one in a text edit removes that picture from the chapter.
+  They are not counted as words.
 - Input limits are deliberate: title 500 characters, text 1,000,000 characters,
   and at most 1,000 chapters in a bulk curation command.
 
