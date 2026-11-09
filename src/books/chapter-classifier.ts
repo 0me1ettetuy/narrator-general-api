@@ -159,28 +159,28 @@ const HEURISTIC_ROLE_BY_PATTERN: Array<{
 }> = [
   {
     pattern:
-      /(?:^|\b)(?:contents?|table[- ]of[- ]contents?|оглавление|содержание)(?:\b|$)/iu,
+      /(?<![\p{L}\p{N}])(?:contents?|table[- ]of[- ]contents?|оглавление|содержание)(?![\p{L}\p{N}])/iu,
     role: 'NAVIGATION',
     includeInDefaultNarration: false,
     reason: 'HEURISTIC_TOC_TITLE',
   },
   {
     pattern:
-      /(?:^|\b)(?:index|glossary|bibliography|references?|notes?|указатель|глоссарий|библиограф)/iu,
+      /(?<![\p{L}\p{N}])(?:index|glossary|bibliography|references?|notes?|указатель|глоссарий|библиограф\p{L}*)(?![\p{L}\p{N}])/iu,
     role: 'REFERENCE',
     includeInDefaultNarration: false,
     reason: 'HEURISTIC_REFERENCE_TITLE',
   },
   {
     pattern:
-      /(?:^|\b)(?:copyright|title[- ]page|dedication|preface|foreword|введение|посвящение|авторские права)/iu,
+      /(?<![\p{L}\p{N}])(?:copyright|title[- ]page|dedication|preface|foreword|введение|посвящение|авторские права)(?![\p{L}\p{N}])/iu,
     role: 'FRONT_MATTER',
     includeInDefaultNarration: true,
     reason: 'HEURISTIC_FRONT_MATTER_TITLE',
   },
   {
     pattern:
-      /(?:^|\b)(?:appendix|afterword|acknowledg(?:e)?ments?|colophon|приложени|послесловие|благодарност)/iu,
+      /(?<![\p{L}\p{N}])(?:appendix|afterword|acknowledg(?:e)?ments?|colophon|приложени\p{L}*|послесловие|благодарност\p{L}*)(?![\p{L}\p{N}])/iu,
     role: 'BACK_MATTER',
     includeInDefaultNarration: true,
     reason: 'HEURISTIC_BACK_MATTER_TITLE',
@@ -198,7 +198,8 @@ export function classifyChapter(
     }
   }
 
-  const heuristicInput = `${chapter.title} ${chapter.sourceHref}`.toLowerCase();
+  // Title only: hrefs like `content/…` or `index_split_001` are not hints.
+  const heuristicInput = chapter.title.toLowerCase();
   for (const heuristic of HEURISTIC_ROLE_BY_PATTERN) {
     if (heuristic.pattern.test(heuristicInput)) {
       return {

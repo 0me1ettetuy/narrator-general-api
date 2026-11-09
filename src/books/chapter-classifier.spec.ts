@@ -49,4 +49,28 @@ describe('classifyChapter', () => {
       reason: null,
     });
   });
+
+  it('ignores the file path when guessing from hints', () => {
+    for (const sourceHref of [
+      'content/ch1.xhtml',
+      'text/index_split_005.html',
+    ]) {
+      expect(classifyChapter({ ...chapter, sourceHref }).role).toBe('MAIN');
+    }
+  });
+
+  it('matches whole words only', () => {
+    for (const title of ['The Notebook', 'Referee', 'Indexing the Past']) {
+      expect(classifyChapter({ ...chapter, title }).role).toBe('MAIN');
+    }
+  });
+
+  it('recognises Cyrillic hints', () => {
+    expect(classifyChapter({ ...chapter, title: 'Оглавление' }).role).toBe(
+      'NAVIGATION',
+    );
+    expect(classifyChapter({ ...chapter, title: 'Приложения' }).role).toBe(
+      'BACK_MATTER',
+    );
+  });
 });

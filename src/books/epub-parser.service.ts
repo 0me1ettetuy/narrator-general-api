@@ -140,15 +140,9 @@ function readBlocks(book: Book, chapter: Chapter): Block[] {
   }
 }
 
+// First block only: a nested footnote/index block must not retype the chapter.
 function getChapterSemanticTypes(blocks: Block[]): string[] {
-  return [
-    ...new Set(
-      blocks
-        .map((block) => block.epubType)
-        .filter((value): value is string => Boolean(value))
-        .flatMap((value) => value.toLowerCase().split(/\s+/u)),
-    ),
-  ];
+  return blocks[0]?.epubType?.toLowerCase().split(/\s+/u).filter(Boolean) ?? [];
 }
 
 function normalizeText(value: string | undefined): string {
