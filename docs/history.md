@@ -16,6 +16,10 @@ title, no hashes; find its commit with `git log -S"<title>" -- docs/history.md`
 
 ## Recent changes
 
+- Regenerate chapter audio: `POST /books/:bookId/audio` accepts
+  `regenerate: true`, which deletes a `READY` chapter's chunks and files and
+  re-queues it with the selected model (`resetReadyChapterAudio`); a model
+  change is allowed only for regenerated audio.
 - History without hashes: renamed "Uncommitted work" to "Recent changes"; entries are
   written before the commit with a unique title and found via
   `git log -S"<title>" -- docs/history.md`.

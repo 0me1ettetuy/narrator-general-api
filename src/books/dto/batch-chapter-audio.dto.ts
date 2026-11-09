@@ -4,6 +4,7 @@ import {
   ArrayMinSize,
   ArrayUnique,
   IsArray,
+  IsBoolean,
   IsOptional,
   IsString,
   IsUUID,
@@ -37,4 +38,13 @@ export class BatchChapterAudioDto {
   @MaxLength(50)
   @Matches(/^[a-z0-9_]+$/)
   voiceId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Discard chapters that already have ready audio and generate it again with the selected model',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  regenerate?: boolean;
 }

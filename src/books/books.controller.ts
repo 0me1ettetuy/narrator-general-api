@@ -243,6 +243,7 @@ export class BooksController {
       params.bookId,
       dto.chapterIds,
       dto.voiceId ?? null,
+      dto.regenerate ?? false,
     );
   }
 

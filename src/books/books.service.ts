@@ -420,6 +420,7 @@ export class BooksService {
     bookId: string,
     chapterIds: string[],
     requestedVoiceId: string | null = null,
+    regenerate = false,
   ): Promise<BatchChapterAudioResponse> {
     const book = await this.getOwnedBook(userId, bookId);
     const chapters = await this.getSelectedChapters(book.id, chapterIds);
@@ -434,13 +435,25 @@ export class BooksService {
       requestedVoiceId,
     );
 
-    await this.assertAudioModelsAreCompatible(chapters, selectedModel.id);
+    await this.assertAudioModelsAreCompatible(
+      chapters,
+      selectedModel.id,
+      regenerate,
+    );
 
     const affectedChapterIds: string[] = [];
     const skippedChapterIds: string[] = [];
     const jobsToEnqueue: string[] = [];
 
     for (const chapter of chapters) {
+      if (regenerate) {
+        await this.resetReadyChapterAudio(
+          chapter.id,
+          selectedModel.id,
+          voiceId,
+        );
+      }
+
       const queued = await this.createOrReuseChapterAudioJob(
         book.id,
         chapter.id,
@@ -1171,7 +1184,13 @@ export class BooksService {
   ): Promise<ReadonlyMap<string, string>> {
     const voices = await this.fishVoices.getVoices(userId);
 
-    return new Map(voices.map((voice) => [voice.referenceId, voice.name]));
+    return new Map([
+      ...this.ttsModelsService.getLocalVoiceNames(),
+      ...voices.map((voice): [string, string] => [
+        voice.referenceId,
+        voice.name,
+      ]),
+    ]);
   }
 
   private async getOwnedBook(userId: string, bookId: string): Promise<Book> {
@@ -1258,9 +1277,12 @@ export class BooksService {
     return selectedChapters;
   }
 
+  // Regeneration discards a READY chapter's audio, so a model change is fine
+  // for it; only audio that is kept still has to match the selected model.
   private async assertAudioModelsAreCompatible(
     chapters: Chapter[],
     modelId: string,
+    regenerate: boolean,
   ): Promise<void> {
     const existingAudio = await Promise.all(
       chapters.map(async (chapter) =>
@@ -1272,7 +1294,10 @@ export class BooksService {
 
     if (
       existingAudio.some(
-        (audio) => audio && (audio as Audio).modelKey !== modelId,
+        (audio) =>
+          audio &&
+          (audio as Audio).modelKey !== modelId &&
+          !(regenerate && (audio as Audio).status === 'READY'),
       )
     ) {
       throw new ConflictException({
@@ -1280,6 +1305,62 @@ export class BooksService {
         message: 'Delete the existing chapter audio before changing its model',
       });
     }
+  }
+
+  /**
+   * Turns a READY chapter audio back into a fresh QUEUED one: its chunks and
+   * files are dropped so the worker re-plans from the current chapter text and
+   * re-synthesizes everything instead of reusing the stored parts.
+   */
+  private async resetReadyChapterAudio(
+    chapterId: string,
+    modelId: string,
+    voiceId: string | null,
+  ): Promise<void> {
+    const objectKeys = await this.prisma.db.transaction(async (transaction) => {
+      const audio = (await transaction.orm.public.Audio.where({
+        chapterId,
+        status: 'READY',
+      }).first()) as StoredAudio | null;
+
+      if (!audio) {
+        return [];
+      }
+
+      const chunks = (await transaction.orm.public.AudioChunk.where({
+        audioId: audio.id,
+      }).all()) as StoredAudioChunk[];
+
+      await transaction.orm.public.AudioChunk.where({
+        audioId: audio.id,
+      }).deleteAndCount();
+      await transaction.orm.public.Audio.where({
+        id: audio.id,
+        status: 'READY',
+      }).update({
+        status: 'QUEUED',
+        processingStage: null,
+        totalChunks: 0,
+        completedChunks: 0,
+        objectKey: null,
+        mimeType: null,
+        modelKey: modelId,
+        provider: null,
+        voice: voiceId,
+        durationMs: null,
+        byteSize: null,
+        error: null,
+        completedAt: null,
+        updatedAt: temporalNow(),
+      });
+
+      return [
+        audio.objectKey,
+        ...chunks.map((chunk) => chunk.objectKey),
+      ].filter((objectKey): objectKey is string => Boolean(objectKey));
+    });
+
+    await this.storageService.deleteObjects(objectKeys);
   }
 
   private async deleteChapterAudioJobs(

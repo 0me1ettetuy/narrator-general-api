@@ -27,14 +27,14 @@ MAIN | FRONT_MATTER | NAVIGATION | REFERENCE | BACK_MATTER | OTHER
 
 ## 8.2 Manual outline editing
 
-> **UI entry point currently hidden.** The **Review chapters** button on the
-> book page is commented out; the backend endpoints and
-> `ChapterCurationPanel.tsx` below are unchanged and fully functional. See
-> [`narrator-fe/docs/issues/chapter-curation-hidden.md`](../../../narrator-fe/docs/issues/chapter-curation-hidden.md).
+> **UI reduced.** The frontend exposes only tagging, narration toggle and merge,
+> on the **Reorganize chapters** page (`/library/:bookId/reorganize`). The other
+> endpoints below (edit, add, remove, restore, reorder) are unchanged but have
+> no UI. The steps below describe the old review sheet.
 
 ### How to use it in the UI
 
-1. Open a book and select **Review chapters**.
+1. Open a book and select **Reorganize chapters**.
 2. Inspect role badges and parser-suggestion badges. Change a role or toggle
    narration inclusion for an individual chapter, or apply an inclusion change
    to the currently selected chapter set.

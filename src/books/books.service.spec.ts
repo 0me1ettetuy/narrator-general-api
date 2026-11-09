@@ -92,6 +92,7 @@ describe('BooksService', () => {
     orm: {
       public: {
         Audio: { where: jest.fn() },
+        AudioChunk: { where: jest.fn() },
         Book: { where: jest.fn(), create: bookCreate },
         BookAuthor: { where: jest.fn() },
         BookLibraryEntry: {
@@ -118,11 +119,13 @@ describe('BooksService', () => {
     createUploadUrl: jest.fn(),
     getObjectMetadata: jest.fn(),
     copyObject: jest.fn().mockResolvedValue(undefined),
+    deleteObjects: jest.fn().mockResolvedValue(undefined),
   };
   const storageService = storage as unknown as StorageService;
   const ttsModelsService = {
     getSelectableModel: jest.fn(),
     resolveLocalVoiceId: jest.fn().mockReturnValue(null),
+    getLocalVoiceNames: jest.fn().mockReturnValue(new Map([['ryan', 'Ryan']])),
   } as unknown as TtsModelsService;
   const fishVoices = {
     resolveVoiceReferenceId: jest.fn(),
@@ -300,6 +303,92 @@ describe('BooksService', () => {
     );
   });
 
+  describe('regenerating ready chapter audio', () => {
+    const readyAudio = {
+      id: 'audio-id',
+      chapterId: firstChapter.id,
+      status: 'READY',
+      modelKey: 'local.other-model',
+      objectKey: 'books/user-id/book-id/audio/final.mp3',
+    };
+    const audioUpdate = jest.fn().mockResolvedValue(undefined);
+    const chunkDelete = jest.fn().mockResolvedValue(1);
+
+    const createRegenerateService = () => {
+      chaptersAll.mockResolvedValue([firstChapter]);
+      audioFirst.mockResolvedValue(readyAudio);
+      db.orm.public.Audio.where.mockReturnValue({
+        first: audioFirst,
+        update: audioUpdate,
+      });
+      db.orm.public.AudioChunk.where.mockReturnValue({
+        all: jest
+          .fn()
+          .mockResolvedValue([{ objectKey: 'books/user-id/parts/0.mp3' }]),
+        deleteAndCount: chunkDelete,
+      });
+      const service = createService();
+      jest
+        .spyOn(
+          service as unknown as BooksServiceInternals,
+          'createOrReuseChapterAudioJob',
+        )
+        .mockResolvedValue({
+          audio: {} as Audio,
+          job: { id: 'job-id' } as ProcessingJob,
+          shouldEnqueue: true,
+        });
+
+      return service;
+    };
+
+    it('drops the old audio and queues it again, even with a different model', async () => {
+      const service = createRegenerateService();
+
+      await expect(
+        service.queueSelectedChapterAudio(
+          'user-id',
+          book.id,
+          [firstChapter.id],
+          null,
+          true,
+        ),
+      ).resolves.toEqual({
+        affectedChapterIds: [firstChapter.id],
+        skippedChapterIds: [],
+      });
+
+      expect(chunkDelete).toHaveBeenCalled();
+      expect(audioUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'QUEUED',
+          objectKey: null,
+          modelKey: 'local.piper.en-us-amy',
+        }),
+      );
+      expect(storage.deleteObjects).toHaveBeenCalledWith([
+        readyAudio.objectKey,
+        'books/user-id/parts/0.mp3',
+      ]);
+      expect(jobsService.enqueueChapterSynthesis).toHaveBeenCalledWith(
+        'job-id',
+        'LOCAL',
+      );
+    });
+
+    it('still refuses a model change when not regenerating', async () => {
+      const service = createRegenerateService();
+
+      await expect(
+        service.queueSelectedChapterAudio('user-id', book.id, [
+          firstChapter.id,
+        ]),
+      ).rejects.toThrow(ConflictException);
+      expect(chunkDelete).not.toHaveBeenCalled();
+      expect(storage.deleteObjects).not.toHaveBeenCalled();
+    });
+  });
+
   it('sends chapters for a Fish model to the Fish queue', async () => {
     jest.mocked(ttsModelsService.getSelectableModel).mockResolvedValue({
       id: 'fish.s2.1-pro',
@@ -335,6 +424,34 @@ describe('BooksService', () => {
       'fish-job-id',
       'FISH',
     );
+  });
+
+  it("resolves a local model's voice name from its voice id", async () => {
+    authorsAll.mockResolvedValue([]);
+    chaptersAll.mockResolvedValue([firstChapter]);
+    audioFirst.mockResolvedValue({
+      id: 'audio-id',
+      chapterId: firstChapter.id,
+      modelKey: 'local.qwen3-tts-0-6b',
+      voice: 'ryan',
+      status: 'READY',
+      processingStage: null,
+      totalChunks: 1,
+      completedChunks: 1,
+      error: null,
+    } as Audio);
+    jest.mocked(fishVoices.getVoices).mockResolvedValue([]);
+    const service = new BooksService(
+      prisma,
+      storageService,
+      jobsService,
+      ttsModelsService,
+      fishVoices,
+    );
+
+    await expect(
+      service.getVoiceNamesByReferenceId('user-id'),
+    ).resolves.toEqual(new Map([['ryan', 'Ryan']]));
   });
 
   it("resolves a chapter audio's voice name alongside its snapshotted voice id", async () => {
