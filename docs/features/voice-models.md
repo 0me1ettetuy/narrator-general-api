@@ -10,8 +10,9 @@ key.
 ## How to use it in the UI
 
 1. Open **Models** in the private sidebar.
-2. Local cards show `READY`, `UNAVAILABLE`, or `DISABLED`. Only Silero TTS
-   (Russian + English) is enabled; it is off by default and runs on CPU.
+2. Local cards show `READY`, `UNAVAILABLE`, or `DISABLED`. Silero TTS
+   (CPU) and Qwen3-TTS 0.6B (NVIDIA GPU) are the local models, both Russian +
+   English and off by default.
 3. To use Fish Audio, enter a personal key in the Fish setup card. The form
    validates it before Fish model cards are displayed.
 4. Choose a ready card. The selected card becomes the default for future
@@ -54,10 +55,21 @@ key.
   at chapter-audio creation. Later selection/catalogue changes cannot mix
   voices in an in-progress chapter or its retries.
 
-### Local models (Silero TTS)
+### Paid Fish models need credit
+
+A Fish model with `requiresCredit` (`fish.s2.1-pro`) is listed `UNAVAILABLE` with
+`reasonCode: FISH_CREDIT_REQUIRED` when the user's Fish account balance
+(`GET /wallet/self/api-credit`, cached 60 s per user) is zero. Selecting or
+generating with it is rejected with `409 TTS_MODEL_UNAVAILABLE`. If Fish cannot
+be asked, the model stays selectable and a Fish `402` at synthesis is the last
+guard (not yet mapped to a clear error).
+
+### Local models (Silero TTS, Qwen3-TTS)
 
 Silero TTS (Russian + English) is selectable when `TTS_LOCAL_SILERO_TTS_ENABLED`
-is true and its health check passes. Qwen3-TTS, Piper, Kokoro-82M and Chatterbox
+is true and its health check passes. Qwen3-TTS 0.6B
+(`local.qwen3-tts-0-6b`, speakers ryan, aiden, vivian, serena) works the same
+way with `TTS_LOCAL_QWEN3_TTS_ENABLED`. Piper, Kokoro-82M and Chatterbox
 Turbo are removed or disabled: `GET /tts/models` omits them, and the frontend
 shows no card for them.
 

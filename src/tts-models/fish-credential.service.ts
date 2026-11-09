@@ -22,6 +22,7 @@ const CIPHER_VERSION = 'v1';
 const ENCRYPTION_KEY_VERSION = 1;
 const AES_256_GCM = 'aes-256-gcm';
 const DEFAULT_VALIDATION_TIMEOUT_MS = 5_000;
+const CREDIT_CACHE_TTL_MS = 60_000;
 
 type StoredFishCredential = {
   id: string;
@@ -39,6 +40,12 @@ type ValidationResult = {
 
 @Injectable()
 export class FishCredentialService {
+  // shortcut: per-process cache, so each API instance asks Fish once a minute per user; use Redis if instances multiply.
+  private readonly creditCache = new Map<
+    string,
+    { hasCredit: boolean | null; expiresAt: number }
+  >();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
@@ -96,10 +103,35 @@ export class FishCredentialService {
       });
     }
 
+    this.creditCache.delete(userId);
+
     return this.getPublicStatus(userId);
   }
 
+  /**
+   * Whether the user's Fish account has API credit for paid models. `null`
+   * means Fish could not be asked (callers must not block on that); a 402 at
+   * synthesis time is the final guard.
+   */
+  async hasApiCredit(userId: string): Promise<boolean | null> {
+    const cached = this.creditCache.get(userId);
+
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.hasCredit;
+    }
+
+    const hasCredit = await this.fetchHasApiCredit(userId);
+
+    this.creditCache.set(userId, {
+      hasCredit,
+      expiresAt: Date.now() + CREDIT_CACHE_TTL_MS,
+    });
+
+    return hasCredit;
+  }
+
   async delete(userId: string): Promise<void> {
+    this.creditCache.delete(userId);
     await this.prisma.db.orm.public.UserTtsProviderCredential.where({
       userId,
       provider: FISH_AUDIO_PROVIDER,
@@ -168,6 +200,45 @@ export class FishCredentialService {
     }).first();
   }
 
+  private async fetchHasApiCredit(userId: string): Promise<boolean | null> {
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      this.getPositiveNumberConfig(
+        'FISH_CREDENTIAL_VALIDATION_TIMEOUT_MS',
+        DEFAULT_VALIDATION_TIMEOUT_MS,
+      ),
+    );
+
+    try {
+      const apiKey = await this.getValidApiKey(userId);
+      const response = await fetch(
+        this.getWalletUrl('/wallet/self/api-credit'),
+        {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${apiKey}` },
+          signal: controller.signal,
+        },
+      );
+
+      if (!response.ok) {
+        return null;
+      }
+
+      // Fish returns the balance as a string.
+      const { credit } = (await response.json()) as { credit?: unknown };
+      const balance = Number(credit);
+
+      return typeof credit === 'string' && Number.isFinite(balance)
+        ? balance > 0
+        : null;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   private async validateApiKey(apiKey: string): Promise<ValidationResult> {
     const controller = new AbortController();
     const timeout = setTimeout(
@@ -179,7 +250,7 @@ export class FishCredentialService {
     );
 
     try {
-      const response = await fetch(this.getValidationUrl(), {
+      const response = await fetch(this.getWalletUrl('/wallet/self/package'), {
         method: 'GET',
         headers: { Authorization: `Bearer ${apiKey}` },
         signal: controller.signal,
@@ -275,7 +346,7 @@ export class FishCredentialService {
     return Buffer.from(`${FISH_AUDIO_PROVIDER}:${userId}`, 'utf8');
   }
 
-  private getValidationUrl(): string {
+  private getWalletUrl(path: string): string {
     const baseUrl =
       this.configService.get<string>('FISH_AUDIO_API_BASE_URL')?.trim() ??
       FISH_AUDIO_API_BASE_URL;
@@ -287,7 +358,7 @@ export class FishCredentialService {
         throw new Error('Fish Audio API URL must use HTTPS');
       }
 
-      return new URL('/wallet/self/package', url).toString();
+      return new URL(path, url).toString();
     } catch {
       throw new Error('FISH_AUDIO_API_BASE_URL must be a valid HTTPS URL');
     }

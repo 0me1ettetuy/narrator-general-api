@@ -45,6 +45,8 @@ export type FishTtsModelDefinition = {
   providerModel: string;
   displayName: string;
   enabledConfigKey: string;
+  // Paid models fail with 402 on an account without Fish API credit.
+  requiresCredit: boolean;
 };
 
 export type ConfiguredFishTtsModel = Omit<

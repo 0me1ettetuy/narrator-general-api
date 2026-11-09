@@ -51,19 +51,40 @@ export class TtsModelsService {
     ];
 
     if (fishCredential.credentialState === 'VALID') {
+      const fishModels = this.registry.getFishModels();
+      // Only ask Fish about credit when a paid model is actually offered.
+      const hasCredit = fishModels.some(
+        (model) => model.enabled && model.requiresCredit,
+      )
+        ? await this.fishCredentials.hasApiCredit(userId)
+        : null;
+
       groups.push({
         id: 'fish-audio',
         displayName: 'Fish Audio',
-        models: this.registry.getFishModels().map((model) => ({
-          id: model.id,
-          provider: 'fish-audio',
-          displayName: model.displayName,
-          source: 'FISH',
-          status: model.enabled ? 'READY' : 'DISABLED',
-          selectable: model.enabled,
-          reasonCode: model.enabled ? null : 'MODEL_DISABLED',
-          voices: [],
-        })),
+        models: fishModels.map((model): TtsModelResponse => {
+          const needsCredit = model.requiresCredit && hasCredit === false;
+          const selectable = model.enabled && !needsCredit;
+
+          return {
+            id: model.id,
+            provider: 'fish-audio',
+            displayName: model.displayName,
+            source: 'FISH',
+            status: !model.enabled
+              ? 'DISABLED'
+              : needsCredit
+                ? 'UNAVAILABLE'
+                : 'READY',
+            selectable,
+            reasonCode: !model.enabled
+              ? 'MODEL_DISABLED'
+              : needsCredit
+                ? 'FISH_CREDIT_REQUIRED'
+                : null,
+            voices: [],
+          };
+        }),
       });
     }
 
@@ -135,6 +156,16 @@ export class TtsModelsService {
 
     await this.fishCredentials.assertValidCredential(userId);
 
+    if (
+      fishModel.requiresCredit &&
+      (await this.fishCredentials.hasApiCredit(userId)) === false
+    ) {
+      throw new ConflictException({
+        code: API_ERROR_CODES.ttsModelUnavailable,
+        message: 'The Fish Audio account has no credit for this model',
+      });
+    }
+
     return {
       id: fishModel.id,
       source: 'FISH',
@@ -159,9 +190,12 @@ export class TtsModelsService {
     const voice = this.registry
       .getLocalModels()
       .find((candidate) => candidate.id === modelId)
-      ?.voices.find((candidate) => candidate.id === voiceId);
+      ?.voices.find(
+        (candidate) =>
+          candidate.id === voiceId && candidate.language === language,
+      );
 
-    if (!voice || voice.language !== language) {
+    if (!voice) {
       throw new BadRequestException({
         code: API_ERROR_CODES.validationFailed,
         message: 'Voice is not available for this model and book language',
@@ -169,6 +203,16 @@ export class TtsModelsService {
     }
 
     return voice.id;
+  }
+
+  /** Display names of every local voice, keyed by voice id, for labelling finished audio. */
+  getLocalVoiceNames(): ReadonlyMap<string, string> {
+    return new Map(
+      this.registry
+        .getLocalModels()
+        .flatMap((model) => model.voices)
+        .map((voice) => [voice.id, voice.displayName]),
+    );
   }
 
   async getSelectableLocalModel(

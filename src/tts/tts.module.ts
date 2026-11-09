@@ -7,6 +7,7 @@ import { TtsModelsModule } from '../tts-models/tts-models.module.js';
 // import { ChatterboxTtsAdapter } from './adapters/chatterbox-tts.adapter.js';
 // import { KokoroTtsAdapter } from './adapters/kokoro-tts.adapter.js';
 // import { PiperTtsAdapter } from './adapters/piper-tts.adapter.js';
+import { Qwen3TtsAdapter } from './adapters/qwen3-tts.adapter.js';
 import { SileroTtsAdapter } from './adapters/silero-tts.adapter.js';
 import { AudioChunkService } from './audio-chunk.service.js';
 import { AudioMergeService } from './audio-merge.service.js';
@@ -26,6 +27,7 @@ import { TtsAdapterResolverService } from './tts-adapter-resolver.service.js';
     // PiperTtsAdapter,
     // KokoroTtsAdapter,
     SileroTtsAdapter,
+    Qwen3TtsAdapter,
     // ChatterboxTtsAdapter,
     TtsAdapterResolverService,
   ],

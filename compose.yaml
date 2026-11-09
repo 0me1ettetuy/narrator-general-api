@@ -38,7 +38,6 @@ services:
     build:
       context: ./docker/minio
     image: narrator-minio:local
-    pull_policy: build
     container_name: narrator-minio
     profiles: ['${MINIO_ENABLED:-false}']
     restart: unless-stopped
@@ -106,6 +105,8 @@ services:
       STORAGE_INTERNAL_ENDPOINT: ${STORAGE_INTERNAL_ENDPOINT:-}
       TTS_LOCAL_SILERO_TTS_HEALTH_URL: http://silero-tts:8001/health
       TTS_LOCAL_SILERO_TTS_URL: http://silero-tts:8001
+      TTS_LOCAL_QWEN3_TTS_HEALTH_URL: http://qwen3-tts:8002/health
+      TTS_LOCAL_QWEN3_TTS_URL: http://qwen3-tts:8002
     depends_on:
       db:
         condition: service_healthy
@@ -170,6 +171,31 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
+
+  qwen3-tts:
+    # NVIDIA GPU with 4 GB or more; the quantized model and codec are baked into the image.
+    build:
+      context: docker/qwen3-tts
+    image: narrator-qwen3-tts:local
+    container_name: narrator-qwen3-tts
+    profiles: ['${TTS_LOCAL_QWEN3_TTS_ENABLED:-false}']
+    # The engine can crash after a GPU out-of-memory error, so restart it.
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${TTS_LOCAL_QWEN3_TTS_PUBLISHED_PORT:-8002}:8002'
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:8002/health']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
 
 volumes:
   narrator_postgres_data:

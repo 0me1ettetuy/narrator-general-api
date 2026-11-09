@@ -7,12 +7,18 @@ describe('TtsModelRegistryService', () => {
       get: jest.fn((key: string) => values[key]),
     }) as unknown as ConfigService;
 
-  it('lists Silero TTS disabled by default, with no URLs', () => {
+  it('lists the local models disabled by default, with no URLs', () => {
     const service = new TtsModelRegistryService(createConfigService({}));
 
     expect(service.getLocalModels()).toEqual([
       expect.objectContaining({
         id: 'local.silero-tts',
+        enabled: false,
+        healthUrl: null,
+        synthesisUrl: null,
+      }),
+      expect.objectContaining({
+        id: 'local.qwen3-tts-0-6b',
         enabled: false,
         healthUrl: null,
         synthesisUrl: null,
@@ -36,6 +42,23 @@ describe('TtsModelRegistryService', () => {
         synthesisUrl: 'http://silero-tts:8001/',
       }),
     );
+  });
+
+  it('lists each Qwen3-TTS speaker for both Russian and English', () => {
+    const qwen = new TtsModelRegistryService(createConfigService({}))
+      .getLocalModels()
+      .find((model) => model.id === 'local.qwen3-tts-0-6b');
+
+    expect(qwen?.voices).toContainEqual({
+      id: 'ryan',
+      language: 'ru',
+      displayName: 'Ryan',
+    });
+    expect(qwen?.voices).toContainEqual({
+      id: 'ryan',
+      language: 'en',
+      displayName: 'Ryan',
+    });
   });
 
   it('refuses to enable Silero TTS without its health URL', () => {

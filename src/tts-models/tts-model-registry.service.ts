@@ -7,7 +7,7 @@ import type {
   LocalTtsModelDefinition,
 } from './types/tts-model.type.js';
 
-// Only Silero TTS is enabled. Qwen3-TTS, Piper, Kokoro and Chatterbox are
+// Silero TTS and Qwen3-TTS 0.6B are enabled. Piper, Kokoro and Chatterbox are
 // removed; see docs/tts/local-tts-models-removed.md.
 const LOCAL_TTS_MODEL_DEFINITIONS: LocalTtsModelDefinition[] = [
   {
@@ -33,6 +33,22 @@ const LOCAL_TTS_MODEL_DEFINITIONS: LocalTtsModelDefinition[] = [
       { id: 'en_4', language: 'en', displayName: 'English 5' },
     ],
   },
+  {
+    id: 'local.qwen3-tts-0-6b',
+    provider: 'local-qwen3-tts',
+    displayName: 'Qwen3-TTS 0.6B (RU/EN, GPU)',
+    enabledConfigKey: 'TTS_LOCAL_QWEN3_TTS_ENABLED',
+    healthUrlConfigKey: 'TTS_LOCAL_QWEN3_TTS_HEALTH_URL',
+    synthesisUrlConfigKey: 'TTS_LOCAL_QWEN3_TTS_URL',
+    healthStrategy: 'JSON_STATUS_HEALTHY',
+    // The same CustomVoice speakers are multilingual, so each is listed per language.
+    voices: (['ru', 'en'] as const).flatMap((language) => [
+      { id: 'ryan', language, displayName: 'Ryan' },
+      { id: 'aiden', language, displayName: 'Aiden' },
+      { id: 'vivian', language, displayName: 'Vivian' },
+      { id: 'serena', language, displayName: 'Serena' },
+    ]),
+  },
 ];
 
 const FISH_TTS_MODEL_DEFINITIONS: FishTtsModelDefinition[] = [
@@ -41,12 +57,14 @@ const FISH_TTS_MODEL_DEFINITIONS: FishTtsModelDefinition[] = [
     providerModel: 's2.1-pro-free',
     displayName: 'Fish Audio — S2.1 Pro Free',
     enabledConfigKey: 'TTS_FISH_S2_1_PRO_FREE_ENABLED',
+    requiresCredit: false,
   },
   {
     id: 'fish.s2.1-pro',
     providerModel: 's2.1-pro',
     displayName: 'Fish Audio — S2.1 Pro',
     enabledConfigKey: 'TTS_FISH_S2_1_PRO_ENABLED',
+    requiresCredit: true,
   },
 ];
 
@@ -114,6 +132,7 @@ export class TtsModelRegistryService {
       id: definition.id,
       providerModel: definition.providerModel,
       displayName: definition.displayName,
+      requiresCredit: definition.requiresCredit,
       enabled: this.getBooleanConfig(
         definition.enabledConfigKey,
         definition.id === 'fish.s2.1-pro-free',

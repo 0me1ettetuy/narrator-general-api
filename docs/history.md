@@ -20,6 +20,20 @@ title, no hashes; find its commit with `git log -S"<title>" -- docs/history.md`
   `regenerate: true`, which deletes a `READY` chapter's chunks and files and
   re-queues it with the selected model (`resetReadyChapterAudio`); a model
   change is allowed only for regenerated audio.
+- Fish free-to-paid issue: recorded the undetected free-to-paid switch and the
+  options considered (`docs/issues/fish-free-model-turns-paid.md`).
+- Fish paid-model credit check: `GET /tts/models` marks `fish.s2.1-pro`
+  `UNAVAILABLE` (`FISH_CREDIT_REQUIRED`) when the user's Fish balance is zero,
+  cached 60 s; selecting it is rejected server-side too.
+- GPU model on-demand loading issue: recorded the deferred idea of starting a GPU
+  model's container only while it is used (`docs/issues/gpu-model-on-demand-loading.md`).
+- Quantized Qwen3-TTS 0.6B: new `local.qwen3-tts-0-6b` model on `qwentts.cpp`
+  (GGUF Q8_0, GPU, fits 4 GB), `docker/qwen3-tts` image with an MP3 proxy,
+  `qwen3-tts` Compose service, adapter, `TTS_LOCAL_QWEN3_TTS_*` keys. Voice
+  lookup now matches id and book language together; chapter audio labels now
+  show local voice names (`getLocalVoiceNames`), not only Fish ones.
+- MinIO build only when missing: dropped `pull_policy: build` from `minio` in
+  `compose.yaml`; rebuild with `docker compose build minio`.
 - History without hashes: renamed "Uncommitted work" to "Recent changes"; entries are
   written before the commit with a unique title and found via
   `git log -S"<title>" -- docs/history.md`.

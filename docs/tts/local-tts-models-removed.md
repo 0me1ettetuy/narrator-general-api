@@ -2,6 +2,10 @@
 
 ## Status
 
+Update 2026-11-09: Qwen3-TTS 0.6B came back as a quantized GGUF model on
+`qwentts.cpp` (see [local-tts-docker.md](local-tts-docker.md)); the old
+unquantized adapter and image described below are still removed.
+
 Update 2026-11-08: Qwen3-TTS was removed again and replaced by Silero TTS
 (Russian + English, CPU only; see [local-tts-docker.md](local-tts-docker.md)).
 Why Qwen went: the stock image's torch (cu128) has no kernels for Pascal

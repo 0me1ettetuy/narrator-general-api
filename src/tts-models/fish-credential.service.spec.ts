@@ -166,6 +166,48 @@ describe('FishCredentialService', () => {
     );
   });
 
+  describe('hasApiCredit', () => {
+    async function saveKey() {
+      fetchMock.mockResolvedValueOnce(new Response('{}', { status: 200 }));
+      await service.saveAndValidate('user-id', 'fish-secret-key');
+      fetchMock.mockClear();
+    }
+
+    it('reads the balance with the user key and caches it', async () => {
+      await saveKey();
+      fetchMock.mockResolvedValue(
+        new Response(JSON.stringify({ credit: '0' }), { status: 200 }),
+      );
+
+      await expect(service.hasApiCredit('user-id')).resolves.toBe(false);
+      await expect(service.hasApiCredit('user-id')).resolves.toBe(false);
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.fish.audio/wallet/self/api-credit',
+        expect.objectContaining({
+          headers: { Authorization: 'Bearer fish-secret-key' },
+        }),
+      );
+    });
+
+    it('is true for a positive balance', async () => {
+      await saveKey();
+      fetchMock.mockResolvedValue(
+        new Response(JSON.stringify({ credit: '12.5' }), { status: 200 }),
+      );
+
+      await expect(service.hasApiCredit('user-id')).resolves.toBe(true);
+    });
+
+    it('is unknown, not false, when Fish cannot be read', async () => {
+      await saveKey();
+      fetchMock.mockResolvedValue(new Response('{}', { status: 503 }));
+
+      await expect(service.hasApiCredit('user-id')).resolves.toBeNull();
+    });
+  });
+
   it('stores an invalid key as invalid without exposing it', async () => {
     fetchMock.mockResolvedValue(new Response('{}', { status: 401 }));
 

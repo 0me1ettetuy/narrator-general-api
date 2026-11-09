@@ -1,7 +1,7 @@
 # TTS model catalogue maintenance guide
 
-> **Only Silero TTS is enabled.** `LOCAL_TTS_MODEL_DEFINITIONS` holds that
-> one entry (`local.silero-tts`). Qwen3-TTS, Piper, Kokoro-82M and Chatterbox Turbo rows, adapters, and Docker
+> **Silero TTS and Qwen3-TTS 0.6B are enabled.** `LOCAL_TTS_MODEL_DEFINITIONS`
+> holds `local.silero-tts` and `local.qwen3-tts-0-6b`. Piper, Kokoro-82M and Chatterbox Turbo rows, adapters, and Docker
 > services are commented out or removed, not deleted. See
 > [local-tts-models-removed.md](local-tts-models-removed.md) for the full
 > restoration record and [the issue record](../issues/local-tts-models-disabled.md)
@@ -166,6 +166,9 @@ is missing, it detects the primary language from cleaned chapter text with
 with each chapter text segment, and each adapter interprets it only when its
 own provider supports it:
 
+- Qwen3-TTS translates `ru` and `en` to `Russian` and `English`; anything else
+  is rejected. Its speakers repeat per language in the `voices` list, so a
+  voice is validated by id and book language together.
 - Silero translates `ru` and `en` to Silero language names. Missing or
   unsupported metadata is rejected, because Silero cannot detect a language.
   Its selectable voices are the `voices` list on the model definition (5

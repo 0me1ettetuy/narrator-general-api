@@ -43,6 +43,11 @@ The default starts the complete backend. Optional profiles:
   `TTS_LOCAL_SILERO_TTS_ENABLED="true"`; see
   [`docs/tts/local-tts-docker.md`](../tts/local-tts-docker.md).
 
+- `qwen3-tts` — the GPU Qwen3-TTS 0.6B server (`docker/qwen3-tts`), switched on
+  by `TTS_LOCAL_QWEN3_TTS_ENABLED="true"`. Needs an NVIDIA GPU with 4 GB or more
+  and the NVIDIA container toolkit; see
+  [`docs/tts/local-tts-docker.md`](../tts/local-tts-docker.md).
+
 The other local TTS models are disabled — see
 [`docs/tts/local-tts-models-removed.md`](../tts/local-tts-models-removed.md).
 

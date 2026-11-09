@@ -32,7 +32,11 @@ export class TtsModelResponseDto {
 
   @ApiProperty({
     nullable: true,
-    enum: ['MODEL_DISABLED', 'MODEL_SERVICE_UNREACHABLE'],
+    enum: [
+      'MODEL_DISABLED',
+      'MODEL_SERVICE_UNREACHABLE',
+      'FISH_CREDIT_REQUIRED',
+    ],
   })
   reasonCode: string | null;
 

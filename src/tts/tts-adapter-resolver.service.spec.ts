@@ -7,6 +7,7 @@ jest.mock('./tts.service.js', () => ({
 }));
 
 import { TtsModelsService } from '../tts-models/tts-models.service.js';
+import type { Qwen3TtsAdapter } from './adapters/qwen3-tts.adapter.js';
 import type { SileroTtsAdapter } from './adapters/silero-tts.adapter.js';
 import { TtsService } from './tts.service.js';
 import { TtsAdapterResolverService } from './tts-adapter-resolver.service.js';
@@ -14,6 +15,7 @@ import { TtsAdapterResolverService } from './tts-adapter-resolver.service.js';
 describe('TtsAdapterResolverService', () => {
   const fish = {} as TtsService;
   const silero = {} as SileroTtsAdapter;
+  const qwen3 = {} as Qwen3TtsAdapter;
 
   it('resolves a Fish adapter with its provider model for the owner', async () => {
     const models = {
@@ -23,7 +25,7 @@ describe('TtsAdapterResolverService', () => {
         providerModel: 's2.1-pro-free',
       }),
     } as unknown as TtsModelsService;
-    const resolver = new TtsAdapterResolverService(fish, silero, models);
+    const resolver = new TtsAdapterResolverService(fish, silero, qwen3, models);
 
     await expect(resolver.resolve('user-id', null)).resolves.toEqual({
       adapter: fish,
@@ -41,12 +43,31 @@ describe('TtsAdapterResolverService', () => {
         providerModel: null,
       }),
     } as unknown as TtsModelsService;
-    const resolver = new TtsAdapterResolverService(fish, silero, models);
+    const resolver = new TtsAdapterResolverService(fish, silero, qwen3, models);
 
     await expect(
       resolver.resolve('user-id', 'local.silero-tts'),
     ).resolves.toEqual({
       adapter: silero,
+      source: 'LOCAL',
+      providerModel: null,
+    });
+  });
+
+  it('resolves local.qwen3-tts-0-6b to the Qwen3 adapter', async () => {
+    const models = {
+      getSelectableModel: jest.fn().mockResolvedValue({
+        id: 'local.qwen3-tts-0-6b',
+        source: 'LOCAL',
+        providerModel: null,
+      }),
+    } as unknown as TtsModelsService;
+    const resolver = new TtsAdapterResolverService(fish, silero, qwen3, models);
+
+    await expect(
+      resolver.resolve('user-id', 'local.qwen3-tts-0-6b'),
+    ).resolves.toEqual({
+      adapter: qwen3,
       source: 'LOCAL',
       providerModel: null,
     });
@@ -60,7 +81,7 @@ describe('TtsAdapterResolverService', () => {
         providerModel: null,
       }),
     } as unknown as TtsModelsService;
-    const resolver = new TtsAdapterResolverService(fish, silero, models);
+    const resolver = new TtsAdapterResolverService(fish, silero, qwen3, models);
 
     await expect(
       resolver.resolve('user-id', 'local.kokoro-82m'),

@@ -3,12 +3,14 @@ import {
   type SelectableTtsModel,
   TtsModelsService,
 } from '../tts-models/tts-models.service.js';
-// Qwen3-TTS, Piper, Kokoro and Chatterbox are removed; see docs/tts/local-tts-models-removed.md.
+// Piper, Kokoro and Chatterbox are removed; see docs/tts/local-tts-models-removed.md.
+import { Qwen3TtsAdapter } from './adapters/qwen3-tts.adapter.js';
 import { SileroTtsAdapter } from './adapters/silero-tts.adapter.js';
 import { type TtsAdapter, TtsSynthesisError } from './adapters/tts-adapter.js';
 import { TtsService } from './tts.service.js';
 
 const SILERO_TTS_MODEL_ID = 'local.silero-tts';
+const QWEN3_TTS_MODEL_ID = 'local.qwen3-tts-0-6b';
 
 export type ResolvedTtsAdapter = {
   adapter: TtsAdapter;
@@ -21,6 +23,7 @@ export class TtsAdapterResolverService {
   constructor(
     private readonly fishAudioTtsAdapter: TtsService,
     private readonly sileroTtsAdapter: SileroTtsAdapter,
+    private readonly qwen3TtsAdapter: Qwen3TtsAdapter,
     private readonly ttsModelsService: TtsModelsService,
   ) {}
 
@@ -48,6 +51,14 @@ export class TtsAdapterResolverService {
     if (model.id === SILERO_TTS_MODEL_ID) {
       return {
         adapter: this.sileroTtsAdapter,
+        source: model.source,
+        providerModel: null,
+      };
+    }
+
+    if (model.id === QWEN3_TTS_MODEL_ID) {
+      return {
+        adapter: this.qwen3TtsAdapter,
         source: model.source,
         providerModel: null,
       };

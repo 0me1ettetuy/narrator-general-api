@@ -36,6 +36,7 @@ describe('TtsModelsService', () => {
           id: 'fish.s2.1-pro-free',
           providerModel: 's2.1-pro-free',
           displayName: 'Fish Audio — S2.1 Pro Free',
+          requiresCredit: false,
           enabled: true,
         },
       ]),
@@ -184,6 +185,86 @@ describe('TtsModelsService', () => {
     );
   });
 
+  describe('paid Fish model credit check', () => {
+    const paidFishModels = [
+      {
+        id: 'fish.s2.1-pro-free',
+        providerModel: 's2.1-pro-free',
+        displayName: 'Free',
+        requiresCredit: false,
+        enabled: true,
+      },
+      {
+        id: 'fish.s2.1-pro',
+        providerModel: 's2.1-pro',
+        displayName: 'Pro',
+        requiresCredit: true,
+        enabled: true,
+      },
+    ];
+
+    function createService(hasCredit: boolean | null) {
+      const registry = {
+        getLocalModels: jest.fn().mockReturnValue([]),
+        getFishModels: jest.fn().mockReturnValue(paidFishModels),
+      } as unknown as TtsModelRegistryService;
+      const fishCredentials = {
+        getPublicStatus: jest.fn().mockResolvedValue({
+          id: 'fish-audio',
+          credentialState: 'VALID',
+          setupRequired: false,
+          lastValidatedAt: null,
+          voices: [],
+        }),
+        assertValidCredential: jest.fn().mockResolvedValue(undefined),
+        hasApiCredit: jest.fn().mockResolvedValue(hasCredit),
+      } as unknown as FishCredentialService;
+
+      return new TtsModelsService(
+        prisma,
+        registry,
+        availableLocalModel,
+        fishCredentials,
+      );
+    }
+
+    it('marks the paid model unavailable when the account has no credit', async () => {
+      const response = await createService(false).listModels('user-id');
+
+      expect(response.groups[1].models).toEqual([
+        expect.objectContaining({ id: 'fish.s2.1-pro-free', selectable: true }),
+        expect.objectContaining({
+          id: 'fish.s2.1-pro',
+          status: 'UNAVAILABLE',
+          selectable: false,
+          reasonCode: 'FISH_CREDIT_REQUIRED',
+        }),
+      ]);
+    });
+
+    it.each([true, null])(
+      'keeps the paid model selectable when credit is %s',
+      async (hasCredit) => {
+        const response = await createService(hasCredit).listModels('user-id');
+
+        expect(response.groups[1].models[1]).toEqual(
+          expect.objectContaining({ id: 'fish.s2.1-pro', selectable: true }),
+        );
+      },
+    );
+
+    it('refuses to select the paid model without credit, but not the free one', async () => {
+      const service = createService(false);
+
+      await expect(
+        service.getSelectableModel('user-id', 'fish.s2.1-pro'),
+      ).rejects.toThrow('no credit');
+      await expect(
+        service.getSelectableModel('user-id', 'fish.s2.1-pro-free'),
+      ).resolves.toEqual(expect.objectContaining({ id: 'fish.s2.1-pro-free' }));
+    });
+  });
+
   it('saves a validated model as the user default', async () => {
     const fishCredentials = {
       assertValidCredential: jest.fn().mockResolvedValue(undefined),
@@ -257,6 +338,33 @@ describe('TtsModelsService', () => {
       expect(
         service.resolveLocalVoiceId('local.piper.en-us-amy', 'en', undefined),
       ).toBeNull();
+    });
+
+    it('accepts a speaker listed under several languages for each of them', () => {
+      const registry = {
+        getLocalModels: jest.fn().mockReturnValue([
+          {
+            id: 'local.qwen3-tts-0-6b',
+            voices: [
+              { id: 'ryan', language: 'ru', displayName: 'Ryan' },
+              { id: 'ryan', language: 'en', displayName: 'Ryan' },
+            ],
+          },
+        ]),
+      } as unknown as TtsModelRegistryService;
+      const service = new TtsModelsService(
+        prisma,
+        registry,
+        availableLocalModel,
+        {} as unknown as FishCredentialService,
+      );
+
+      expect(
+        service.resolveLocalVoiceId('local.qwen3-tts-0-6b', 'en', 'ryan'),
+      ).toBe('ryan');
+      expect(
+        service.resolveLocalVoiceId('local.qwen3-tts-0-6b', 'ru', 'ryan'),
+      ).toBe('ryan');
     });
 
     it('rejects a voice of another language or an unknown voice', () => {
