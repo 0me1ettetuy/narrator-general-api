@@ -5,7 +5,11 @@ import { temporalNow } from '../prisma/temporal.js';
 import { StorageService } from '../storage/storage.service.js';
 import { classifyChapter } from './chapter-classifier.js';
 import { EpubParserService } from './epub-parser.service.js';
-import type { ParsedEpub, ParsedEpubCover } from './types/parsed-epub.type.js';
+import type {
+  ParsedEpub,
+  ParsedEpubCover,
+  ParsedEpubImage,
+} from './types/parsed-epub.type.js';
 
 const BOOK_PARSE_FAILED_ERROR = 'BOOK_PARSE_FAILED';
 
@@ -13,6 +17,15 @@ type StoredBookCover = {
   objectKey: string;
   mimeType: string;
   size: number;
+};
+
+type PlannedBookImage = {
+  id: string;
+  objectKey: string;
+  mimeType: string;
+  size: number;
+  alt: string | null;
+  bytes: Uint8Array;
 };
 
 export type ClaimedBookParsingJob = {
@@ -47,15 +60,31 @@ export class BookParsingService {
 
     const parsedEpub = this.epubParserService.parse(epubBytes);
     const cover = await this.storeCover(claimedJob, parsedEpub.cover);
-    await this.updateProgress(claimedJob.id, 75);
+    const images = parsedEpub.images.map((image) =>
+      planImage(claimedJob, image),
+    );
 
     try {
-      await this.persistParsedBook(claimedJob, parsedEpub, cover);
+      for (const image of images) {
+        await this.storageService.putObjectBytes(
+          image.objectKey,
+          image.bytes,
+          image.mimeType,
+        );
+      }
+      await this.updateProgress(claimedJob.id, 75);
+      await this.persistParsedBook(claimedJob, parsedEpub, cover, images);
     } catch (error) {
       if (cover) {
         await this.storageService.deleteObject(cover.objectKey).catch(() => {
           // The parser retry overwrites this deterministic key if cleanup fails.
         });
+      }
+      if (images.length) {
+        // Image ids are new on every attempt; book deletion removes any leftovers.
+        await this.storageService
+          .deleteObjects(images.map((image) => image.objectKey))
+          .catch(() => undefined);
       }
 
       throw error;
@@ -160,6 +189,7 @@ export class BookParsingService {
     job: ClaimedBookParsingJob,
     parsedEpub: ParsedEpub,
     cover: StoredBookCover | null,
+    images: PlannedBookImage[],
   ): Promise<void> {
     const now = temporalNow();
 
@@ -172,6 +202,17 @@ export class BookParsingService {
           bookId: job.bookId,
           name,
           position,
+        });
+      }
+
+      for (const image of images) {
+        await transaction.orm.public.BookImage.create({
+          id: image.id,
+          bookId: job.bookId,
+          objectKey: image.objectKey,
+          mimeType: image.mimeType,
+          size: image.size,
+          alt: image.alt,
         });
       }
 
@@ -265,6 +306,24 @@ export class BookParsingService {
       size: cover.bytes.byteLength,
     };
   }
+}
+
+function planImage(
+  job: ClaimedBookParsingJob,
+  image: ParsedEpubImage,
+): PlannedBookImage {
+  return {
+    id: image.id,
+    objectKey: `books/${job.userId}/${job.bookId}/images/${image.id}.${getImageExtension(image.mimeType)}`,
+    mimeType: image.mimeType,
+    size: image.bytes.byteLength,
+    alt: image.alt,
+    bytes: image.bytes,
+  };
+}
+
+function getImageExtension(mimeType: string): string {
+  return mimeType === 'image/svg+xml' ? 'svg' : getCoverExtension(mimeType);
 }
 
 function getCoverExtension(mimeType: string): string {

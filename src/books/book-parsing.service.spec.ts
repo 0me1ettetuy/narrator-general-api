@@ -1,6 +1,7 @@
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { StorageService } from '../storage/storage.service.js';
 import type { EpubParserService } from './epub-parser.service.js';
+import type { ParsedEpub } from './types/parsed-epub.type.js';
 
 jest.mock('../prisma/prisma.service.js', () => ({
   PrismaService: class PrismaService {},
@@ -33,11 +34,13 @@ describe('BookParsingService', () => {
   };
   let shouldFindProcessingBook = true;
   let deletedBeforeFinalSave = false;
+  let parsedEpub: ParsedEpub;
   const jobUpdate = jest.fn().mockResolvedValue(undefined);
   const bookUpdate = jest.fn().mockImplementation(() => Promise.resolve(book));
   const chapterCreate = jest.fn().mockResolvedValue(undefined);
   const storageService = {
     deleteObject: jest.fn().mockResolvedValue(undefined),
+    deleteObjects: jest.fn().mockResolvedValue(undefined),
     getObjectBytes: jest.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
     putObjectBytes: jest.fn().mockResolvedValue(undefined),
   } as unknown as StorageService;
@@ -50,6 +53,7 @@ describe('BookParsingService', () => {
       public: {
         Book: { where: jest.Mock };
         BookAuthor: { create: jest.Mock };
+        BookImage: { create: jest.Mock };
         Chapter: { create: jest.Mock };
         Job: { where: jest.Mock };
       };
@@ -60,6 +64,7 @@ describe('BookParsingService', () => {
       public: {
         Book: { where: jest.fn() },
         BookAuthor: { create: jest.fn() },
+        BookImage: { create: jest.fn() },
         Chapter: { create: jest.fn() },
         Job: { where: jest.fn() },
       },
@@ -103,9 +108,10 @@ describe('BookParsingService', () => {
       }),
     );
     db.orm.public.BookAuthor.create.mockResolvedValue(undefined);
+    db.orm.public.BookImage.create.mockResolvedValue(undefined);
     chapterCreate.mockResolvedValue(undefined);
     db.orm.public.Chapter.create = chapterCreate;
-    jest.mocked(epubParserService.parse).mockReturnValue({
+    parsedEpub = {
       title: 'Parsed title',
       language: 'en-US',
       authors: [],
@@ -125,7 +131,8 @@ describe('BookParsingService', () => {
           isLinear: true,
         },
       ],
-    });
+    };
+    jest.mocked(epubParserService.parse).mockReturnValue(parsedEpub);
   });
 
   it('stores an extracted cover before marking the parsed book ready', async () => {
@@ -195,5 +202,99 @@ describe('BookParsingService', () => {
     expect(storageService.deleteObject).toHaveBeenCalledWith(
       'books/user-id/book-id/cover/original.png',
     );
+  });
+  describe('images', () => {
+    const mapId = '0b9c1f52-3a4e-4d6a-9b1e-2f7c8d9e0a11';
+    const photoId = '7d2e4a90-1c3b-4f58-8a6d-5e9f0b1c2d33';
+    const mapKey = `books/user-id/book-id/images/${mapId}.png`;
+    const photoKey = `books/user-id/book-id/images/${photoId}.jpg`;
+
+    beforeEach(() => {
+      parsedEpub.images = [
+        {
+          id: mapId,
+          bytes: new Uint8Array([7, 8]),
+          mimeType: 'image/png',
+          alt: 'Map',
+        },
+        {
+          id: photoId,
+          bytes: new Uint8Array([9]),
+          mimeType: 'image/jpeg',
+          alt: null,
+        },
+      ];
+    });
+
+    it('uploads every image and saves a row for each', async () => {
+      const service = new BookParsingService(
+        prisma,
+        storageService,
+        epubParserService,
+      );
+
+      await service.parse(parseJob.id);
+
+      expect(storageService.putObjectBytes).toHaveBeenCalledWith(
+        mapKey,
+        new Uint8Array([7, 8]),
+        'image/png',
+      );
+      expect(storageService.putObjectBytes).toHaveBeenCalledWith(
+        photoKey,
+        new Uint8Array([9]),
+        'image/jpeg',
+      );
+      expect(db.orm.public.BookImage.create).toHaveBeenCalledWith({
+        id: mapId,
+        bookId: 'book-id',
+        objectKey: mapKey,
+        mimeType: 'image/png',
+        size: 2,
+        alt: 'Map',
+      });
+      expect(db.orm.public.BookImage.create).toHaveBeenCalledWith({
+        id: photoId,
+        bookId: 'book-id',
+        objectKey: photoKey,
+        mimeType: 'image/jpeg',
+        size: 1,
+        alt: null,
+      });
+    });
+
+    it('removes the uploaded images when the parsed book cannot be persisted', async () => {
+      shouldFindProcessingBook = false;
+      const service = new BookParsingService(
+        prisma,
+        storageService,
+        epubParserService,
+      );
+
+      await expect(service.parse(parseJob.id)).rejects.toThrow(
+        'Book is no longer being parsed',
+      );
+
+      expect(storageService.deleteObjects).toHaveBeenCalledWith([
+        mapKey,
+        photoKey,
+      ]);
+    });
+
+    it('leaves image storage alone for a book without images', async () => {
+      parsedEpub.images = [];
+      shouldFindProcessingBook = false;
+      const service = new BookParsingService(
+        prisma,
+        storageService,
+        epubParserService,
+      );
+
+      await expect(service.parse(parseJob.id)).rejects.toThrow();
+
+      expect(storageService.putObjectBytes).toHaveBeenCalledTimes(1);
+      expect(storageService.deleteObjects).not.toHaveBeenCalled();
+      expect(db.orm.public.BookImage.create).not.toHaveBeenCalled();
+    });
   });
 });
