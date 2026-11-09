@@ -121,9 +121,29 @@ export class ChapterSummaryResponseDto {
   audio: ChapterAudioResponseDto | null;
 }
 
+export class ChapterImageResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+
+  @ApiProperty({ description: 'Short-lived signed URL of the image' })
+  url: string;
+
+  @ApiProperty({ type: String, nullable: true })
+  alt: string | null;
+}
+
 export class ChapterDetailResponseDto extends ChapterSummaryResponseDto {
-  @ApiProperty({ description: 'Plain editable chapter text' })
+  @ApiProperty({
+    description:
+      'Chapter text. [[img_<id>]] markers show where images belong; they are never narrated',
+  })
   text: string;
+
+  @ApiProperty({
+    type: () => [ChapterImageResponseDto],
+    description: 'Images named by the markers in the text, in text order',
+  })
+  images: ChapterImageResponseDto[];
 
   @ApiProperty({ enum: ['IMPORTED', 'USER'] })
   origin: string;

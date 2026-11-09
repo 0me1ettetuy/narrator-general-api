@@ -1,4 +1,5 @@
 import {
+  countNarratedWords,
   findImageMarkerIds,
   formatImageMarker,
   stripImageMarkers,
@@ -34,5 +35,10 @@ describe('chapter image markers', () => {
     expect(stripImageMarkers(`one\n\n[[img_${A}]]\n\ntwo`)).toBe(
       'one\n\n\n\ntwo',
     );
+  });
+
+  it('counts words without counting markers', () => {
+    expect(countNarratedWords(`Before [[img_${A}]] after`)).toBe(2);
+    expect(countNarratedWords(`one two\n\n[[img_${B}]]\n\nthree`)).toBe(3);
   });
 });

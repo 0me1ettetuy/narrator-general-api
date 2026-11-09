@@ -8,7 +8,10 @@ import {
 } from '@abfcode/spine';
 import { franc } from 'franc';
 import { Injectable } from '@nestjs/common';
-import { stripImageMarkers } from './chapter-image-marker.js';
+import {
+  countNarratedWords,
+  stripImageMarkers,
+} from './chapter-image-marker.js';
 import { EpubImageCollector } from './epub-image-collector.js';
 import type {
   ParsedEpub,
@@ -123,7 +126,7 @@ function toParsedEpubChapter(
     title: normalizeText(chapter.title) || `Chapter ${chapter.index + 1}`,
     sourceHref: chapter.href,
     text,
-    wordCount: countWords(stripImageMarkers(text)),
+    wordCount: countNarratedWords(text),
     semanticTypes: getChapterSemanticTypes(blocks),
     isLinear: book.spine?.[chapter.start?.spineIndex]?.linear ?? true,
   };
@@ -162,8 +165,4 @@ function normalizeText(value: string | undefined): string {
 
 function uniqueNonEmpty(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
-}
-
-function countWords(text: string): number {
-  return text.split(/\s+/u).length;
 }

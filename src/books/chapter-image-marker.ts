@@ -24,3 +24,7 @@ export function stripImageMarkers(text: string): string {
     )
     .trim();
 }
+
+export function countNarratedWords(text: string): number {
+  return stripImageMarkers(text).split(/\s+/u).length;
+}

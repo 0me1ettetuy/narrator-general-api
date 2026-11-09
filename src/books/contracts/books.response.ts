@@ -70,8 +70,15 @@ export type ChapterSummaryResponse = {
   audio: ChapterAudioResponse | null;
 };
 
+export type ChapterImageResponse = {
+  id: string;
+  url: string;
+  alt: string | null;
+};
+
 export type ChapterDetailResponse = ChapterSummaryResponse & {
   text: string;
+  images: ChapterImageResponse[];
   origin: ChapterOrigin;
 };
 

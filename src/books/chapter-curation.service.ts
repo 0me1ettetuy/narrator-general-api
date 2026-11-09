@@ -8,9 +8,15 @@ import { randomUUID } from 'node:crypto';
 import { API_ERROR_CODES } from '../global-filters/api-error.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { temporalNow } from '../prisma/temporal.js';
+import { StorageService } from '../storage/storage.service.js';
 import { BooksService } from './books.service.js';
+import {
+  countNarratedWords,
+  findImageMarkerIds,
+} from './chapter-image-marker.js';
 import type {
   ChapterDetailResponse,
+  ChapterImageResponse,
   ChapterMergeResponse,
   RemovedChaptersResponse,
   ChapterSelectionResponse,
@@ -33,6 +39,7 @@ export class ChapterCurationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly booksService: BooksService,
+    private readonly storageService: StorageService,
   ) {}
 
   async getChapter(
@@ -42,13 +49,19 @@ export class ChapterCurationService {
   ): Promise<ChapterDetailResponse> {
     await this.getOwnedBook(userId, bookId);
     const chapter = await this.getActiveChapter(bookId, chapterId);
+    const images = await this.getChapterImages(bookId, chapter.text);
     const audio = (await this.prisma.db.orm.public.Audio.where({
       chapterId: chapter.id,
     }).first()) as Audio | null;
     const voiceNamesByReferenceId =
       await this.booksService.getVoiceNamesByReferenceId(userId);
 
-    return toChapterDetailResponse(chapter, audio, voiceNamesByReferenceId);
+    return toChapterDetailResponse(
+      chapter,
+      audio,
+      voiceNamesByReferenceId,
+      images,
+    );
   }
 
   async listRemovedChapters(
@@ -120,7 +133,11 @@ export class ChapterCurationService {
     }).update({
       ...(dto.title !== undefined ? { title: dto.title } : {}),
       ...(dto.text !== undefined
-        ? { text: dto.text, wordCount: countWords(dto.text), editedAt: now }
+        ? {
+            text: dto.text,
+            wordCount: countNarratedWords(dto.text),
+            editedAt: now,
+          }
         : {}),
       ...(dto.role !== undefined ? { role: dto.role } : {}),
       ...(dto.includeInDefaultNarration !== undefined
@@ -168,7 +185,7 @@ export class ChapterCurationService {
         position: activeChapters.length,
         title: dto.title,
         text: dto.text,
-        wordCount: countWords(dto.text),
+        wordCount: countNarratedWords(dto.text),
         role: dto.role ?? 'MAIN',
         includeInDefaultNarration: dto.includeInDefaultNarration ?? true,
         classificationSource: 'USER',
@@ -271,7 +288,7 @@ export class ChapterCurationService {
       }).update({
         title: dto.title,
         text: mergedText,
-        wordCount: countWords(mergedText),
+        wordCount: countNarratedWords(mergedText),
         role: dto.role,
         includeInDefaultNarration: dto.includeInDefaultNarration,
         classificationSource: 'USER',
@@ -430,6 +447,37 @@ export class ChapterCurationService {
         updatedAt: now,
       });
     });
+  }
+
+  // Only images of this book are returned, so a marker naming anything else is ignored.
+  private async getChapterImages(
+    bookId: string,
+    text: string,
+  ): Promise<ChapterImageResponse[]> {
+    const markerIds = findImageMarkerIds(text);
+
+    if (!markerIds.length) {
+      return [];
+    }
+
+    const rows = await this.prisma.db.orm.public.BookImage.where({
+      bookId,
+    }).all();
+    const rowsById = new Map(rows.map((row) => [row.id, row]));
+
+    return Promise.all(
+      markerIds.flatMap((id) => {
+        const row = rowsById.get(id);
+
+        return row
+          ? [
+              this.storageService
+                .createDownloadUrl(row.objectKey)
+                .then((url) => ({ id, url, alt: row.alt })),
+            ]
+          : [];
+      }),
+    );
   }
 
   private async getOwnedBook(userId: string, bookId: string): Promise<Book> {
@@ -606,10 +654,12 @@ function toChapterDetailResponse(
   chapter: Chapter,
   audio: Audio | null,
   voiceNamesByReferenceId: ReadonlyMap<string, string>,
+  images: ChapterImageResponse[],
 ): ChapterDetailResponse {
   return {
     ...toChapterSummaryResponse(chapter, audio, voiceNamesByReferenceId),
     text: chapter.text,
+    images,
     origin: chapter.origin,
   };
 }
@@ -666,8 +716,4 @@ async function reindexChapters(
 
 function compareByPosition(first: Chapter, second: Chapter): number {
   return first.position - second.position || first.id.localeCompare(second.id);
-}
-
-function countWords(text: string): number {
-  return text.split(/\s+/u).length;
 }
