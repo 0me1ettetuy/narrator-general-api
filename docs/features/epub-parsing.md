@@ -46,7 +46,9 @@ It also extracts a supported embedded cover image when the EPUB provides one.
 - Chapter images are saved under `books/{userId}/{bookId}/images/{imageId}.{ext}`
   with a `book_image` row (key, MIME type, size, alt text) per file. Only PNG,
   JPEG, GIF, WebP and SVG are kept: at most 10 MiB each, 300 per book and
-  100 MiB per book; anything else is skipped without failing the parse. The same
+  100 MiB per book (counted over kept chapters only; an image over a limit keeps
+  its marker but has no picture); anything else is skipped without failing the
+  parse. The same
   file used twice is stored once. The parser rebuilds the text of a chapter
   that has images from the library's blocks and writes `[[img_<imageId>]]` where
   each image stood; the image's alt text is kept in `book_image.alt` and no

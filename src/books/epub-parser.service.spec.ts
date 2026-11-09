@@ -333,5 +333,41 @@ describe('EpubParserService', () => {
         `${formatImageMarker(result.images[0].id)}\n\nCaption`,
       );
     });
+    it('does not spend the image budget on images of dropped chapters', () => {
+      const plates = Array.from({ length: 300 }, (_, index) => ({
+        blocks: [paragraph(image(`plate-${index}.png`))],
+      }));
+      const files = Object.fromEntries(
+        [...plates.keys()].map((index) => [`plate-${index}.png`, PNG]),
+      );
+      mockEpub(
+        [
+          ...plates,
+          { blocks: [paragraph(text('Readable'), image('figure.png'))] },
+        ],
+        { ...files, 'figure.png': PNG },
+      );
+
+      const result = parser.parse(new Uint8Array([1]));
+
+      expect(result.images).toHaveLength(1);
+      expect(result.chapters[0].text).toContain(
+        formatImageMarker(result.images[0].id),
+      );
+    });
+
+    it('keeps at most 300 images per book', () => {
+      const chapters = Array.from({ length: 301 }, (_, index) => ({
+        blocks: [
+          paragraph(text(`Chapter ${index}`), image(`img-${index}.png`)),
+        ],
+      }));
+      const files = Object.fromEntries(
+        [...chapters.keys()].map((index) => [`img-${index}.png`, PNG]),
+      );
+      mockEpub(chapters, files);
+
+      expect(parser.parse(new Uint8Array([1])).images).toHaveLength(300);
+    });
   });
 });

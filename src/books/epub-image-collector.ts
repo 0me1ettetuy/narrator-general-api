@@ -25,7 +25,6 @@ const IMAGE_MIME_TYPES = new Set([
 export class EpubImageCollector {
   // A null entry is an image already judged unusable, so it is read only once.
   private readonly bySource = new Map<string, ParsedEpubImage | null>();
-  private totalBytes = 0;
 
   constructor(private readonly book: Book) {}
 
@@ -44,14 +43,29 @@ export class EpubImageCollector {
     return blocks.flatMap((block) => this.replaceInBlock(block));
   }
 
-  // Only images whose marker survived (their chapter was kept) are returned.
+  // Only images whose marker survived (their chapter was kept) count against the
+  // per-book limits; one over a limit keeps its marker but gets no stored file.
   usedImages(texts: string[]): ParsedEpubImage[] {
     const usedIds = new Set(texts.flatMap(findImageMarkerIds));
+    const kept: ParsedEpubImage[] = [];
+    let totalBytes = 0;
 
-    return [...this.bySource.values()].filter(
-      (image): image is ParsedEpubImage =>
-        image !== null && usedIds.has(image.id),
-    );
+    for (const image of this.bySource.values()) {
+      if (!image || !usedIds.has(image.id)) {
+        continue;
+      }
+      if (
+        kept.length >= MAX_BOOK_IMAGES ||
+        totalBytes + image.bytes.byteLength > MAX_BOOK_IMAGE_BYTES
+      ) {
+        break;
+      }
+
+      kept.push(image);
+      totalBytes += image.bytes.byteLength;
+    }
+
+    return kept;
   }
 
   private replaceInBlock(block: Block): Block[] {
@@ -137,28 +151,12 @@ export class EpubImageCollector {
     if (
       !bytes ||
       !IMAGE_MIME_TYPES.has(mimeType) ||
-      bytes.byteLength > MAX_IMAGE_BYTES ||
-      this.countStored() >= MAX_BOOK_IMAGES ||
-      this.totalBytes + bytes.byteLength > MAX_BOOK_IMAGE_BYTES
+      bytes.byteLength > MAX_IMAGE_BYTES
     ) {
       return null;
     }
 
-    this.totalBytes += bytes.byteLength;
-
     return { id: randomUUID(), bytes, mimeType, alt: alt?.trim() || null };
-  }
-
-  private countStored(): number {
-    let count = 0;
-
-    for (const image of this.bySource.values()) {
-      if (image) {
-        count += 1;
-      }
-    }
-
-    return count;
   }
 }
 
