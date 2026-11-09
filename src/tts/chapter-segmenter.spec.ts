@@ -62,4 +62,24 @@ describe('ChapterSegmenter', () => {
     expect(segmenter.segment(' \n\n ')).toEqual([]);
     expect(DEFAULT_TTS_SEGMENT_MAX_CHARACTERS).toBe(4_000);
   });
+
+  describe('image markers', () => {
+    const marker = '[[img_0b9c1f52-3a4e-4d6a-9b1e-2f7c8d9e0a11]]';
+
+    it('never narrates a marker standing between paragraphs', () => {
+      expect(
+        new ChapterSegmenter().segment(`First.\n\n${marker}\n\nSecond.`),
+      ).toEqual(['First.\n\nSecond.']);
+    });
+
+    it('returns no segments for a chapter made only of markers', () => {
+      expect(new ChapterSegmenter().segment(marker)).toEqual([]);
+    });
+
+    it('removes a marker inside a sentence without a double space', () => {
+      expect(new ChapterSegmenter().segment(`Hi ${marker} there.`)).toEqual([
+        'Hi there.',
+      ]);
+    });
+  });
 });

@@ -1,3 +1,5 @@
+import { stripImageMarkers } from '../books/chapter-image-marker.js';
+
 export const DEFAULT_TTS_SEGMENT_MAX_CHARACTERS = 4_000;
 
 // Local engines return no bytes until a whole segment is synthesized, so a
@@ -21,8 +23,7 @@ export class ChapterSegmenter {
   }
 
   segment(chapterText: string): string[] {
-    const paragraphs = chapterText
-      .trim()
+    const paragraphs = stripImageMarkers(chapterText)
       .split(/\n\s*\n/u)
       .map((paragraph) => paragraph.trim())
       .filter(Boolean);
