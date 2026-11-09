@@ -109,6 +109,7 @@ describe('BookParsingService', () => {
       title: 'Parsed title',
       language: 'en-US',
       authors: [],
+      images: [],
       cover: {
         bytes: new Uint8Array([4, 5, 6]),
         mimeType: 'image/png',

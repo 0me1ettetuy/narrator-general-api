@@ -1,6 +1,15 @@
-import { parse, type Book, type Chapter, type Cover } from '@abfcode/spine';
+import {
+  blocksToText,
+  parse,
+  type Block,
+  type Book,
+  type Chapter,
+  type Cover,
+} from '@abfcode/spine';
 import { franc } from 'franc';
 import { Injectable } from '@nestjs/common';
+import { stripImageMarkers } from './chapter-image-marker.js';
+import { EpubImageCollector } from './epub-image-collector.js';
 import type {
   ParsedEpub,
   ParsedEpubChapter,
@@ -22,8 +31,9 @@ export class EpubParserService {
     const book = parse(epubBytes, {
       maxInflatedBytes: MAX_EPUB_INFLATED_ENTRY_BYTES,
     });
+    const images = new EpubImageCollector(book);
     const chapters = Array.from(book.iterChapters())
-      .map((chapter) => toParsedEpubChapter(book, chapter))
+      .map((chapter) => toParsedEpubChapter(book, chapter, images))
       .filter((chapter): chapter is ParsedEpubChapter => chapter !== null)
       .map((chapter, position) => ({ ...chapter, position }));
 
@@ -37,6 +47,7 @@ export class EpubParserService {
         normalizeText(book.metadata.language) || detectLanguage(chapters),
       authors: uniqueNonEmpty(book.metadata.authors.map(normalizeText)),
       cover: readCover(book),
+      images: images.usedImages(chapters.map((chapter) => chapter.text)),
       chapters,
     };
   }
@@ -44,7 +55,7 @@ export class EpubParserService {
 
 function detectLanguage(chapters: ParsedEpubChapter[]): string | null {
   const detectedLanguage = franc(
-    chapters.map((chapter) => chapter.text).join('\n'),
+    chapters.map((chapter) => stripImageMarkers(chapter.text)).join('\n'),
   );
 
   if (detectedLanguage === 'und') {
@@ -93,10 +104,17 @@ function normalizeCoverMimeType(contentType: string): string | null {
 function toParsedEpubChapter(
   book: Book,
   chapter: Chapter,
+  images: EpubImageCollector,
 ): ParsedEpubChapter | null {
-  const text = normalizeText(chapter.text);
+  const blocks = readBlocks(book, chapter);
+  // Chapters without images keep the library's own text unchanged.
+  const text = normalizeText(
+    images.hasImages(blocks)
+      ? blocksToText(images.replaceImages(blocks))
+      : chapter.text,
+  );
 
-  if (!text) {
+  if (!stripImageMarkers(text)) {
     return null;
   }
 
@@ -105,26 +123,29 @@ function toParsedEpubChapter(
     title: normalizeText(chapter.title) || `Chapter ${chapter.index + 1}`,
     sourceHref: chapter.href,
     text,
-    wordCount: countWords(text),
-    semanticTypes: getChapterSemanticTypes(book, chapter),
+    wordCount: countWords(stripImageMarkers(text)),
+    semanticTypes: getChapterSemanticTypes(blocks),
     isLinear: book.spine?.[chapter.start?.spineIndex]?.linear ?? true,
   };
 }
 
-function getChapterSemanticTypes(book: Book, chapter: Chapter): string[] {
+function readBlocks(book: Book, chapter: Chapter): Block[] {
   try {
-    return [
-      ...new Set(
-        book
-          .blocksInRange(chapter.start, chapter.end)
-          .map((block) => block.epubType)
-          .filter((value): value is string => Boolean(value))
-          .flatMap((value) => value.toLowerCase().split(/\s+/u)),
-      ),
-    ];
+    return book.blocksInRange(chapter.start, chapter.end);
   } catch {
     return [];
   }
+}
+
+function getChapterSemanticTypes(blocks: Block[]): string[] {
+  return [
+    ...new Set(
+      blocks
+        .map((block) => block.epubType)
+        .filter((value): value is string => Boolean(value))
+        .flatMap((value) => value.toLowerCase().split(/\s+/u)),
+    ),
+  ];
 }
 
 function normalizeText(value: string | undefined): string {

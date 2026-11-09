@@ -1,5 +1,9 @@
-import { parse } from '@abfcode/spine';
+import { parse, type Block, type Inline } from '@abfcode/spine';
 import { franc } from 'franc';
+import {
+  findImageMarkerIds,
+  formatImageMarker,
+} from './chapter-image-marker.js';
 import { EpubParserService } from './epub-parser.service.js';
 
 describe('EpubParserService', () => {
@@ -49,6 +53,7 @@ describe('EpubParserService', () => {
         bytes: new Uint8Array([1, 2, 3]),
         mimeType: 'image/jpeg',
       },
+      images: [],
       chapters: [
         {
           position: 0,
@@ -118,5 +123,215 @@ describe('EpubParserService', () => {
     } as never);
 
     expect(parser.parse(new Uint8Array([1])).cover).toBeNull();
+  });
+  describe('images', () => {
+    const PNG = new Uint8Array([137, 80, 78, 71]);
+    const text = (value: string): Inline => ({ kind: 'text', text: value });
+    const image = (src: string, alt?: string): Inline => ({
+      kind: 'image',
+      src,
+      alt,
+    });
+    const paragraph = (...inlines: Inline[]): Block => ({
+      kind: 'paragraph',
+      inlines,
+    });
+
+    function mockEpub(
+      chapters: { text?: string; blocks: Block[] }[],
+      files: Record<string, Uint8Array>,
+    ) {
+      parseMock.mockReturnValue({
+        metadata: { title: 'Book', authors: [] },
+        cover: () => undefined,
+        openResource: (src: string) => files[src],
+        blocksInRange: (start: { spineIndex: number }) =>
+          chapters[start.spineIndex].blocks,
+        iterChapters: function* () {
+          for (const [index, chapter] of chapters.entries()) {
+            yield {
+              index,
+              title: `Chapter ${index + 1}`,
+              href: `text/${index}.xhtml`,
+              text: chapter.text ?? 'raw library text',
+              start: { spineIndex: index, blockIndex: 0 },
+              end: { spineIndex: index + 1, blockIndex: 0 },
+            };
+          }
+        },
+      } as never);
+    }
+
+    it('puts a marker where an image stood and keeps its alt text out of the text', () => {
+      mockEpub(
+        [
+          {
+            blocks: [
+              paragraph(text('Before')),
+              paragraph(image('images/map.png', 'Map of town')),
+              paragraph(text('After')),
+            ],
+          },
+        ],
+        { 'images/map.png': PNG },
+      );
+
+      const result = parser.parse(new Uint8Array([1]));
+      const [stored] = result.images;
+
+      expect(result.images).toEqual([
+        {
+          id: stored.id,
+          bytes: PNG,
+          mimeType: 'image/png',
+          alt: 'Map of town',
+        },
+      ]);
+      expect(result.chapters[0].text).toBe(
+        `Before\n\n${formatImageMarker(stored.id)}\n\nAfter`,
+      );
+    });
+
+    it('keeps a marker inside a sentence on the same line', () => {
+      mockEpub(
+        [
+          {
+            blocks: [
+              paragraph(text('Before '), image('a.png'), text(' after.')),
+            ],
+          },
+        ],
+        { 'a.png': PNG },
+      );
+
+      const result = parser.parse(new Uint8Array([1]));
+
+      expect(result.chapters[0].text).toBe(
+        `Before ${formatImageMarker(result.images[0].id)} after.`,
+      );
+    });
+
+    it('stores an image used twice once and reuses its id', () => {
+      mockEpub(
+        [
+          {
+            blocks: [
+              paragraph(text('One'), image('logo.png')),
+              paragraph(text('Two'), image('logo.png')),
+            ],
+          },
+        ],
+        { 'logo.png': PNG },
+      );
+
+      const result = parser.parse(new Uint8Array([1]));
+      const marker = formatImageMarker(result.images[0].id);
+
+      expect(result.images).toHaveLength(1);
+      expect(result.chapters[0].text.split(marker)).toHaveLength(3);
+    });
+
+    it('drops an image missing from the archive without failing', () => {
+      mockEpub(
+        [
+          {
+            blocks: [
+              paragraph(text('Before')),
+              paragraph(image('gone.png', 'Lost')),
+              paragraph(text('After')),
+            ],
+          },
+        ],
+        {},
+      );
+
+      const result = parser.parse(new Uint8Array([1]));
+
+      expect(result.images).toEqual([]);
+      expect(result.chapters[0].text).toBe('Before\n\nAfter');
+    });
+
+    it.each([
+      ['larger than 10 MiB', 'big.png', new Uint8Array(10 * 1024 * 1024 + 1)],
+      ['of an unsupported type', 'scan.bmp', PNG],
+    ])('skips an image %s', (_label, src, bytes) => {
+      mockEpub([{ blocks: [paragraph(text('Text'), image(src, 'Alt'))] }], {
+        [src]: bytes,
+      });
+
+      const result = parser.parse(new Uint8Array([1]));
+
+      expect(result.images).toEqual([]);
+      expect(findImageMarkerIds(result.chapters[0].text)).toEqual([]);
+      expect(result.chapters[0].text).toBe('Text');
+    });
+
+    it('drops a chapter that holds only an image and does not keep its image', () => {
+      mockEpub(
+        [
+          { blocks: [paragraph(image('plate.png', 'Plate'))] },
+          { blocks: [paragraph(text('Readable'))], text: 'Readable' },
+        ],
+        { 'plate.png': PNG },
+      );
+
+      const result = parser.parse(new Uint8Array([1]));
+
+      expect(result.chapters.map((chapter) => chapter.text)).toEqual([
+        'Readable',
+      ]);
+      expect(result.images).toEqual([]);
+    });
+
+    it('counts words without markers', () => {
+      mockEpub(
+        [
+          {
+            blocks: [
+              paragraph(text('Before '), image('a.png'), text(' after')),
+            ],
+          },
+        ],
+        { 'a.png': PNG },
+      );
+
+      expect(parser.parse(new Uint8Array([1])).chapters[0].wordCount).toBe(2);
+    });
+
+    it('keeps the library text for a chapter without images', () => {
+      mockEpub(
+        [{ text: 'Library text', blocks: [paragraph(text('Block text'))] }],
+        {},
+      );
+
+      expect(parser.parse(new Uint8Array([1])).chapters[0].text).toBe(
+        'Library text',
+      );
+    });
+
+    it('places a figure image before its caption', () => {
+      mockEpub(
+        [
+          {
+            blocks: [
+              {
+                kind: 'figure',
+                figure: {
+                  images: [image('fig.png', 'Fig')],
+                  caption: [text('Caption')],
+                },
+              },
+            ],
+          },
+        ],
+        { 'fig.png': PNG },
+      );
+
+      const result = parser.parse(new Uint8Array([1]));
+
+      expect(result.chapters[0].text).toBe(
+        `${formatImageMarker(result.images[0].id)}\n\nCaption`,
+      );
+    });
   });
 });
