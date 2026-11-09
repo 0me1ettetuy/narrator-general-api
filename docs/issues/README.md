@@ -12,6 +12,9 @@
 - [GPU TTS models: load only the model in use](gpu-model-on-demand-loading.md) —
   start a GPU model's container only while it is needed, so several GPU models
   can be enabled on one small card.
+- [Chapter images: follow-ups](chapter-image-follow-ups.md) — small parsing,
+  storage and test gaps left after the chapter-image feature, plus the pending
+  migration ref.
 
 Issues describe known follow-up work, not supported product behavior. Move an
 issue to its owning domain documentation once it is fully implemented.
