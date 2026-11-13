@@ -245,6 +245,97 @@ describe('BooksService', () => {
     ]);
   });
 
+  describe('listing active audio', () => {
+    const audioRow = (chapterId: string, createdAt: number, status: string) =>
+      ({
+        id: `audio-${chapterId}`,
+        chapterId,
+        status,
+        processingStage: status === 'PROCESSING' ? 'GENERATING' : null,
+        totalChunks: 12,
+        completedChunks: 7,
+        modelKey: null,
+        voice: null,
+        error: null,
+        createdAt: temporalFromEpochMilliseconds(createdAt),
+      }) as unknown as Audio;
+    const chapter = (id: string, bookId: string, position: number) =>
+      ({
+        id,
+        bookId,
+        position,
+        title: id,
+        removedAt: null,
+      }) as unknown as Chapter;
+    const listedBook = (id: string, userId: string, deleted = false) =>
+      ({
+        ...book,
+        id,
+        userId,
+        title: id,
+        coverObjectKey: null,
+        deletedAt: deleted ? temporalFromEpochMilliseconds(1) : null,
+      }) as unknown as Book;
+
+    it('returns only the caller’s live books, chapters in order, oldest request first', async () => {
+      db.orm.public.Audio.where.mockReturnValue({
+        all: jest
+          .fn()
+          .mockResolvedValue([
+            audioRow('b2-c1', 3_000, 'QUEUED'),
+            audioRow('b1-c2', 2_000, 'QUEUED'),
+            audioRow('b1-c1', 1_000, 'PROCESSING'),
+            audioRow('other-c1', 500, 'PROCESSING'),
+            audioRow('gone-c1', 400, 'PROCESSING'),
+          ]),
+      });
+      chaptersAll.mockResolvedValue([
+        chapter('b2-c1', 'book-2', 0),
+        chapter('b1-c2', 'book-1', 1),
+        chapter('b1-c1', 'book-1', 0),
+        chapter('other-c1', 'other-book', 0),
+        chapter('gone-c1', 'deleted-book', 0),
+      ]);
+      db.orm.public.Book.where.mockReturnValue({
+        all: jest
+          .fn()
+          .mockResolvedValue([
+            listedBook('book-2', 'user-id'),
+            listedBook('book-1', 'user-id'),
+            listedBook('other-book', otherUserId),
+            listedBook('deleted-book', 'user-id', true),
+          ]),
+      });
+
+      const result = await createService().listActiveAudio('user-id');
+
+      expect(result.books.map((entry) => entry.bookId)).toEqual([
+        'book-1',
+        'book-2',
+      ]);
+      expect(result.books[0].chapters.map((entry) => entry.id)).toEqual([
+        'b1-c1',
+        'b1-c2',
+      ]);
+      expect(result.books[0].chapters[0].audio).toMatchObject({
+        status: 'PROCESSING',
+        completedChunks: 7,
+        totalChunks: 12,
+      });
+    });
+
+    it('returns an empty list without further queries when nothing is active', async () => {
+      db.orm.public.Audio.where.mockReturnValue({
+        all: jest.fn().mockResolvedValue([]),
+      });
+
+      await expect(createService().listActiveAudio('user-id')).resolves.toEqual(
+        { books: [] },
+      );
+      expect(db.orm.public.Book.where).not.toHaveBeenCalled();
+    });
+  });
+
   it('queues selected chapters in book order through the saved user model', async () => {
     const service = new BooksService(
       prisma,

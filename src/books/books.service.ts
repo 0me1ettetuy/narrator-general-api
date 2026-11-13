@@ -20,6 +20,7 @@ import {
   TtsModelsService,
 } from '../tts-models/tts-models.service.js';
 import type {
+  ActiveAudioResponse,
   ChapterAudioAccessResponse,
   BatchChapterAudioResponse,
   BookCoverAccessResponse,
@@ -906,6 +907,71 @@ export class BooksService {
           voiceNamesByReferenceId,
         ),
       ),
+    };
+  }
+
+  // The user's own books with audio queued or processing. Starts from the
+  // (small) set of active audio rows so no chapter text is loaded.
+  // shortcut: scans active audio of all users and filters by owner here, add
+  // an owner column or join to Audio if the active set grows large.
+  async listActiveAudio(userId: string): Promise<ActiveAudioResponse> {
+    const active = (await this.prisma.db.orm.public.Audio.where((audio) =>
+      audio.status.in(['QUEUED', 'PROCESSING']),
+    ).all()) as Audio[];
+
+    if (active.length === 0) {
+      return { books: [] };
+    }
+
+    const chapters = (
+      (await this.prisma.db.orm.public.Chapter.where((chapter) =>
+        chapter.id.in(active.map((audio) => audio.chapterId)),
+      ).all()) as Chapter[]
+    ).filter((chapter) => chapter.removedAt === null);
+    const [books, voiceNamesByReferenceId] = (await Promise.all([
+      this.prisma.db.orm.public.Book.where((book) =>
+        book.id.in([...new Set(chapters.map((chapter) => chapter.bookId))]),
+      ).all(),
+      this.getVoiceNamesByReferenceId(userId),
+    ])) as [Book[], ReadonlyMap<string, string>];
+    const audioByChapterId = new Map(
+      active.map((audio) => [audio.chapterId, audio]),
+    );
+
+    return {
+      books: books
+        .filter((book) => book.userId === userId && book.deletedAt === null)
+        .map((book) => {
+          const bookChapters = chapters
+            .filter((chapter) => chapter.bookId === book.id)
+            .sort(compareByPosition);
+          const oldest = Math.min(
+            ...bookChapters.map(
+              (chapter) =>
+                audioByChapterId.get(chapter.id)!.createdAt.epochMilliseconds,
+            ),
+          );
+
+          return {
+            oldest,
+            response: {
+              bookId: book.id,
+              title: book.title,
+              hasCover: book.coverObjectKey !== null,
+              chapters: bookChapters.map((chapter) => ({
+                id: chapter.id,
+                position: chapter.position,
+                title: chapter.title,
+                audio: toChapterAudioResponse(
+                  audioByChapterId.get(chapter.id)!,
+                  voiceNamesByReferenceId,
+                ),
+              })),
+            },
+          };
+        })
+        .sort((a, b) => a.oldest - b.oldest)
+        .map(({ response }) => response),
     };
   }
 

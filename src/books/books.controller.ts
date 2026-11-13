@@ -34,6 +34,7 @@ import type { Request } from 'express';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard.js';
 import type { JwtPayload } from '../auth/types/jwt.type.js';
 import {
+  ActiveAudioResponseDto,
   BatchChapterAudioResponseDto,
   BookCoverAccessResponseDto,
   BookDetailResponseDto,
@@ -54,6 +55,7 @@ import {
 import type {
   BatchChapterAudioResponse,
   BookCoverAccessResponse,
+  ActiveAudioResponse,
   BookDetailResponse,
   BooksListResponse,
   LibraryBooksListResponse,
@@ -583,6 +585,19 @@ export class BooksController {
     @Query() query: BooksListQueryDto,
   ): Promise<LibraryBooksListResponse> {
     return this.booksService.listBooks(request.user.sub, query);
+  }
+
+  @Get('audio/active')
+  @ApiOperation({
+    summary: "List the user's own books with audio queued or processing",
+  })
+  @ApiOkResponse({ type: ActiveAudioResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @UseGuards(JwtAccessGuard)
+  listActiveAudio(
+    @Req() request: RequestWithUser,
+  ): Promise<ActiveAudioResponse> {
+    return this.booksService.listActiveAudio(request.user.sub);
   }
 
   // Registered before ':bookId' so "public" is never matched as a bookId.

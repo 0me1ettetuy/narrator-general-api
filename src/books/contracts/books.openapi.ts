@@ -214,6 +214,46 @@ export class ChapterAudioResponseDto {
   error: string | null;
 }
 
+export class ActiveAudioChapterResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+
+  @ApiProperty({ minimum: 0 })
+  position: number;
+
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty({ type: () => ChapterAudioResponseDto })
+  audio: ChapterAudioResponseDto;
+}
+
+export class ActiveAudioBookResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  bookId: string;
+
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty()
+  hasCover: boolean;
+
+  @ApiProperty({
+    type: () => [ActiveAudioChapterResponseDto],
+    description: 'Queued or processing chapters in book order',
+  })
+  chapters: ActiveAudioChapterResponseDto[];
+}
+
+export class ActiveAudioResponseDto {
+  @ApiProperty({
+    type: () => [ActiveAudioBookResponseDto],
+    description:
+      "The user's own books with audio queued or processing, oldest request first",
+  })
+  books: ActiveAudioBookResponseDto[];
+}
+
 export class ChapterAudioJobResponseDto {
   @ApiProperty({ format: 'uuid' })
   id: string;

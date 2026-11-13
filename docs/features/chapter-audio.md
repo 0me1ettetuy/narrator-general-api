@@ -15,6 +15,9 @@ file for the entire book.
 3. Use the main **Generate** / **Continue** button. Each selected eligible
    chapter becomes its own audio job.
 4. Select queued/processing chapters and use **Stop selected** to cancel them.
+   `GET /books/audio/active` lists the user's own books that have chapters
+   queued or processing (chapter order, stage and part counts), so a client can
+   show running work outside the book page.
    A stopped or failed chapter can be continued later.
 5. A finished chapter card shows an in-page audio player and a download link.
    **Delete audio** removes a finished or partial result after confirmation.

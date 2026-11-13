@@ -71,6 +71,7 @@ export type Audio = {
   totalChunks: number;
   completedChunks: number;
   error: string | null;
+  createdAt: Instant;
 };
 
 export type ProcessingJob = {

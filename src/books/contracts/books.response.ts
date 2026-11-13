@@ -107,6 +107,24 @@ export type ChapterAudioResponse = {
   error: string | null;
 };
 
+export type ActiveAudioChapterResponse = {
+  id: string;
+  position: number;
+  title: string;
+  audio: ChapterAudioResponse;
+};
+
+export type ActiveAudioBookResponse = {
+  bookId: string;
+  title: string;
+  hasCover: boolean;
+  chapters: ActiveAudioChapterResponse[];
+};
+
+export type ActiveAudioResponse = {
+  books: ActiveAudioBookResponse[];
+};
+
 export type ChapterAudioJobResponse = {
   id: string;
   status: JobStatus;

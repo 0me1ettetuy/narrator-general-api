@@ -16,6 +16,7 @@ title, no hashes; find its commit with `git log -S"<title>" -- docs/history.md`
 
 ## Recent changes
 
+- Active audio list: `GET /books/audio/active` returns the user's own books with chapters queued or processing (stage, part counts), so the frontend can show generation across all books.
 - Chapter type parsing fix: title hints ignore the file path and match whole words
   (Unicode-aware, Cyrillic works); `epub:type` is read from the first block only.
 - Chapter image follow-ups issue: recorded the deferred review findings
