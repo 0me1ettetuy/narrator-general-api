@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { API_ERROR_CODES } from '../global-filters/api-error.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { temporalNow } from '../prisma/temporal.js';
+import { findBookIdsWithReadyAudio } from '../books/book-ready-audio.js';
 import { toBookSummary } from '../books/book-summary.mapper.js';
 import type {
   BookAuthor,
@@ -264,6 +265,10 @@ export class CollectionsService {
         collectionId: collection.id,
       }).first()) !== null;
 
+    const readyAudioBookIds = await findBookIdsWithReadyAudio(
+      this.prisma,
+      readableBookIds,
+    );
     const books: CollectionBookEntry[] = [];
 
     for (const view of views) {
@@ -278,6 +283,7 @@ export class CollectionsService {
             userId,
             addedBookIds.has(view.book.id),
             authors.filter((author) => author.bookId === view.book.id),
+            readyAudioBookIds.has(view.book.id),
           ),
         });
       } else if (collection.userId === userId) {

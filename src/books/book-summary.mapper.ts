@@ -9,6 +9,7 @@ export function toBookSummary(
   requesterId: string,
   isAdded: boolean,
   authors: BookAuthor[] = [],
+  hasReadyAudio = false,
 ): BookSummary {
   return {
     id: book.id,
@@ -20,6 +21,7 @@ export function toBookSummary(
     sourceSize: book.sourceSize,
     authors: authors.sort(compareByPosition).map(toBookAuthorResponse),
     hasCover: book.coverObjectKey !== null,
+    hasReadyAudio,
     parseStatus: book.parseStatus,
     chapterCount: book.chapterCount,
     visibility: book.visibility,

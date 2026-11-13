@@ -35,6 +35,12 @@ export class BookSummaryResponseDto {
   hasCover: boolean;
 
   @ApiProperty({
+    description:
+      'Whether at least one chapter has ready audio, so Play can be offered without opening the book',
+  })
+  hasReadyAudio: boolean;
+
+  @ApiProperty({
     enum: ['UPLOADING', 'QUEUED', 'PROCESSING', 'READY', 'FAILED'],
   })
   parseStatus: string;

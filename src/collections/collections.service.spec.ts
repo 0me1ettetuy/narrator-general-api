@@ -35,6 +35,7 @@ function createTable(rows: Row[]) {
     },
     where: (filter: Filter) => ({
       all: async () => rows.filter(matches(filter)),
+      select: () => ({ all: async () => rows.filter(matches(filter)) }),
       first: async () => rows.find(matches(filter)) ?? null,
       update: async (patch: Row) => {
         const row = rows.find(matches(filter));
@@ -107,8 +108,10 @@ describe('CollectionsService', () => {
         bookRow('book-other-public', 'other', 'PUBLIC'),
         bookRow('book-other-private', 'other', 'PRIVATE'),
       ]),
+      Audio: createTable([]),
       BookAuthor: createTable([]),
       BookLibraryEntry: createTable([]),
+      Chapter: createTable([]),
       Collection: createTable([
         {
           id: 'collection-1',

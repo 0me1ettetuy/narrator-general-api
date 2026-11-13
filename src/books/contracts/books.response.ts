@@ -38,6 +38,9 @@ export type BookSummary = {
   sourceSize: number;
   authors: BookAuthorResponse[];
   hasCover: boolean;
+  // At least one chapter has ready audio, so a client can offer Play without
+  // opening the book.
+  hasReadyAudio: boolean;
   parseStatus: BookParseStatus;
   chapterCount: number;
   visibility: BookVisibility;

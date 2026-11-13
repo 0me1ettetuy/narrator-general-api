@@ -42,23 +42,23 @@ Two parts, in this order.
 
 **Rules**
 
-- *Where a fact goes:* current behavior to the owning domain doc; a
+- _Where a fact goes:_ current behavior to the owning domain doc; a
   user-visible capability or limit to `features/`; a just-made change to
   `history.md` (Recent changes, 1–3 lines); decisions, plans and research to
   `superpowers/`, `integrations/` or the domain's plan doc; follow-up work to
   `issues/`.
-- *Editing:* find the owning doc in the table, edit it, keep it accurate
+- _Editing:_ find the owning doc in the table, edit it, keep it accurate
   instead of appending a changelog, and fix links to anything renamed or removed.
-- *Creating:* prefer editing, then a new section, then a new file. A new file
+- _Creating:_ prefer editing, then a new section, then a new file. A new file
   goes in its domain folder, begins with `# Title`, a one-sentence summary and
   a `Status:` line, and is linked from the folder README (and from the manifest
   if it is a new top-level area). Names are lowercase-kebab-case.
-- *Size budget:* index README under ~100 lines; other docs under ~300, hard cap
+- _Size budget:_ index README under ~100 lines; other docs under ~300, hard cap
   400; docs over 100 lines start with a contents list. A touched doc over
   budget is split before the task is done: it becomes a folder whose README is
   a routing table, and parts stay above ~100 lines. Historical docs are exempt
   unless edited.
-- *Status tags:* `current` is safe to rely on; `historical`, `superseded`,
+- _Status tags:_ `current` is safe to rely on; `historical`, `superseded`,
   `deferred` are context only and never a source of current behavior.
 
 **Routing table**: columns `Area | Open it for | Edit it when | Status`, one row

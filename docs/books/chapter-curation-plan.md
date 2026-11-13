@@ -136,14 +136,14 @@ unchanged in storage.
 
 No generated audio may remain associated with text that has changed.
 
-| Change | Existing audio behavior |
-| --- | --- |
-| Role/default-inclusion change | Keep audio; only selection behavior changes. |
-| Title-only change | Keep audio; spoken text is unchanged. |
-| Text edit | Confirm and delete that chapter's audio. |
-| Merge | Confirm and delete audio for every merged chapter. |
-| Remove | Confirm and delete that chapter's audio. |
-| Reorder | Keep audio; playback order follows new chapter order. |
+| Change                        | Existing audio behavior                               |
+| ----------------------------- | ----------------------------------------------------- |
+| Role/default-inclusion change | Keep audio; only selection behavior changes.          |
+| Title-only change             | Keep audio; spoken text is unchanged.                 |
+| Text edit                     | Confirm and delete that chapter's audio.              |
+| Merge                         | Confirm and delete audio for every merged chapter.    |
+| Remove                        | Confirm and delete that chapter's audio.              |
+| Reorder                       | Keep audio; playback order follows new chapter order. |
 
 For text edits, merging, and removal, reject affected chapters with audio in
 `QUEUED`, `PROCESSING`, or `DELETING`. Return a stable conflict code and ask

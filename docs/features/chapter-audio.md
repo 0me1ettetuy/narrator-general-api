@@ -18,6 +18,9 @@ file for the entire book.
    `GET /books/audio/active` lists the user's own books that have chapters
    queued or processing (chapter order, stage and part counts), so a client can
    show running work outside the book page.
+   Every book summary (library, public list, book detail, collection) carries
+   `hasReadyAudio`, true when a live chapter has ready audio, so a client can
+   offer Play without opening the book.
    A stopped or failed chapter can be continued later.
 5. A finished chapter card shows an in-page audio player and a download link.
    **Delete audio** removes a finished or partial result after confirmation.

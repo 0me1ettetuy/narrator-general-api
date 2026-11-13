@@ -44,16 +44,16 @@ API model header (`s2.1-pro-free`). Do not interchange them.
 
 ## Request contract
 
-| Item | Value |
-| --- | --- |
-| Method and URL | `POST https://openrouter.ai/api/v1/audio/speech` |
-| Authentication | `Authorization: Bearer $OPENROUTER_API_KEY` |
-| Request encoding | JSON |
-| Required body fields | `model`, `input` |
-| Storage/playback format | `response_format: "mp3"` |
-| Success body | Raw audio bytes, not JSON |
-| Expected MP3 type | `audio/mpeg` |
-| Trace header | `X-Generation-Id` |
+| Item                    | Value                                            |
+| ----------------------- | ------------------------------------------------ |
+| Method and URL          | `POST https://openrouter.ai/api/v1/audio/speech` |
+| Authentication          | `Authorization: Bearer $OPENROUTER_API_KEY`      |
+| Request encoding        | JSON                                             |
+| Required body fields    | `model`, `input`                                 |
+| Storage/playback format | `response_format: "mp3"`                         |
+| Success body            | Raw audio bytes, not JSON                        |
+| Expected MP3 type       | `audio/mpeg`                                     |
+| Trace header            | `X-Generation-Id`                                |
 
 Minimal intended payload shape:
 
@@ -128,4 +128,3 @@ Do not send book text, user keys, or user voice references in this probe.
 - [OpenRouter Text-to-Speech guide](https://openrouter.ai/docs/guides/overview/multimodal/tts)
 - [OpenRouter speech-model discovery API](https://openrouter.ai/api/v1/models?output_modalities=speech)
 - [OpenRouter model catalogue](https://openrouter.ai/models)
-

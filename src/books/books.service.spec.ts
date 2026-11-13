@@ -144,9 +144,15 @@ describe('BooksService', () => {
       update: bookUpdate,
       all: jest.fn().mockResolvedValue([book]),
     });
-    db.orm.public.Chapter.where.mockReturnValue({ all: chaptersAll });
+    db.orm.public.Chapter.where.mockReturnValue({
+      all: chaptersAll,
+      select: () => ({ all: chaptersAll }),
+    });
     db.orm.public.BookAuthor.where.mockReturnValue({ all: authorsAll });
-    db.orm.public.Audio.where.mockReturnValue({ first: audioFirst });
+    db.orm.public.Audio.where.mockReturnValue({
+      first: audioFirst,
+      select: () => ({ all: jest.fn().mockResolvedValue([]) }),
+    });
     libraryEntryFirst.mockResolvedValue(null);
     libraryEntryAll.mockResolvedValue([]);
     db.orm.public.BookLibraryEntry.where.mockReturnValue({

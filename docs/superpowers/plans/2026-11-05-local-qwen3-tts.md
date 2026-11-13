@@ -46,11 +46,13 @@ Gate for everything else. The dev machine has a **GTX 1050 Ti (4 GB)**. This is 
 ### Task 2: Adapter and base class
 
 **Files:**
+
 - Modify: `src/tts/adapters/openai-compatible-local-tts.adapter.ts` (strip the `// ` header and prefixes)
 - Modify: `src/tts/adapters/qwen3-tts.adapter.ts` (delete the header and `/* */` wrapper)
 - Rename: `qwen3-tts.adapter.spec.ts.disabled-test` and `openai-compatible-local-tts.adapter.spec.ts.disabled-test` back to `.spec.ts` (`git mv`)
 
 **Interfaces:**
+
 - Produces: `class Qwen3TtsAdapter implements TtsAdapter` (injectable, constructor `(configService: ConfigService)`), `toQwenLanguage(language: string | null | undefined): string`.
 
 - [ ] **Step 1:** Restore the files and run `pnpm test src/tts/adapters`. Expected: the old specs pass unchanged.
@@ -62,10 +64,12 @@ Gate for everything else. The dev machine has a **GTX 1050 Ti (4 GB)**. This is 
 ### Task 3: Registry, resolver and module
 
 **Files:**
+
 - Modify: `src/tts-models/tts-model-registry.service.ts`, `src/tts/tts-adapter-resolver.service.ts`, `src/tts/tts.module.ts`
 - Test: `src/tts/tts-adapter-resolver.service.spec.ts`, `src/tts-models/tts-models.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `Qwen3TtsAdapter` from Task 2.
 - Produces: `LOCAL_TTS_MODEL_DEFINITIONS` containing only `local.qwen3-tts-0.6b` (`healthStrategy: 'JSON_STATUS_HEALTHY'`). The resolver returns `{ adapter: qwen3TtsAdapter, source: 'LOCAL', providerModel: null }` for that id.
 
@@ -80,6 +84,7 @@ Gate for everything else. The dev machine has a **GTX 1050 Ti (4 GB)**. This is 
 ### Task 4: Queue concurrency and mid-run failure
 
 **Files:**
+
 - Inspect: `src/worker/synthesize-chapter.processor.ts`, `src/jobs/jobs.service.ts` (the local queue already exists)
 - Test: `src/worker/synthesize-chapter.processor.spec.ts`, `src/tts/chapter-tts.service.spec.ts`
 
@@ -91,6 +96,7 @@ Gate for everything else. The dev machine has a **GTX 1050 Ti (4 GB)**. This is 
 ### Task 5: Docker service and env
 
 **Files:**
+
 - Modify: `compose.yaml`, `compose.dev.yaml`, `.env.example`
 
 - [ ] **Step 1:** Add the `qwen3-tts` service and the volumes `narrator_qwen3_tts_data` and `narrator_qwen3_tts_huggingface_cache` from the restoration record. Use the image pinned in Task 1, bound to `127.0.0.1`. Add only the Qwen `TTS_LOCAL_QWEN3_TTS_0_6B_*` URL and health lines to the `application-environment` anchor. Add the matching `extends:` stanza in `compose.dev.yaml`.
@@ -102,6 +108,7 @@ Gate for everything else. The dev machine has a **GTX 1050 Ti (4 GB)**. This is 
 ### Task 6: Frontend
 
 **Files (narrator-fe):**
+
 - Modify: `src/pages/models/ui/ModelsPage.tsx`, `src/pages/book/ui/TtsSelector.tsx`, `src/pages/book/model/tts-selection.ts`, i18n strings (`en.ts`, `ru.ts`)
 
 - [ ] **Step 1:** Run `pnpm api:generate` against the running backend. The contract should be unchanged.

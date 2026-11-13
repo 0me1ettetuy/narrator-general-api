@@ -17,14 +17,14 @@ segment MP3 held in worker memory.
 
 Fish and OpenRouter have different contracts:
 
-| Concern | OpenRouter route used by Narrator | Direct Fish API |
-| --- | --- | --- |
-| URL | `https://openrouter.ai/api/v1/audio/speech` | `https://api.fish.audio/v1/tts` |
-| Credential | OpenRouter API key | Fish API key |
-| Free model ID | `fish-audio/s2.1-pro-free:free` in JSON `model` | `s2.1-pro-free` in the `model` header |
-| Text field | `input` | `text` |
-| Output-format field | `response_format` | `format` |
-| Saved-voice field | provider-specific `voice` | `reference_id` |
+| Concern             | OpenRouter route used by Narrator               | Direct Fish API                       |
+| ------------------- | ----------------------------------------------- | ------------------------------------- |
+| URL                 | `https://openrouter.ai/api/v1/audio/speech`     | `https://api.fish.audio/v1/tts`       |
+| Credential          | OpenRouter API key                              | Fish API key                          |
+| Free model ID       | `fish-audio/s2.1-pro-free:free` in JSON `model` | `s2.1-pro-free` in the `model` header |
+| Text field          | `input`                                         | `text`                                |
+| Output-format field | `response_format`                               | `format`                              |
+| Saved-voice field   | provider-specific `voice`                       | `reference_id`                        |
 
 The direct Fish adapter uses the right-hand column. Do not mix the fields.
 

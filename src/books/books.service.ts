@@ -55,6 +55,7 @@ import type {
   Chapter,
   ProcessingJob,
 } from './types/book.type.js';
+import { findBookIdsWithReadyAudio } from './book-ready-audio.js';
 import {
   compareByPosition,
   toBookAuthorResponse,
@@ -279,6 +280,11 @@ export class BooksService {
       authorsByBookId.set(author.bookId, bookAuthors);
     }
 
+    const readyAudioBookIds = await findBookIdsWithReadyAudio(
+      this.prisma,
+      pageBooks.map((book) => book.id),
+    );
+
     return {
       books: pageBooks.map((book) =>
         toBookSummary(
@@ -286,6 +292,7 @@ export class BooksService {
           userId,
           addedBookIdSet.has(book.id),
           authorsByBookId.get(book.id) ?? [],
+          readyAudioBookIds.has(book.id),
         ),
       ),
       nextOffset: hasNextPage ? offset + limit : null,
@@ -336,6 +343,11 @@ export class BooksService {
 
     const addedBookIdSet = new Set(entries.map((entry) => entry.bookId));
 
+    const readyAudioBookIds = await findBookIdsWithReadyAudio(
+      this.prisma,
+      pageBooks.map((book) => book.id),
+    );
+
     return {
       books: pageBooks.map((book) =>
         toBookSummary(
@@ -343,6 +355,7 @@ export class BooksService {
           userId,
           addedBookIdSet.has(book.id),
           authorsByBookId.get(book.id) ?? [],
+          readyAudioBookIds.has(book.id),
         ),
       ),
       nextOffset: hasNextPage ? offset + limit : null,
@@ -898,6 +911,9 @@ export class BooksService {
         userId,
         isAdded,
         authors.sort(compareByPosition),
+        [...audioByChapterId.values()].some(
+          (audio) => audio.status === 'READY',
+        ),
       ),
       authors: authors.sort(compareByPosition).map(toBookAuthorResponse),
       chapters: sortedChapters.map((chapter) =>
@@ -989,8 +1005,12 @@ export class BooksService {
       });
     }
 
+    const hasReadyAudio = (
+      await findBookIdsWithReadyAudio(this.prisma, [book.id])
+    ).has(book.id);
+
     if (book.visibility === dto.visibility) {
-      return toBookSummary(book, userId, false);
+      return toBookSummary(book, userId, false, [], hasReadyAudio);
     }
 
     const updated = (await this.prisma.db.orm.public.Book.where({
@@ -1001,7 +1021,7 @@ export class BooksService {
       updatedAt: temporalNow(),
     })) as Book;
 
-    return toBookSummary(updated, userId, false);
+    return toBookSummary(updated, userId, false, [], hasReadyAudio);
   }
 
   async addToLibrary(userId: string, bookId: string): Promise<void> {

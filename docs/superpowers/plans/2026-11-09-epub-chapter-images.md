@@ -41,6 +41,7 @@
 ## File Structure
 
 Backend:
+
 - Create `src/books/chapter-image-marker.ts` (+ `.spec.ts`): marker format, find, strip.
 - Modify `src/tts/chapter-segmenter.ts`: strip markers before splitting.
 - Modify `src/prisma/contract.prisma`; new migration under `migrations/`.
@@ -50,6 +51,7 @@ Backend:
 - Modify `src/books/chapter-curation.service.ts`, `src/books/contracts/books.response.ts`, `src/books/contracts/books.openapi.ts`: `images` on chapter detail; markers excluded from word count.
 
 Frontend:
+
 - Create `src/pages/book/model/chapter-images.ts`: split text into text/image parts.
 - Modify `src/pages/book/ui/ChapterReorganizePage.tsx`: render images in the reader.
 - Modify `src/shared/i18n/en.ts`, `ru.ts`, docs.
@@ -59,10 +61,12 @@ Frontend:
 ### Task 1: Marker helpers
 
 **Files:**
+
 - Create: `src/books/chapter-image-marker.ts`
 - Test: `src/books/chapter-image-marker.spec.ts`
 
 **Interfaces:**
+
 - Produces:
   - `formatImageMarker(imageId: string): string` → `[[img_<imageId>]]`
   - `findImageMarkerIds(text: string): string[]` → unique ids in order of first appearance, lower-cased
@@ -82,10 +86,12 @@ Frontend:
 ### Task 2: Narration never sees markers
 
 **Files:**
+
 - Modify: `src/tts/chapter-segmenter.ts` (`ChapterSegmenter.segment`)
 - Test: `src/tts/chapter-segmenter.spec.ts` (create if absent, else add to the existing spec beside it)
 
 **Interfaces:**
+
 - Consumes: `stripImageMarkers` from Task 1.
 
 - [ ] **Step 1: Write failing tests:**
@@ -100,11 +106,13 @@ Frontend:
 ### Task 3: `book_image` table and deletion
 
 **Files:**
+
 - Modify: `src/prisma/contract.prisma`; add migration files under `migrations/`
 - Modify: `src/books/book-deletion.service.ts` (`deleteRows`)
 - Test: `src/books/book-deletion.service.spec.ts`
 
 **Interfaces:**
+
 - Produces: ORM model `transaction.orm.public.BookImage` with fields `id` (uuid, caller-supplied), `bookId`, `objectKey` (unique), `mimeType`, `size` Int, `alt String?`, `createdAt`; relation to `Book`; `@@index([bookId])`; `@@map("book_image")`. `Book` gains `images BookImage[]`.
 
 - [ ] **Step 1: Write failing test** in the deletion spec: deleting a book also calls `BookImage.where({ bookId }).deleteAndCount()` before deleting the `Book` row (follow how the spec already asserts `Chapter`/`BookAuthor` deletes).
@@ -118,10 +126,12 @@ Frontend:
 ### Task 4: Parser emits markers and images
 
 **Files:**
+
 - Modify: `src/books/epub-parser.service.ts`, `src/books/types/parsed-epub.type.ts`
 - Test: `src/books/epub-parser.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `formatImageMarker`, `stripImageMarkers` (Task 1).
 - Produces:
   - `type ParsedEpubImage = { id: string; bytes: Uint8Array; mimeType: string; alt: string | null }`
@@ -145,10 +155,12 @@ Frontend:
 ### Task 5: Upload and persist images
 
 **Files:**
+
 - Modify: `src/books/book-parsing.service.ts` (`parse`, `persistParsedBook`, new `storeImages`)
 - Test: `src/books/book-parsing.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `ParsedEpub.images` (Task 4), `BookImage` model (Task 3), `StorageService.putObjectBytes(objectKey, bytes, mimeType)` and `deleteObjects(keys)`.
 - Produces: private `storeImages(job: ClaimedBookParsingJob, images: ParsedEpubImage[]): Promise<StoredBookImage[]>` where `StoredBookImage = { id, objectKey, mimeType, size, alt }`.
 
@@ -164,10 +176,12 @@ Frontend:
 ### Task 6: Chapter detail returns images
 
 **Files:**
+
 - Modify: `src/books/chapter-curation.service.ts` (`getChapter`, `toChapterDetailResponse`, `countWords`, constructor), `src/books/contracts/books.response.ts`, `src/books/contracts/books.openapi.ts`
 - Test: `src/books/chapter-curation.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `findImageMarkerIds`, `stripImageMarkers`; `StorageService.createDownloadUrl(objectKey)`; `BookImage` model.
 - Produces:
   - `type ChapterImageResponse = { id: string; url: string; alt: string | null }`
@@ -187,6 +201,7 @@ Frontend:
 ### Task 7: Docs, history, backend gate
 
 **Files:**
+
 - Modify: `docs/features/chapter-curation.md`, `docs/books/book-and-audio-workflow.md`, `docs/history.md`, `docs/superpowers/README.md` (link this plan); any doc `docs/README.md` routes parsing/storage facts to.
 
 - [ ] **Step 1:** Document the marker format, storage key, limits, narration stripping, the "books parsed before this change keep `[image]`" note, and the new `images` field.
@@ -198,11 +213,13 @@ Frontend:
 ### Task 8: Frontend reader renders images
 
 **Files:**
+
 - Create: `src/pages/book/model/chapter-images.ts`
 - Modify: `src/pages/book/ui/ChapterReorganizePage.tsx` (the `useQueries` text block near line 550 and the `<p>` near line 635), `src/shared/i18n/en.ts`, `src/shared/i18n/ru.ts`
 - Modify docs: `docs/features/product-behavior.md`, `docs/history.md`
 
 **Interfaces:**
+
 - Produces: `splitChapterText(text: string): Array<{ kind: 'text'; value: string } | { kind: 'image'; id: string }>` — splits on the `[[img_<uuid>]]` marker, drops empty text parts, trims nothing else.
 - i18n key `book.chapterImage` ("Illustration" / "Иллюстрация") used as `alt` when an image has none.
 

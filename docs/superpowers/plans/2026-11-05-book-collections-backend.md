@@ -217,7 +217,9 @@ Add this test beside the other `listBooks` tests. It must arrange an added book 
 ```ts
 it('returns a private added book as a ghost with only its id and title', async () => {
   // arrange: otherUserId has a library entry for a PRIVATE book
-  const result = await createService().listBooks(otherUserId, { source: 'all' });
+  const result = await createService().listBooks(otherUserId, {
+    source: 'all',
+  });
 
   expect(result.books).toEqual([]);
   expect(result.ghosts).toEqual([{ bookId: book.id, title: book.title }]);
@@ -496,7 +498,8 @@ export class AddCollectionBookDto {
   bookId: string;
 
   @ApiPropertyOptional({
-    description: 'Confirms making a private book public for a public collection',
+    description:
+      'Confirms making a private book public for a public collection',
   })
   @IsOptional()
   @IsBoolean()
@@ -601,10 +604,12 @@ Every book needs `deletedAt: null`, `title`, and `createdAt`. Every collection n
 ```ts
 describe('getCollection', () => {
   it('returns 404 for a non-owner of a private collection', async () => {
-    await expect(service.getCollection('stranger', 'collection-1')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      service.getCollection('stranger', 'collection-1'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('gives the owner a ghost for another user\'s private book', async () => {
+  it("gives the owner a ghost for another user's private book", async () => {
     // collection-1 contains book-other-private
     const result = await service.getCollection('owner', 'collection-1');
 
@@ -622,7 +627,9 @@ describe('getCollection', () => {
     // collection-1 is PUBLIC and contains book-own-private and book-own-public
     const result = await service.getCollection('stranger', 'collection-1');
 
-    expect(result.books.map((entry) => entry.bookId)).toEqual(['book-own-public']);
+    expect(result.books.map((entry) => entry.bookId)).toEqual([
+      'book-own-public',
+    ]);
     expect(result.collection.bookCount).toBe(1);
     expect(result.collection.coverBookId).toBeNull();
   });
@@ -645,7 +652,9 @@ describe('listPublicCollections', () => {
 
   it('matches search case-insensitively', async () => {
     // collection-1 is PUBLIC, titled "Dune Series", and contains book-own-public
-    const result = await service.listPublicCollections('stranger', { search: 'dune' });
+    const result = await service.listPublicCollections('stranger', {
+      search: 'dune',
+    });
 
     expect(result.collections).toHaveLength(1);
   });
@@ -685,7 +694,9 @@ describe('deleteCollection', () => {
   });
 
   it('returns 404 for a non-owner', async () => {
-    await expect(service.deleteCollection('stranger', 'collection-1')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      service.deleteCollection('stranger', 'collection-1'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
 
@@ -693,7 +704,12 @@ describe('createCollection', () => {
   it('always creates a private collection', async () => {
     const result = await service.createCollection('owner', { title: 'Dune' });
 
-    expect(result).toMatchObject({ title: 'Dune', visibility: 'PRIVATE', isOwner: true, bookCount: 0 });
+    expect(result).toMatchObject({
+      title: 'Dune',
+      visibility: 'PRIVATE',
+      isOwner: true,
+      bookCount: 0,
+    });
   });
 });
 ```
@@ -817,29 +833,43 @@ reorderBooks(userId: string, collectionId: string, dto: ReorderCollectionBooksDt
 ```ts
 describe('addBook', () => {
   it('adds a public book owned by someone else after the last position', async () => {
-    await service.addBook('owner', 'collection-1', { bookId: 'book-own-public' });
-    await service.addBook('owner', 'collection-1', { bookId: 'book-other-public' });
+    await service.addBook('owner', 'collection-1', {
+      bookId: 'book-own-public',
+    });
+    await service.addBook('owner', 'collection-1', {
+      bookId: 'book-other-public',
+    });
 
-    expect(db.orm.public.CollectionBook.rows.map((row) => row.position)).toEqual([0, 1]);
+    expect(
+      db.orm.public.CollectionBook.rows.map((row) => row.position),
+    ).toEqual([0, 1]);
   });
 
   it('does nothing when the book is already in the collection', async () => {
-    await service.addBook('owner', 'collection-1', { bookId: 'book-own-public' });
-    await service.addBook('owner', 'collection-1', { bookId: 'book-own-public' });
+    await service.addBook('owner', 'collection-1', {
+      bookId: 'book-own-public',
+    });
+    await service.addBook('owner', 'collection-1', {
+      bookId: 'book-own-public',
+    });
 
     expect(db.orm.public.CollectionBook.rows).toHaveLength(1);
   });
 
-  it('returns 404 for another user\'s private book', async () => {
+  it("returns 404 for another user's private book", async () => {
     await expect(
-      service.addBook('owner', 'collection-1', { bookId: 'book-other-private' }),
+      service.addBook('owner', 'collection-1', {
+        bookId: 'book-other-private',
+      }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('returns 404 when a non-owner adds to a public collection', async () => {
     // collection-1 is PUBLIC
     await expect(
-      service.addBook('stranger', 'collection-1', { bookId: 'book-own-public' }),
+      service.addBook('stranger', 'collection-1', {
+        bookId: 'book-own-public',
+      }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -860,7 +890,10 @@ describe('addBook', () => {
       makePublic: true,
     });
 
-    expect(db.orm.public.Book.rows.find((row) => row.id === 'book-own-private')?.visibility).toBe('PUBLIC');
+    expect(
+      db.orm.public.Book.rows.find((row) => row.id === 'book-own-private')
+        ?.visibility,
+    ).toBe('PUBLIC');
     expect(db.orm.public.CollectionBook.rows).toHaveLength(1);
   });
 
@@ -878,7 +911,9 @@ describe('addBook', () => {
 
   it('allows a non-READY book in a private collection', async () => {
     // book-own-private has parseStatus 'PROCESSING'
-    await service.addBook('owner', 'collection-1', { bookId: 'book-own-private' });
+    await service.addBook('owner', 'collection-1', {
+      bookId: 'book-own-private',
+    });
 
     expect(db.orm.public.CollectionBook.rows).toHaveLength(1);
   });
@@ -905,7 +940,9 @@ describe('reorderBooks', () => {
   it('rejects a list that leaves out a ghost', async () => {
     // collection-1 contains book-own-public and book-other-private
     await expect(
-      service.reorderBooks('owner', 'collection-1', { bookIds: ['book-own-public'] }),
+      service.reorderBooks('owner', 'collection-1', {
+        bookIds: ['book-own-public'],
+      }),
     ).rejects.toMatchObject({ response: { code: 'VALIDATION_FAILED' } });
   });
 
@@ -916,7 +953,10 @@ describe('reorderBooks', () => {
     });
 
     const byBook = Object.fromEntries(
-      db.orm.public.CollectionBook.rows.map((row) => [row.bookId, row.position]),
+      db.orm.public.CollectionBook.rows.map((row) => [
+        row.bookId,
+        row.position,
+      ]),
     );
     expect(byBook).toEqual({ 'book-other-public': 0, 'book-own-public': 1 });
   });
@@ -983,42 +1023,66 @@ removeFromLibrary(userId: string, collectionId: string): Promise<void>
 
 ```ts
 describe('updateVisibility', () => {
-  it('publishes the collection and the owner\'s private books', async () => {
+  it("publishes the collection and the owner's private books", async () => {
     // collection-1 contains book-own-private
-    const result = await service.updateVisibility('owner', 'collection-1', { visibility: 'PUBLIC' });
+    const result = await service.updateVisibility('owner', 'collection-1', {
+      visibility: 'PUBLIC',
+    });
 
     expect(result.visibility).toBe('PUBLIC');
-    expect(db.orm.public.Book.rows.find((row) => row.id === 'book-own-private')?.visibility).toBe('PUBLIC');
+    expect(
+      db.orm.public.Book.rows.find((row) => row.id === 'book-own-private')
+        ?.visibility,
+    ).toBe('PUBLIC');
   });
 
-  it('changes nothing when one of the owner\'s books is not READY', async () => {
+  it("changes nothing when one of the owner's books is not READY", async () => {
     // collection-1 contains book-own-private and book-not-ready (owner, PRIVATE, PROCESSING)
     await expect(
-      service.updateVisibility('owner', 'collection-1', { visibility: 'PUBLIC' }),
-    ).rejects.toMatchObject({ response: { code: 'COLLECTION_BOOKS_NOT_READY' } });
+      service.updateVisibility('owner', 'collection-1', {
+        visibility: 'PUBLIC',
+      }),
+    ).rejects.toMatchObject({
+      response: { code: 'COLLECTION_BOOKS_NOT_READY' },
+    });
 
     expect(db.orm.public.Collection.rows[0].visibility).toBe('PRIVATE');
-    expect(db.orm.public.Book.rows.find((row) => row.id === 'book-own-private')?.visibility).toBe('PRIVATE');
+    expect(
+      db.orm.public.Book.rows.find((row) => row.id === 'book-own-private')
+        ?.visibility,
+    ).toBe('PRIVATE');
   });
 
-  it('never changes another user\'s private book', async () => {
+  it("never changes another user's private book", async () => {
     // collection-1 contains book-other-private
-    await service.updateVisibility('owner', 'collection-1', { visibility: 'PUBLIC' });
+    await service.updateVisibility('owner', 'collection-1', {
+      visibility: 'PUBLIC',
+    });
 
-    expect(db.orm.public.Book.rows.find((row) => row.id === 'book-other-private')?.visibility).toBe('PRIVATE');
+    expect(
+      db.orm.public.Book.rows.find((row) => row.id === 'book-other-private')
+        ?.visibility,
+    ).toBe('PRIVATE');
   });
 
   it('leaves books public and saved entries in place when going private', async () => {
     // collection-1 is PUBLIC, contains book-own-public, and stranger saved it
-    await service.updateVisibility('owner', 'collection-1', { visibility: 'PRIVATE' });
+    await service.updateVisibility('owner', 'collection-1', {
+      visibility: 'PRIVATE',
+    });
 
-    expect(db.orm.public.Book.rows.find((row) => row.id === 'book-own-public')?.visibility).toBe('PUBLIC');
+    expect(
+      db.orm.public.Book.rows.find((row) => row.id === 'book-own-public')
+        ?.visibility,
+    ).toBe('PUBLIC');
     expect(db.orm.public.CollectionLibraryEntry.rows).toHaveLength(1);
   });
 
   it('returns a saved collection to the list when it goes public again', async () => {
     // stranger saved collection-1, which is PRIVATE and contains book-own-public
-    await service.updateVisibility('owner', 'collection-1', { visibility: 'PUBLIC' });
+    await service.updateVisibility('owner', 'collection-1', {
+      visibility: 'PUBLIC',
+    });
     const result = await service.listCollections('stranger', { source: 'all' });
 
     expect(result.ghosts).toEqual([]);
@@ -1027,7 +1091,9 @@ describe('updateVisibility', () => {
 
   it('returns 404 for a non-owner', async () => {
     await expect(
-      service.updateVisibility('stranger', 'collection-1', { visibility: 'PUBLIC' }),
+      service.updateVisibility('stranger', 'collection-1', {
+        visibility: 'PUBLIC',
+      }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
@@ -1053,12 +1119,16 @@ describe('addToLibrary', () => {
   });
 
   it('returns 404 for a private collection', async () => {
-    await expect(service.addToLibrary('stranger', 'collection-1')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      service.addToLibrary('stranger', 'collection-1'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('rejects the owner saving their own collection', async () => {
     // collection-1 is PUBLIC
-    await expect(service.addToLibrary('owner', 'collection-1')).rejects.toBeInstanceOf(ConflictException);
+    await expect(
+      service.addToLibrary('owner', 'collection-1'),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 });
 
@@ -1124,20 +1194,20 @@ git commit -m "feat: publish collections and save them to a library"
 - Consumes: all `CollectionsService` methods.
 - Produces: the routes below. Method names are part of the frontend contract, because the generated client names come from them. For example, `listPublicCollections` becomes `collectionsControllerListPublicCollectionsOptions`.
 
-| Order | Method and path                                 | Controller method       | Success              |
-| ----- | ----------------------------------------------- | ----------------------- | -------------------- |
-| 1     | `POST /collections`                             | `createCollection`      | 201 summary          |
-| 2     | `GET /collections`                              | `listCollections`       | 200 my list          |
-| 3     | `GET /collections/public`                       | `listPublicCollections` | 200 list             |
-| 4     | `GET /collections/:collectionId`                | `getCollection`         | 200 detail           |
-| 5     | `PATCH /collections/:collectionId`              | `updateCollection`      | 200 summary          |
-| 6     | `PATCH /collections/:collectionId/visibility`   | `updateVisibility`      | 200 summary          |
-| 7     | `DELETE /collections/:collectionId`             | `deleteCollection`      | 204                  |
-| 8     | `POST /collections/:collectionId/books`         | `addBook`               | 204                  |
-| 9     | `PUT /collections/:collectionId/books/order`    | `reorderBooks`          | 204                  |
-| 10    | `DELETE /collections/:collectionId/books/:bookId` | `removeBook`          | 204                  |
-| 11    | `POST /collections/:collectionId/library`       | `addToLibrary`          | 204                  |
-| 12    | `DELETE /collections/:collectionId/library`     | `removeFromLibrary`     | 204                  |
+| Order | Method and path                                   | Controller method       | Success     |
+| ----- | ------------------------------------------------- | ----------------------- | ----------- |
+| 1     | `POST /collections`                               | `createCollection`      | 201 summary |
+| 2     | `GET /collections`                                | `listCollections`       | 200 my list |
+| 3     | `GET /collections/public`                         | `listPublicCollections` | 200 list    |
+| 4     | `GET /collections/:collectionId`                  | `getCollection`         | 200 detail  |
+| 5     | `PATCH /collections/:collectionId`                | `updateCollection`      | 200 summary |
+| 6     | `PATCH /collections/:collectionId/visibility`     | `updateVisibility`      | 200 summary |
+| 7     | `DELETE /collections/:collectionId`               | `deleteCollection`      | 204         |
+| 8     | `POST /collections/:collectionId/books`           | `addBook`               | 204         |
+| 9     | `PUT /collections/:collectionId/books/order`      | `reorderBooks`          | 204         |
+| 10    | `DELETE /collections/:collectionId/books/:bookId` | `removeBook`            | 204         |
+| 11    | `POST /collections/:collectionId/library`         | `addToLibrary`          | 204         |
+| 12    | `DELETE /collections/:collectionId/library`       | `removeFromLibrary`     | 204         |
 
 - [ ] **Step 1: Create the controller**
 
@@ -1226,7 +1296,7 @@ Add item 9:
 Add this row to the "At a glance" table after "Public book sharing":
 
 ```markdown
-| Book collections             | `/library`'s **Collections** tab, Community     | Group books in order, share them publicly, save other people's collections, keep ghosts            |
+| Book collections | `/library`'s **Collections** tab, Community | Group books in order, share them publicly, save other people's collections, keep ghosts |
 ```
 
 - [ ] **Step 3: Commit**

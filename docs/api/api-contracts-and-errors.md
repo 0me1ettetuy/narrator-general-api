@@ -38,19 +38,19 @@ appropriate when it represents a domain command, such as `/auth/refresh` or
 
 ## Status codes
 
-| Situation | Status |
-| --- | --- |
-| Read or successful update | `200` |
-| Created resource/session | `201` |
-| Queued long-running work | `202` |
-| Successful no-content removal | `204` |
-| Invalid input | `400` |
-| Missing/invalid authentication | `401` |
-| Authenticated but forbidden, including invalid CSRF | `403` |
-| Resource absent or intentionally hidden | `404` |
-| State/uniqueness conflict | `409` |
-| Rate limited | `429` |
-| Unexpected server failure | `500` |
+| Situation                                           | Status |
+| --------------------------------------------------- | ------ |
+| Read or successful update                           | `200`  |
+| Created resource/session                            | `201`  |
+| Queued long-running work                            | `202`  |
+| Successful no-content removal                       | `204`  |
+| Invalid input                                       | `400`  |
+| Missing/invalid authentication                      | `401`  |
+| Authenticated but forbidden, including invalid CSRF | `403`  |
+| Resource absent or intentionally hidden             | `404`  |
+| State/uniqueness conflict                           | `409`  |
+| Rate limited                                        | `429`  |
+| Unexpected server failure                           | `500`  |
 
 ## Error envelope
 
