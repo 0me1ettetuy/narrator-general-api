@@ -16,6 +16,7 @@ title, no hashes; find its commit with `git log -S"<title>" -- docs/history.md`
 
 ## Recent changes
 
+- Marking a narrated chapter not narrated now needs `discardAudio` when it has audio (single update and bulk selection) and deletes that audio, instead of leaving hidden but playable audio behind.
 - Book summaries carry `hasReadyAudio` (library, public list, book detail, visibility change, collection page), read from chapter and audio ids only, so a client can show Play on a cover.
 - Active audio list: `GET /books/audio/active` returns the user's own books with chapters queued or processing (stage, part counts), so the frontend can show generation across all books.
 - Chapter type parsing fix: title hints ignore the file path and match whole words

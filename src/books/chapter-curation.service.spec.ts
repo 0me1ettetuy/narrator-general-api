@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { StorageService } from '../storage/storage.service.js';
 import type { BooksService } from './books.service.js';
@@ -52,8 +52,10 @@ describe('ChapterCurationService', () => {
     },
   };
   const prisma = { db } as unknown as PrismaService;
+  const deleteChapterAudio = jest.fn().mockResolvedValue(undefined);
   const booksService = {
     getVoiceNamesByReferenceId: jest.fn().mockResolvedValue(new Map()),
+    deleteChapterAudio,
   } as unknown as BooksService;
   const storageService = {
     createDownloadUrl: jest.fn((key: string) =>
@@ -98,6 +100,87 @@ describe('ChapterCurationService', () => {
       }),
     );
     expect(chapterUpdate).toHaveBeenCalledTimes(2);
+  });
+
+  describe('marking narrated chapters not narrated', () => {
+    const narrated = chapters.map((chapter) => ({
+      ...chapter,
+      includeInDefaultNarration: true,
+    })) as Chapter[];
+    const makeService = (audioStatus: string | null) => {
+      chaptersAll.mockResolvedValue(narrated);
+      db.orm.public.Audio.where.mockReturnValue({
+        first: jest
+          .fn()
+          .mockResolvedValue(audioStatus ? { status: audioStatus } : null),
+      });
+
+      return new ChapterCurationService(prisma, booksService, storageService);
+    };
+    const body = {
+      chapterIds: [narrated[0].id],
+      includeInDefaultNarration: false,
+    };
+
+    it('asks for confirmation when a chapter has audio, and changes nothing', async () => {
+      const service = makeService('READY');
+
+      await expect(
+        service.updateSelection('user-id', book.id, body),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(chapterUpdate).not.toHaveBeenCalled();
+      expect(deleteChapterAudio).not.toHaveBeenCalled();
+    });
+
+    it('deletes the audio when the user confirmed', async () => {
+      const service = makeService('READY');
+
+      await service.updateSelection('user-id', book.id, {
+        ...body,
+        discardAudio: true,
+      });
+
+      expect(deleteChapterAudio).toHaveBeenCalledWith(
+        'user-id',
+        book.id,
+        narrated[0].id,
+      );
+      expect(chapterUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it('refuses while the audio is still being generated', async () => {
+      const service = makeService('PROCESSING');
+
+      await expect(
+        service.updateSelection('user-id', book.id, {
+          ...body,
+          discardAudio: true,
+        }),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(deleteChapterAudio).not.toHaveBeenCalled();
+    });
+
+    it('needs no confirmation without audio', async () => {
+      const service = makeService(null);
+
+      await service.updateSelection('user-id', book.id, body);
+
+      expect(chapterUpdate).toHaveBeenCalledTimes(1);
+      expect(deleteChapterAudio).not.toHaveBeenCalled();
+    });
+
+    it('does nothing to audio for chapters that were already not narrated', async () => {
+      chaptersAll.mockResolvedValue(chapters);
+      const service = new ChapterCurationService(
+        prisma,
+        booksService,
+        storageService,
+      );
+
+      await service.updateSelection('user-id', book.id, body);
+
+      expect(deleteChapterAudio).not.toHaveBeenCalled();
+    });
   });
 
   it('refuses to curate a book that is being deleted', async () => {

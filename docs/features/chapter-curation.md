@@ -67,6 +67,11 @@ MAIN | FRONT_MATTER | NAVIGATION | REFERENCE | BACK_MATTER | OTHER
   confirmation; the service deletes its final/temporary objects and records
   before applying the outline change. This prevents audio from describing old
   text.
+- Marking a narrated chapter as **not narrated** (single update or the bulk
+  selection command) follows the same rule: chapters that have audio need
+  `discardAudio: true` (409 otherwise, and 409 while the audio is generating),
+  and the audio is deleted. Otherwise the audio would stay hidden but playable.
+  Already not-narrated chapters and chapters without audio need nothing.
 - Image markers (`[[img_<id>]]`) are part of the chapter text. A merge keeps
   them, and deleting one in a text edit removes that picture from the chapter.
   They are not counted as words.

@@ -12,7 +12,6 @@ import {
   IsUUID,
   MaxLength,
   MinLength,
-  ValidateIf,
 } from 'class-validator';
 
 export const CHAPTER_ROLES = [
@@ -61,9 +60,10 @@ export class UpdateChapterDto {
   includeInDefaultNarration?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Required when changed text has existing finished audio',
+    description:
+      'Required when changed text, or marking a narrated chapter not narrated, would discard existing audio',
   })
-  @ValidateIf((dto: UpdateChapterDto) => dto.text !== undefined)
+  @IsOptional()
   @IsBoolean()
   discardAudio?: boolean;
 }
@@ -125,6 +125,14 @@ export class UpdateChapterSelectionDto {
   @IsOptional()
   @IsBoolean()
   includeInDefaultNarration?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'Required when marking narrated chapters that have audio as not narrated; the audio is deleted',
+  })
+  @IsOptional()
+  @IsBoolean()
+  discardAudio?: boolean;
 }
 
 export class MergeChaptersDto {

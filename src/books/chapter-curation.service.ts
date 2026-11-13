@@ -121,7 +121,13 @@ export class ChapterCurationService {
       });
     }
 
-    if (changesContent) {
+    // Audio of a chapter that stops being narrated would linger unseen and
+    // still play, so it goes the same way as audio of changed text.
+    const stopsBeingNarrated =
+      dto.includeInDefaultNarration === false &&
+      chapter.includeInDefaultNarration;
+
+    if (changesContent || stopsBeingNarrated) {
       await this.discardAudioIfNeeded(book, [chapter], dto.discardAudio);
     }
 
@@ -227,6 +233,20 @@ export class ChapterCurationService {
       dto.chapterIds,
     );
     const now = temporalNow();
+
+    if (dto.includeInDefaultNarration === false) {
+      const stopsBeingNarrated = chapters.filter(
+        (chapter) => chapter.includeInDefaultNarration,
+      );
+
+      if (stopsBeingNarrated.length > 0) {
+        await this.discardAudioIfNeeded(
+          book,
+          stopsBeingNarrated,
+          dto.discardAudio,
+        );
+      }
+    }
 
     await this.prisma.db.transaction(async (transaction) => {
       for (const chapter of chapters) {
