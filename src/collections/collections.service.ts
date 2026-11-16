@@ -295,6 +295,11 @@ export class CollectionsService {
           title: view.book.title,
           position: view.row.position,
           isGhost: false,
+          coverUrl: view.book.coverObjectKey
+            ? await this.storageService.createDownloadUrl(
+                view.book.coverDisplayObjectKey ?? view.book.coverObjectKey,
+              )
+            : null,
           book: toBookSummary(
             view.book,
             userId,
@@ -309,6 +314,7 @@ export class CollectionsService {
           title: view.book.title,
           position: view.row.position,
           isGhost: true,
+          coverUrl: null,
           book: null,
         });
       }

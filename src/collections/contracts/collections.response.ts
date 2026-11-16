@@ -38,6 +38,8 @@ export type CollectionBookEntry = {
   title: string;
   position: number;
   isGhost: boolean;
+  // Signed link to the cover (display copy first); null for a ghost or no cover.
+  coverUrl: string | null;
   // Null when isGhost is true.
   book: BookSummary | null;
 };

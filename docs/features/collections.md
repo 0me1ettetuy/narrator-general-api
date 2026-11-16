@@ -21,7 +21,7 @@ ghost for the owner only, and it returns when the book is public again.
 
 ## What happens underneath
 
-- `GET /collections` and `GET /collections/public` items carry `coverUrls`: signed links (display copy first) to the covers of the first 5 readable books that have one, in collection order, so the library draws a stack of covers without a request per book. Other endpoints returning a collection summary do not have it.
+- `GET /collections` and `GET /collections/public` items carry `coverUrls`: signed links (display copy first) to the covers of the first 5 readable books that have one, in collection order, so the library draws a stack of covers without a request per book. Other endpoints returning a collection summary do not have it. `GET /collections/:collectionId` entries carry `coverUrl` the same way (null for a ghost or a book with no cover).
 - `Collection` is `PRIVATE` by default. `CollectionBook` holds ordered
   `(collectionId, bookId)` references, unique per pair.
 - `PATCH /collections/:collectionId/visibility` to `PUBLIC` publishes the

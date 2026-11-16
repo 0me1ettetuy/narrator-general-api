@@ -16,6 +16,7 @@ title, no hashes; find its commit with `git log -S"<title>" -- docs/history.md`
 
 ## Recent changes
 
+- Collection book covers: `GET /collections/:collectionId` entries carry a signed `coverUrl` (display copy first, null for a ghost or no cover), so the collection page draws covers without a request per book.
 - Collection list covers: `GET /collections` and `GET /collections/public` items carry `coverUrls` (signed links to the first 5 covers, in order) for the library's book stacks.
 - Resized display covers: parsing and cover changes also store an 800 px WebP `cover/display.webp` (`sharp`); `GET /books` `coverUrl` and cover-access sign it and fall back to the original. The key is a nullable `book.coverDisplayObjectKey` column, because a fixed key alone cannot tell the list whether a copy exists without a storage call per book. Backfill: `node dist/backfill-cover-display.js`.
 - Library list carries word count and cover link: each `GET /books` item has `wordCount` and a signed `coverUrl`, so the shelf makes no per-book requests (they hit the 100/min throttle).

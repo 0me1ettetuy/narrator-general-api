@@ -146,6 +146,22 @@ describe('CollectionsService', () => {
       ).rejects.toBeInstanceOf(NotFoundException);
     });
 
+    it('signs each readable book cover, display copy first', async () => {
+      findBook('book-own-public').coverObjectKey = 'original';
+      findBook('book-own-public').coverDisplayObjectKey = 'display';
+      link('collection-1', 'book-own-public', 0);
+      link('collection-1', 'book-own-private', 1);
+      link('collection-1', 'book-other-public', 2);
+
+      const result = await service.getCollection('owner', 'collection-1');
+
+      expect(result.books.map((entry) => entry.coverUrl)).toEqual([
+        'signed:display',
+        'signed:cover',
+        null,
+      ]);
+    });
+
     it("gives the owner a ghost for another user's private book", async () => {
       link('collection-1', 'book-other-private', 0);
 
@@ -156,6 +172,7 @@ describe('CollectionsService', () => {
         title: 'book-other-private',
         position: 0,
         isGhost: true,
+        coverUrl: null,
         book: null,
       });
       expect(result.collection.bookCount).toBe(0);

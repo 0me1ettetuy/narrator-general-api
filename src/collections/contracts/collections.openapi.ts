@@ -66,6 +66,13 @@ export class CollectionBookEntryResponseDto {
   @ApiProperty()
   isGhost: boolean;
 
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Signed cover link, null for a ghost or a book with no cover',
+  })
+  coverUrl: string | null;
+
   @ApiProperty({ type: () => BookSummaryResponseDto, nullable: true })
   book: BookSummaryResponseDto | null;
 }
