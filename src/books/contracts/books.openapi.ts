@@ -329,12 +329,30 @@ export class GhostBookResponseDto {
   title: string;
 }
 
+export class LibraryBookCountsDto {
+  @ApiProperty({ minimum: 0 })
+  all: number;
+
+  @ApiProperty({ minimum: 0 })
+  owned: number;
+
+  @ApiProperty({ minimum: 0 })
+  added: number;
+}
+
 export class LibraryBooksListResponseDto extends BooksListResponseDto {
   @ApiProperty({
     type: () => [GhostBookResponseDto],
     description: 'Saved books whose owner has made them private',
   })
   ghosts: GhostBookResponseDto[];
+
+  @ApiProperty({
+    type: () => LibraryBookCountsDto,
+    description:
+      'Whole-library totals; not affected by source, search or paging',
+  })
+  counts: LibraryBookCountsDto;
 }
 
 export class CreateBookUploadResponseDto {

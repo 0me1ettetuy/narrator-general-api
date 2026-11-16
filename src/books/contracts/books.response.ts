@@ -164,6 +164,13 @@ export type BooksListResponse = {
   nextOffset: number | null;
 };
 
+// Whole-library totals, independent of `source`, `search` and paging.
+export type LibraryBookCounts = {
+  all: number;
+  owned: number;
+  added: number;
+};
+
 export type GhostBook = {
   bookId: string;
   title: string;
@@ -171,6 +178,7 @@ export type GhostBook = {
 
 export type LibraryBooksListResponse = BooksListResponse & {
   ghosts: GhostBook[];
+  counts: LibraryBookCounts;
 };
 
 export type CreateBookUploadResponse = {

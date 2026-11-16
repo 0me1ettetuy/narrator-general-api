@@ -230,22 +230,18 @@ export class BooksService {
     const offset = query.offset ?? 0;
     const source = query.source ?? 'all';
 
-    const entries =
-      source === 'owned'
-        ? []
-        : ((await this.prisma.db.orm.public.BookLibraryEntry.where({
-            userId,
-          }).all()) as BookLibraryEntry[]);
+    // Both sides are always loaded: the filter counts need them whatever
+    // `source` is.
+    const entries = (await this.prisma.db.orm.public.BookLibraryEntry.where({
+      userId,
+    }).all()) as BookLibraryEntry[];
     const addedBookIds = entries.map((entry) => entry.bookId);
     const addedBookIdSet = new Set(addedBookIds);
 
-    const ownedBooks =
-      source === 'added'
-        ? []
-        : ((await this.prisma.db.orm.public.Book.where({
-            userId,
-            deletedAt: null,
-          }).all()) as Book[]);
+    const ownedBooks = (await this.prisma.db.orm.public.Book.where({
+      userId,
+      deletedAt: null,
+    }).all()) as Book[];
     const addedBooks = addedBookIds.length
       ? ((await this.prisma.db.orm.public.Book.where((book) =>
           book.id.in(addedBookIds),
@@ -257,20 +253,31 @@ export class BooksService {
     const visibleAddedBooks = addedBooks.filter(
       (book) => book.deletedAt === null && book.visibility === 'PUBLIC',
     );
-    // shortcut: ghosts aren't paginated, add paging if saved lists grow large.
+    const counts = {
+      all: ownedBooks.length + visibleAddedBooks.length,
+      owned: ownedBooks.length,
+      added: visibleAddedBooks.length,
+    };
     // Title search is in-memory like the public list; it runs before paging.
     const search = query.search?.trim().toLowerCase();
     const matchesSearch = (title: string) =>
       !search || title.toLowerCase().includes(search);
-    const ghosts = addedBooks
-      .filter(
-        (book) =>
-          book.deletedAt === null &&
-          book.visibility !== 'PUBLIC' &&
-          matchesSearch(book.title),
-      )
-      .map((book) => ({ bookId: book.id, title: book.title }));
-    const combined = [...ownedBooks, ...visibleAddedBooks]
+    // shortcut: ghosts aren't paginated, add paging if saved lists grow large.
+    const ghosts =
+      source === 'owned'
+        ? []
+        : addedBooks
+            .filter(
+              (book) =>
+                book.deletedAt === null &&
+                book.visibility !== 'PUBLIC' &&
+                matchesSearch(book.title),
+            )
+            .map((book) => ({ bookId: book.id, title: book.title }));
+    const combined = [
+      ...(source === 'added' ? [] : ownedBooks),
+      ...(source === 'owned' ? [] : visibleAddedBooks),
+    ]
       .filter((book) => matchesSearch(book.title))
       .sort(compareBooksNewestFirst);
     const hasNextPage = combined.length > offset + limit;
@@ -306,6 +313,7 @@ export class BooksService {
       ),
       nextOffset: hasNextPage ? offset + limit : null,
       ghosts,
+      counts,
     };
   }
 

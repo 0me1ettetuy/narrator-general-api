@@ -827,10 +827,33 @@ describe('BooksService', () => {
       expect(result.bookId).not.toBe(book.id);
     });
 
-    it('lists only owned books when filtered to source=owned', async () => {
-      await createService().listBooks('user-id', { source: 'owned' });
+    it('lists only owned books when filtered to source=owned, with whole-library counts', async () => {
+      libraryEntryAll.mockResolvedValue([
+        { id: 'entry-id', userId: 'user-id', bookId: 'added-book-id' },
+      ] as BookLibraryEntry[]);
+      const addedBook = {
+        ...book,
+        id: 'added-book-id',
+        userId: otherUserId,
+        visibility: 'PUBLIC',
+      } as Book;
+      db.orm.public.Book.where.mockImplementation(
+        (criteria: Record<string, unknown> | ((row: unknown) => unknown)) => {
+          if (typeof criteria === 'function') {
+            return { all: jest.fn().mockResolvedValue([addedBook]) };
+          }
 
-      expect(libraryEntryAll).not.toHaveBeenCalled();
+          return { first: bookFirst, all: jest.fn().mockResolvedValue([book]) };
+        },
+      );
+
+      const result = await createService().listBooks('user-id', {
+        source: 'owned',
+        search: 'no-such-title',
+      });
+
+      expect(result.books).toEqual([]);
+      expect(result.counts).toEqual({ all: 2, owned: 1, added: 1 });
     });
 
     it('filters the own library by a case-insensitive title match before paging', async () => {
