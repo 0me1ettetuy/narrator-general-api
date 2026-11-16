@@ -33,8 +33,8 @@ background. It currently supports EPUB only.
    idempotency key, and puts that job onto Redis/BullMQ.
 4. The library list (`GET /books`) returns owned and added-to-library books
    (see [public sharing](public-sharing.md)), paginated (`limit`/`offset`, max 50 per request) and searchable by title (`search`). Each listed book also carries `wordCount`
-   (live chapters, read without chapter text) and a signed `coverUrl` (null
-   without a cover), so a shelf needs no request per book; every
+   (live chapters, read without chapter text) and a signed `coverUrl` (the
+   resized display copy; null without a cover), so a shelf needs no request per book; every
    mutation stays owner-scoped. A book detail response returns active
    chapters in their stored order.
 5. `DELETE /books/:bookId` (`BookDeletionService`) first sets `Book.deletedAt`

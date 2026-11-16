@@ -197,6 +197,7 @@ model Book {
   coverObjectKey         String?
   coverMimeType          String?
   coverSize              Int?
+  coverDisplayObjectKey  String?
   parseStatus            BookParseStatus @default(UPLOADING)
   parseError             String?
   parsedAt               DateTime?

@@ -1,3 +1,5 @@
+import sharp from 'sharp';
+import { makePng } from '../test-mocks/png.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { StorageService } from '../storage/storage.service.js';
 import type { EpubParserService } from './epub-parser.service.js';
@@ -164,6 +166,48 @@ describe('BookParsingService', () => {
         language: 'en-US',
         parseStatus: 'READY',
       }),
+    );
+  });
+
+  it('stores a resized display copy beside the original cover', async () => {
+    const original = await makePng(1600, 2400);
+    parsedEpub.cover = { bytes: original, mimeType: 'image/png' };
+    const service = new BookParsingService(
+      prisma,
+      storageService,
+      epubParserService,
+    );
+
+    await service.parse(parseJob.id);
+
+    const displayCall = jest
+      .mocked(storageService.putObjectBytes)
+      .mock.calls.find(([key]) => key.endsWith('cover/display.webp'));
+    expect(displayCall?.[2]).toBe('image/webp');
+    expect((await sharp(displayCall![1]).metadata()).width).toBe(800);
+    expect(storageService.putObjectBytes).toHaveBeenCalledWith(
+      'books/user-id/book-id/cover/original.png',
+      original,
+      'image/png',
+    );
+    expect(bookUpdate).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        coverDisplayObjectKey: 'books/user-id/book-id/cover/display.webp',
+      }),
+    );
+  });
+
+  it('records no display copy when the cover cannot be resized', async () => {
+    const service = new BookParsingService(
+      prisma,
+      storageService,
+      epubParserService,
+    );
+
+    await service.parse(parseJob.id);
+
+    expect(bookUpdate).toHaveBeenLastCalledWith(
+      expect.objectContaining({ coverDisplayObjectKey: null }),
     );
   });
 

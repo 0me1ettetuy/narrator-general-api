@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { temporalNow } from '../prisma/temporal.js';
 import { StorageService } from '../storage/storage.service.js';
+import { storeCoverDisplay } from './book-cover-display.js';
 import { classifyChapter } from './chapter-classifier.js';
 import { EpubParserService } from './epub-parser.service.js';
 import type {
@@ -17,6 +18,7 @@ type StoredBookCover = {
   objectKey: string;
   mimeType: string;
   size: number;
+  displayObjectKey: string | null;
 };
 
 type PlannedBookImage = {
@@ -76,9 +78,13 @@ export class BookParsingService {
       await this.persistParsedBook(claimedJob, parsedEpub, cover, images);
     } catch (error) {
       if (cover) {
-        await this.storageService.deleteObject(cover.objectKey).catch(() => {
-          // The parser retry overwrites this deterministic key if cleanup fails.
-        });
+        for (const key of [cover.objectKey, cover.displayObjectKey]) {
+          if (key) {
+            await this.storageService.deleteObject(key).catch(() => {
+              // The parser retry overwrites these deterministic keys if cleanup fails.
+            });
+          }
+        }
       }
       if (images.length) {
         // Image ids are new on every attempt; book deletion removes any leftovers.
@@ -258,6 +264,7 @@ export class BookParsingService {
         coverObjectKey: cover?.objectKey ?? null,
         coverMimeType: cover?.mimeType ?? null,
         coverSize: cover?.size ?? null,
+        coverDisplayObjectKey: cover?.displayObjectKey ?? null,
         parseStatus: 'READY',
         parseError: null,
         parsedAt: now,
@@ -304,6 +311,12 @@ export class BookParsingService {
       objectKey,
       mimeType: cover.mimeType,
       size: cover.bytes.byteLength,
+      displayObjectKey: await storeCoverDisplay(
+        this.storageService,
+        job.userId,
+        job.bookId,
+        cover.bytes,
+      ),
     };
   }
 }

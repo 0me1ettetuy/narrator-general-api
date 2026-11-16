@@ -25,6 +25,7 @@ export type Book = {
   coverObjectKey: string | null;
   coverMimeType: string | null;
   coverSize: number | null;
+  coverDisplayObjectKey: string | null;
   parseStatus: BookParseStatus;
   parseError: string | null;
   parsedAt: Instant | null;

@@ -41,7 +41,10 @@ import type {
   BooksListQueryDto,
   PublicBooksListQueryDto,
 } from './dto/books-list-query.dto.js';
-import type { CreateBookCoverUploadDto } from './dto/create-book-cover-upload.dto.js';
+import {
+  MAX_BOOK_COVER_UPLOAD_SIZE_BYTES,
+  type CreateBookCoverUploadDto,
+} from './dto/create-book-cover-upload.dto.js';
 import {
   EPUB_MIME_TYPE,
   type CreateBookUploadDto,
@@ -55,6 +58,7 @@ import type {
   Chapter,
   ProcessingJob,
 } from './types/book.type.js';
+import { storeCoverDisplay } from './book-cover-display.js';
 import { findBookIdsWithReadyAudio } from './book-ready-audio.js';
 import { findBookWordCounts } from './book-word-counts.js';
 import {
@@ -309,7 +313,9 @@ export class BooksService {
     const coverUrls = await Promise.all(
       pageBooks.map((book) =>
         book.coverObjectKey
-          ? this.storageService.createDownloadUrl(book.coverObjectKey)
+          ? this.storageService.createDownloadUrl(
+              book.coverDisplayObjectKey ?? book.coverObjectKey,
+            )
           : null,
       ),
     );
@@ -854,7 +860,7 @@ export class BooksService {
 
     return {
       coverUrl: await this.storageService.createDownloadUrl(
-        book.coverObjectKey,
+        book.coverDisplayObjectKey ?? book.coverObjectKey,
       ),
       expiresInSeconds: SIGNED_URL_TTL_SECONDS,
     };
@@ -896,6 +902,16 @@ export class BooksService {
       });
     }
 
+    const displayObjectKey = await storeCoverDisplay(
+      this.storageService,
+      userId,
+      book.id,
+      await this.storageService.getObjectBytes(
+        objectKey,
+        MAX_BOOK_COVER_UPLOAD_SIZE_BYTES,
+      ),
+    );
+
     await this.prisma.db.orm.public.Book.where({
       id: book.id,
       userId,
@@ -905,8 +921,19 @@ export class BooksService {
       coverObjectKey: objectKey,
       coverMimeType: dto.mimeType,
       coverSize: dto.size,
+      coverDisplayObjectKey: displayObjectKey,
       updatedAt: temporalNow(),
     });
+
+    // An unresizable new cover must not leave the previous copy behind.
+    if (
+      book.coverDisplayObjectKey &&
+      book.coverDisplayObjectKey !== displayObjectKey
+    ) {
+      await this.storageService
+        .deleteObject(book.coverDisplayObjectKey)
+        .catch(() => undefined);
+    }
   }
 
   async getBook(userId: string, bookId: string): Promise<BookDetailResponse> {

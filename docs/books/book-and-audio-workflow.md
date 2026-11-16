@@ -11,7 +11,8 @@ agent must preserve when changing the code.
 4. The worker parses ordered chapters, uses declared EPUB language metadata
    or detects a fallback language from chapter text, and extracts a supported
    cover when available. It saves cover bytes to
-   `books/{userId}/{bookId}/cover/` in object storage, and saves cleaned
+   `books/{userId}/{bookId}/cover/` in object storage (the original plus an
+   800 px WebP `display.webp` used by the library list), and saves cleaned
    chapter text, language, and private cover metadata in Postgres. Chapter
    images go to `books/{userId}/{bookId}/images/` with a `book_image` row, and
    the chapter text carries `[[img_<id>]]` markers (see

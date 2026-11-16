@@ -92,3 +92,16 @@ run:
 ```bash
 docker compose -f compose.dev.yaml exec api pnpm exec prisma db update
 ```
+
+## One-off: cover display copies
+
+Books parsed before the 800 px display covers existed keep serving the original
+until backfilled. After `prisma db update`, run once (safe to repeat; it skips
+books that already have a copy):
+
+```bash
+docker compose exec api node dist/backfill-cover-display.js
+```
+
+The cover resize uses `sharp`, whose prebuilt binaries install with
+`pnpm install` on the `node:24-bookworm-slim` images; no Dockerfile change.

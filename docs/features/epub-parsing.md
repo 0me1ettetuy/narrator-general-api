@@ -43,6 +43,11 @@ It also extracts a supported embedded cover image when the EPUB provides one.
 - Cover bytes are saved beside the source under a book-specific storage key;
   the database holds only key, MIME type, and byte size. Authenticated users
   receive a 15-minute signed cover URL rather than a public object URL.
+- Each cover also gets a display copy, `cover/display.webp` (WebP, quality 85,
+  at most 800 px wide, never upscaled, made with `sharp`), whose key is stored in
+  `book.coverDisplayObjectKey`. The library list `coverUrl` and the cover-access
+  endpoint sign it and fall back to the original when it is null (older books,
+  or a cover `sharp` cannot decode); the original stays for the book page.
 - Chapter images are saved under `books/{userId}/{bookId}/images/{imageId}.{ext}`
   with a `book_image` row (key, MIME type, size, alt text) per file. Only PNG,
   JPEG, GIF, WebP and SVG are kept: at most 10 MiB each, 300 per book and
@@ -59,7 +64,9 @@ It also extracts a supported embedded cover image when the EPUB provides one.
   text; a marker with no image of the same book is ignored.
 - A cover replacement uses a signed direct PUT URL for that stored key. The API
   verifies storage metadata on confirmation, then updates the book timestamp so
-  book-detail and library clients refresh their cached signed URL.
+  book-detail and library clients refresh their cached signed URL. It also
+  rebuilds the display copy, and clears and deletes it if the new cover cannot
+  be resized.
 
 ## Contributing commits, checked by actual change
 

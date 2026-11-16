@@ -1,4 +1,6 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import sharp from 'sharp';
+import { makePng } from '../test-mocks/png.js';
 import type { JobsService } from '../jobs/jobs.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import { temporalFromEpochMilliseconds } from '../prisma/temporal.js';
@@ -118,6 +120,9 @@ describe('BooksService', () => {
     createDownloadUrl: jest.fn(),
     createUploadUrl: jest.fn(),
     getObjectMetadata: jest.fn(),
+    getObjectBytes: jest.fn(),
+    putObjectBytes: jest.fn().mockResolvedValue(undefined),
+    deleteObject: jest.fn().mockResolvedValue(undefined),
     copyObject: jest.fn().mockResolvedValue(undefined),
     deleteObjects: jest.fn().mockResolvedValue(undefined),
   };
@@ -135,6 +140,7 @@ describe('BooksService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     book.coverObjectKey = null;
+    book.coverDisplayObjectKey = null;
     book.visibility = 'PRIVATE';
     bookFirst.mockResolvedValue(book);
     chaptersAll.mockResolvedValue([secondChapter, firstChapter]);
@@ -622,6 +628,25 @@ describe('BooksService', () => {
     expect(storage.createDownloadUrl).toHaveBeenCalledWith(book.coverObjectKey);
   });
 
+  it('signs the display copy of the cover when the book has one', async () => {
+    book.coverObjectKey = 'books/user-id/book-id/cover/original.jpg';
+    book.coverDisplayObjectKey = 'books/user-id/book-id/cover/display.webp';
+    storage.createDownloadUrl.mockResolvedValue('https://storage.test/cover');
+    const service = new BooksService(
+      prisma,
+      storageService,
+      jobsService,
+      ttsModelsService,
+      fishVoices,
+    );
+
+    await service.getBookCoverAccess('user-id', book.id);
+
+    expect(storage.createDownloadUrl).toHaveBeenCalledWith(
+      book.coverDisplayObjectKey,
+    );
+  });
+
   it('creates a signed upload URL for the existing cover object', async () => {
     book.coverObjectKey = 'books/user-id/book-id/cover/original.png';
     storage.createUploadUrl.mockResolvedValue('https://storage.test/upload');
@@ -646,6 +671,49 @@ describe('BooksService', () => {
     );
   });
 
+  describe('cover change', () => {
+    const displayKey = 'books/user-id/book-id/cover/display.webp';
+    const dto = { mimeType: 'image/png', size: 123 } as const;
+
+    beforeEach(() => {
+      book.coverObjectKey = 'books/user-id/book-id/cover/original.png';
+      storage.getObjectMetadata.mockResolvedValue({
+        contentLength: 123,
+        contentType: 'image/png',
+        eTag: 'etag',
+      });
+    });
+
+    it('replaces the display copy with one resized from the new cover', async () => {
+      book.coverDisplayObjectKey = displayKey;
+      storage.getObjectBytes.mockResolvedValue(await makePng(1600, 2400));
+
+      await createService().completeBookCoverUpload('user-id', book.id, dto);
+
+      const [key, bytes, mimeType] = storage.putObjectBytes.mock.calls[0];
+      expect(key).toBe(displayKey);
+      expect(mimeType).toBe('image/webp');
+      expect((await sharp(bytes).metadata()).width).toBe(800);
+      expect(bookUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ coverDisplayObjectKey: displayKey }),
+      );
+      expect(storage.deleteObject).not.toHaveBeenCalled();
+    });
+
+    it('deletes the old display copy when the new cover cannot be resized', async () => {
+      book.coverDisplayObjectKey = displayKey;
+      storage.getObjectBytes.mockResolvedValue(new Uint8Array([1, 2, 3]));
+
+      await createService().completeBookCoverUpload('user-id', book.id, dto);
+
+      expect(storage.putObjectBytes).not.toHaveBeenCalled();
+      expect(bookUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ coverDisplayObjectKey: null }),
+      );
+      expect(storage.deleteObject).toHaveBeenCalledWith(displayKey);
+    });
+  });
+
   it('confirms an uploaded cover after verifying its storage metadata', async () => {
     book.coverObjectKey = 'books/user-id/book-id/cover/original.png';
     storage.getObjectMetadata.mockResolvedValue({
@@ -653,6 +721,7 @@ describe('BooksService', () => {
       contentType: 'image/png',
       eTag: 'etag',
     });
+    storage.getObjectBytes.mockResolvedValue(await makePng(100, 150));
     const service = new BooksService(
       prisma,
       storageService,
@@ -877,6 +946,22 @@ describe('BooksService', () => {
         coverUrl: 'https://storage.test/cover',
       });
       expect(storage.createDownloadUrl).toHaveBeenCalledWith('cover/key');
+    });
+
+    it('lists the display copy of the cover when the book has one', async () => {
+      book.coverObjectKey = 'cover/key';
+      book.coverDisplayObjectKey = 'cover/display.webp';
+      storage.createDownloadUrl.mockResolvedValue('https://storage.test/cover');
+      db.orm.public.Book.where.mockReturnValue({
+        all: jest.fn().mockResolvedValue([book]),
+      });
+      chaptersAll.mockResolvedValue([]);
+
+      await createService().listBooks('user-id', { source: 'owned' });
+
+      expect(storage.createDownloadUrl).toHaveBeenCalledWith(
+        'cover/display.webp',
+      );
     });
 
     it('lists a book without a cover or chapters with 0 words and no cover link', async () => {
