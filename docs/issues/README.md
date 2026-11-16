@@ -15,6 +15,10 @@
 - [Chapter images: follow-ups](chapter-image-follow-ups.md) — small parsing,
   storage and test gaps left after the chapter-image feature, plus the pending
   migration ref.
+- [Aged book-cover variants](aged-book-covers.md) — an optional async
+  image-to-image variant that preserves the original private cover.
+- [Chapter-classification feedback dataset](chapter-classification-feedback.md)
+  — immutable, consented manual corrections for a later small classifier.
 
 Issues describe known follow-up work, not supported product behavior. Move an
 issue to its owning domain documentation once it is fully implemented.

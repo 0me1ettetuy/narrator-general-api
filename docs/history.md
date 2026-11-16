@@ -24,6 +24,13 @@ title, no hashes; find its commit with `git log -S"<title>" -- docs/history.md`
 - Library list counts: `GET /books` returns whole-library `counts` (`all`, `owned`, `added`), independent of `source`, `search` and paging, so filter badges are not capped by the page size.
 - Own-library title search: `GET /books` accepts `search` (case-insensitive title
   substring, applied before paging; ghosts filtered too).
+- Planned EPUB section taxonomy: documented the eight future user-facing
+  chapter classes, their common EPUB subparts, and the rule that type and
+  narration inclusion stay separate.
+- Chapter-classification feedback issue: recorded the immutable parser-versus-
+  user correction dataset needed before training a small classifier.
+- Aged book-cover variants issue: recorded the optional async image-to-image
+  cover effect, with original-cover preservation and worker/storage constraints.
 - Marking a narrated chapter not narrated now needs `discardAudio` when it has audio (single update and bulk selection) and deletes that audio, instead of leaving hidden but playable audio behind.
 - Book summaries carry `hasReadyAudio` (library, public list, book detail, visibility change, collection page), read from chapter and audio ids only, so a client can show Play on a cover.
 - Active audio list: `GET /books/audio/active` returns the user's own books with chapters queued or processing (stage, part counts), so the frontend can show generation across all books.

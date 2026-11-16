@@ -4,6 +4,8 @@
   upload, parsing, deletion, sharing, collections and chapter audio (current).
 - [Chapter curation plan](chapter-curation-plan.md) — parser classification,
   durable roles/inclusion, manual outline repair, and audio invariants.
+- [Planned EPUB section taxonomy](epub-section-taxonomy.md) — eight
+  user-facing classifier labels, their common EPUB subparts, and UI wording.
 - [Chapter 3 segmentation check](chapter-3-segmentation.md) — a captured local
   segmentation result used while evaluating TTS chunk boundaries.
 
