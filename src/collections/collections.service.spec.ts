@@ -162,6 +162,29 @@ describe('CollectionsService', () => {
       ]);
     });
 
+    it('sums the live chapter words of each readable book', async () => {
+      link('collection-1', 'book-own-public', 0);
+      db.orm.public.Chapter.rows.push(
+        {
+          id: 'c1',
+          bookId: 'book-own-public',
+          wordCount: 100,
+          removedAt: null,
+        },
+        { id: 'c2', bookId: 'book-own-public', wordCount: 50, removedAt: null },
+        {
+          id: 'c3',
+          bookId: 'book-own-public',
+          wordCount: 999,
+          removedAt: at(1),
+        },
+      );
+
+      const result = await service.getCollection('owner', 'collection-1');
+
+      expect(result.books[0].wordCount).toBe(150);
+    });
+
     it("gives the owner a ghost for another user's private book", async () => {
       link('collection-1', 'book-other-private', 0);
 
@@ -173,6 +196,7 @@ describe('CollectionsService', () => {
         position: 0,
         isGhost: true,
         coverUrl: null,
+        wordCount: 0,
         book: null,
       });
       expect(result.collection.bookCount).toBe(0);

@@ -73,6 +73,12 @@ export class CollectionBookEntryResponseDto {
   })
   coverUrl: string | null;
 
+  @ApiProperty({
+    minimum: 0,
+    description: 'Words over the live chapters, 0 for a ghost',
+  })
+  wordCount: number;
+
   @ApiProperty({ type: () => BookSummaryResponseDto, nullable: true })
   book: BookSummaryResponseDto | null;
 }

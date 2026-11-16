@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { StorageService } from '../storage/storage.service.js';
 import { temporalNow } from '../prisma/temporal.js';
 import { findBookIdsWithReadyAudio } from '../books/book-ready-audio.js';
+import { findBookWordCounts } from '../books/book-word-counts.js';
 import { toBookSummary } from '../books/book-summary.mapper.js';
 import type {
   BookAuthor,
@@ -286,6 +287,7 @@ export class CollectionsService {
       this.prisma,
       readableBookIds,
     );
+    const wordCounts = await findBookWordCounts(this.prisma, readableBookIds);
     const books: CollectionBookEntry[] = [];
 
     for (const view of views) {
@@ -295,6 +297,7 @@ export class CollectionsService {
           title: view.book.title,
           position: view.row.position,
           isGhost: false,
+          wordCount: wordCounts.get(view.book.id) ?? 0,
           coverUrl: view.book.coverObjectKey
             ? await this.storageService.createDownloadUrl(
                 view.book.coverDisplayObjectKey ?? view.book.coverObjectKey,
@@ -315,6 +318,7 @@ export class CollectionsService {
           position: view.row.position,
           isGhost: true,
           coverUrl: null,
+          wordCount: 0,
           book: null,
         });
       }

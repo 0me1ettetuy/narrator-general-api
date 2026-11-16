@@ -40,6 +40,8 @@ export type CollectionBookEntry = {
   isGhost: boolean;
   // Signed link to the cover (display copy first); null for a ghost or no cover.
   coverUrl: string | null;
+  // Words over the live chapters (sets the book's thickness); 0 for a ghost.
+  wordCount: number;
   // Null when isGhost is true.
   book: BookSummary | null;
 };
