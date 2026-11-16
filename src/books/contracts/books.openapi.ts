@@ -340,7 +340,27 @@ export class LibraryBookCountsDto {
   added: number;
 }
 
+export class LibraryBookSummaryResponseDto extends BookSummaryResponseDto {
+  @ApiProperty({
+    minimum: 0,
+    description: 'Words over the live chapters; 0 until the book is parsed',
+  })
+  wordCount: number;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    format: 'uri',
+    description:
+      'Signed cover image link, valid for the signed-URL TTL; null without a cover',
+  })
+  coverUrl: string | null;
+}
+
 export class LibraryBooksListResponseDto extends BooksListResponseDto {
+  @ApiProperty({ type: () => [LibraryBookSummaryResponseDto] })
+  declare books: LibraryBookSummaryResponseDto[];
+
   @ApiProperty({
     type: () => [GhostBookResponseDto],
     description: 'Saved books whose owner has made them private',

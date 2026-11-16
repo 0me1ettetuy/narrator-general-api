@@ -56,6 +56,7 @@ import type {
   ProcessingJob,
 } from './types/book.type.js';
 import { findBookIdsWithReadyAudio } from './book-ready-audio.js';
+import { findBookWordCounts } from './book-word-counts.js';
 import {
   compareByPosition,
   toBookAuthorResponse,
@@ -301,16 +302,30 @@ export class BooksService {
       pageBooks.map((book) => book.id),
     );
 
+    const wordCounts = await findBookWordCounts(
+      this.prisma,
+      pageBooks.map((book) => book.id),
+    );
+    const coverUrls = await Promise.all(
+      pageBooks.map((book) =>
+        book.coverObjectKey
+          ? this.storageService.createDownloadUrl(book.coverObjectKey)
+          : null,
+      ),
+    );
+
     return {
-      books: pageBooks.map((book) =>
-        toBookSummary(
+      books: pageBooks.map((book, index) => ({
+        ...toBookSummary(
           book,
           userId,
           addedBookIdSet.has(book.id),
           authorsByBookId.get(book.id) ?? [],
           readyAudioBookIds.has(book.id),
         ),
-      ),
+        wordCount: wordCounts.get(book.id) ?? 0,
+        coverUrl: coverUrls[index],
+      })),
       nextOffset: hasNextPage ? offset + limit : null,
       ghosts,
       counts,

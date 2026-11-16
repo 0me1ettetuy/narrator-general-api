@@ -16,6 +16,7 @@ title, no hashes; find its commit with `git log -S"<title>" -- docs/history.md`
 
 ## Recent changes
 
+- Library list carries word count and cover link: each `GET /books` item has `wordCount` and a signed `coverUrl`, so the shelf makes no per-book requests (they hit the 100/min throttle).
 - Library list counts: `GET /books` returns whole-library `counts` (`all`, `owned`, `added`), independent of `source`, `search` and paging, so filter badges are not capped by the page size.
 - Own-library title search: `GET /books` accepts `search` (case-insensitive title
   substring, applied before paging; ghosts filtered too).

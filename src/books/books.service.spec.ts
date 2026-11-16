@@ -856,6 +856,42 @@ describe('BooksService', () => {
       expect(result.counts).toEqual({ all: 2, owned: 1, added: 1 });
     });
 
+    it('adds the word count and a signed cover link to each listed book', async () => {
+      book.coverObjectKey = 'cover/key';
+      storage.createDownloadUrl.mockResolvedValue('https://storage.test/cover');
+      db.orm.public.Book.where.mockReturnValue({
+        all: jest.fn().mockResolvedValue([book]),
+      });
+      chaptersAll.mockResolvedValue([
+        { id: 'c1', bookId: book.id, wordCount: 100, removedAt: null },
+        { id: 'c2', bookId: book.id, wordCount: 50, removedAt: null },
+        { id: 'c3', bookId: book.id, wordCount: 999, removedAt: new Date() },
+      ]);
+
+      const result = await createService().listBooks('user-id', {
+        source: 'owned',
+      });
+
+      expect(result.books[0]).toMatchObject({
+        wordCount: 150,
+        coverUrl: 'https://storage.test/cover',
+      });
+      expect(storage.createDownloadUrl).toHaveBeenCalledWith('cover/key');
+    });
+
+    it('lists a book without a cover or chapters with 0 words and no cover link', async () => {
+      db.orm.public.Book.where.mockReturnValue({
+        all: jest.fn().mockResolvedValue([book]),
+      });
+      chaptersAll.mockResolvedValue([]);
+
+      const result = await createService().listBooks('user-id', {
+        source: 'owned',
+      });
+
+      expect(result.books[0]).toMatchObject({ wordCount: 0, coverUrl: null });
+    });
+
     it('filters the own library by a case-insensitive title match before paging', async () => {
       const matching = { ...book, id: 'matching-id', title: 'The Great Walk' };
       const nonMatching = { ...book, id: 'other-id', title: 'Cooking Basics' };

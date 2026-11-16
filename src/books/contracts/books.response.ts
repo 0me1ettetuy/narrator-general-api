@@ -176,7 +176,17 @@ export type GhostBook = {
   title: string;
 };
 
-export type LibraryBooksListResponse = BooksListResponse & {
+// A library list item: the summary plus what the shelf needs to draw the book
+// without a request per book.
+export type LibraryBookSummary = BookSummary & {
+  // Words over the book's chapters (0 until it is parsed).
+  wordCount: number;
+  // Signed cover image link (valid for the signed-URL TTL), or null without a cover.
+  coverUrl: string | null;
+};
+
+export type LibraryBooksListResponse = Omit<BooksListResponse, 'books'> & {
+  books: LibraryBookSummary[];
   ghosts: GhostBook[];
   counts: LibraryBookCounts;
 };
