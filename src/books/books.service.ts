@@ -258,12 +258,21 @@ export class BooksService {
       (book) => book.deletedAt === null && book.visibility === 'PUBLIC',
     );
     // shortcut: ghosts aren't paginated, add paging if saved lists grow large.
+    // Title search is in-memory like the public list; it runs before paging.
+    const search = query.search?.trim().toLowerCase();
+    const matchesSearch = (title: string) =>
+      !search || title.toLowerCase().includes(search);
     const ghosts = addedBooks
-      .filter((book) => book.deletedAt === null && book.visibility !== 'PUBLIC')
+      .filter(
+        (book) =>
+          book.deletedAt === null &&
+          book.visibility !== 'PUBLIC' &&
+          matchesSearch(book.title),
+      )
       .map((book) => ({ bookId: book.id, title: book.title }));
-    const combined = [...ownedBooks, ...visibleAddedBooks].sort(
-      compareBooksNewestFirst,
-    );
+    const combined = [...ownedBooks, ...visibleAddedBooks]
+      .filter((book) => matchesSearch(book.title))
+      .sort(compareBooksNewestFirst);
     const hasNextPage = combined.length > offset + limit;
     const pageBooks = combined.slice(offset, offset + limit);
 

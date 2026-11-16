@@ -577,6 +577,11 @@ export class BooksController {
     enum: ['owned', 'added', 'all'],
     description: 'Default "all" — owned books plus added-to-library books',
   })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Case-insensitive title substring match',
+  })
   @ApiOkResponse({ type: LibraryBooksListResponseDto })
   @ApiUnauthorizedResponse({ description: 'Invalid access token' })
   @UseGuards(JwtAccessGuard)

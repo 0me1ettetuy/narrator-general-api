@@ -1,5 +1,13 @@
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export const BOOKS_LIST_SOURCES = ['owned', 'added', 'all'] as const;
 
@@ -20,6 +28,11 @@ export class BooksListQueryDto {
   @IsOptional()
   @IsIn(BOOKS_LIST_SOURCES)
   source?: (typeof BOOKS_LIST_SOURCES)[number];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  search?: string;
 }
 
 export class PublicBooksListQueryDto {

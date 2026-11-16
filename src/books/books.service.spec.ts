@@ -833,6 +833,24 @@ describe('BooksService', () => {
       expect(libraryEntryAll).not.toHaveBeenCalled();
     });
 
+    it('filters the own library by a case-insensitive title match before paging', async () => {
+      const matching = { ...book, id: 'matching-id', title: 'The Great Walk' };
+      const nonMatching = { ...book, id: 'other-id', title: 'Cooking Basics' };
+      db.orm.public.Book.where.mockReturnValue({
+        all: jest.fn().mockResolvedValue([matching, nonMatching]),
+      });
+
+      await expect(
+        createService().listBooks('user-id', {
+          source: 'owned',
+          search: ' GREAT ',
+        }),
+      ).resolves.toMatchObject({
+        books: [{ id: 'matching-id' }],
+        nextOffset: null,
+      });
+    });
+
     it('lists added books by joining through the library entries', async () => {
       libraryEntryAll.mockResolvedValue([
         { id: 'entry-id', userId: 'user-id', bookId: 'added-book-id' },

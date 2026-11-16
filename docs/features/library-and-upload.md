@@ -32,7 +32,7 @@ background. It currently supports EPUB only.
    type and size, marks the book `QUEUED`, persists a `PARSE_BOOK` job with an
    idempotency key, and puts that job onto Redis/BullMQ.
 4. The library list (`GET /books`) returns owned and added-to-library books
-   (see [public sharing](public-sharing.md)), paginated (`limit`/`offset`, max 50 per request); every
+   (see [public sharing](public-sharing.md)), paginated (`limit`/`offset`, max 50 per request) and searchable by title (`search`); every
    mutation stays owner-scoped. A book detail response returns active
    chapters in their stored order.
 5. `DELETE /books/:bookId` (`BookDeletionService`) first sets `Book.deletedAt`

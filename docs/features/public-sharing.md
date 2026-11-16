@@ -43,7 +43,8 @@ copy of it.
 - `BookLibraryEntry` (`userId`, `bookId`) is a separate "added to my
   library" reference, distinct from ownership — adding a book never copies
   it or changes `Book.userId`. `POST`/`DELETE /books/:bookId/library`
-  manage it; `GET /books?source=owned|added|all` lists by it; deleting the
+  manage it; `GET /books?source=owned|added|all` lists by it (`search` filters by title,
+  in-memory, before paging; ghosts are filtered too); deleting the
   underlying book also deletes every library entry pointing at it.
 - `POST /books/:bookId/copy` duplicates the source EPUB object under the new
   owner's storage prefix and re-parses it exactly like a fresh upload — a
