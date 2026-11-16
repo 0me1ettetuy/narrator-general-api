@@ -22,6 +22,12 @@ export type CollectionSummary = {
   updatedAt: Instant;
 };
 
+// A list item also carries signed cover links of its first books (in order),
+// so the library draws a stack of covers without one request per book.
+export type CollectionListItem = CollectionSummary & {
+  coverUrls: string[];
+};
+
 export type CollectionGhost = {
   collectionId: string;
   title: string;
@@ -42,7 +48,7 @@ export type CollectionDetailResponse = {
 };
 
 export type CollectionsListResponse = {
-  collections: CollectionSummary[];
+  collections: CollectionListItem[];
   nextOffset: number | null;
 };
 

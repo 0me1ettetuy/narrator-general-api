@@ -7,6 +7,7 @@ import {
 import { randomUUID } from 'node:crypto';
 import { API_ERROR_CODES } from '../global-filters/api-error.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { StorageService } from '../storage/storage.service.js';
 import { temporalNow } from '../prisma/temporal.js';
 import { findBookIdsWithReadyAudio } from '../books/book-ready-audio.js';
 import { toBookSummary } from '../books/book-summary.mapper.js';
@@ -19,6 +20,7 @@ import type {
   CollectionBookEntry,
   CollectionDetailResponse,
   CollectionGhost,
+  CollectionListItem,
   CollectionsListResponse,
   CollectionSummary,
   MyCollectionsListResponse,
@@ -42,6 +44,8 @@ import type {
 } from './types/collection.type.js';
 
 const DEFAULT_PAGE_SIZE = 20;
+// How many covers a collection's list item carries (the library draws a stack).
+const MAX_LIST_COVERS = 5;
 
 type CollectionBookView = {
   row: CollectionBook;
@@ -102,7 +106,10 @@ function compareBookViews(
 
 @Injectable()
 export class CollectionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
+  ) {}
 
   async createCollection(
     userId: string,
@@ -181,13 +188,18 @@ export class CollectionsService {
     );
 
     return {
-      collections: pageCollections.map((collection) =>
-        toCollectionSummary(
-          collection,
-          userId,
-          savedIds.has(collection.id),
-          views.get(collection.id) ?? [],
-          query.bookId,
+      collections: await Promise.all(
+        pageCollections.map((collection) =>
+          this.toListItem(
+            toCollectionSummary(
+              collection,
+              userId,
+              savedIds.has(collection.id),
+              views.get(collection.id) ?? [],
+              query.bookId,
+            ),
+            views.get(collection.id) ?? [],
+          ),
         ),
       ),
       nextOffset: combined.length > offset + limit ? offset + limit : null,
@@ -223,16 +235,21 @@ export class CollectionsService {
     const savedIds = await this.loadSavedCollectionIds(userId);
 
     return {
-      collections: visible
-        .slice(offset, offset + limit)
-        .map((collection) =>
-          toCollectionSummary(
-            collection,
-            userId,
-            savedIds.has(collection.id),
-            views.get(collection.id) ?? [],
+      collections: await Promise.all(
+        visible
+          .slice(offset, offset + limit)
+          .map((collection) =>
+            this.toListItem(
+              toCollectionSummary(
+                collection,
+                userId,
+                savedIds.has(collection.id),
+                views.get(collection.id) ?? [],
+              ),
+              views.get(collection.id) ?? [],
+            ),
           ),
-        ),
+      ),
       nextOffset: visible.length > offset + limit ? offset + limit : null,
     };
   }
@@ -546,6 +563,25 @@ export class CollectionsService {
       userId,
       collectionId,
     }).deleteAndCount();
+  }
+
+  // Adds signed links to the covers of the first readable books, in order.
+  private async toListItem(
+    summary: CollectionSummary,
+    views: CollectionBookView[],
+  ): Promise<CollectionListItem> {
+    const coverUrls = await Promise.all(
+      views
+        .filter((view) => view.readable && view.book.coverObjectKey)
+        .slice(0, MAX_LIST_COVERS)
+        .map((view) =>
+          this.storageService.createDownloadUrl(
+            view.book.coverDisplayObjectKey ?? view.book.coverObjectKey!,
+          ),
+        ),
+    );
+
+    return { ...summary, coverUrls };
   }
 
   private async getCollectionSummary(

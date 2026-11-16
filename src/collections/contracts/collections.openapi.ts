@@ -36,6 +36,15 @@ export class CollectionSummaryResponseDto {
   updatedAt: string;
 }
 
+export class CollectionListItemResponseDto extends CollectionSummaryResponseDto {
+  @ApiProperty({
+    type: [String],
+    description:
+      'Signed cover links of the first books that have a cover (up to 5), in collection order',
+  })
+  coverUrls: string[];
+}
+
 export class CollectionGhostResponseDto {
   @ApiProperty({ format: 'uuid' })
   collectionId: string;
@@ -70,8 +79,8 @@ export class CollectionDetailResponseDto {
 }
 
 export class CollectionsListResponseDto {
-  @ApiProperty({ type: () => [CollectionSummaryResponseDto] })
-  collections: CollectionSummaryResponseDto[];
+  @ApiProperty({ type: () => [CollectionListItemResponseDto] })
+  collections: CollectionListItemResponseDto[];
 
   @ApiProperty({ type: Number, nullable: true, minimum: 0 })
   nextOffset: number | null;

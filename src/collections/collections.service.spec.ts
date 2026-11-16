@@ -1,5 +1,6 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service.js';
+import type { StorageService } from '../storage/storage.service.js';
 import { temporalFromEpochMilliseconds } from '../prisma/temporal.js';
 
 jest.mock('../prisma/prisma.service.js', () => ({
@@ -130,7 +131,12 @@ describe('CollectionsService', () => {
       orm: { public: tables },
       transaction: (callback) => callback(db),
     };
-    service = new CollectionsService({ db } as unknown as PrismaService);
+    service = new CollectionsService(
+      { db } as unknown as PrismaService,
+      {
+        createDownloadUrl: (key: string) => Promise.resolve(`signed:${key}`),
+      } as unknown as StorageService,
+    );
   });
 
   describe('getCollection', () => {
@@ -218,6 +224,23 @@ describe('CollectionsService', () => {
       expect(result.collections).toEqual([]);
       expect(result.ghosts).toEqual([
         { collectionId: 'collection-1', title: 'Saved title' },
+      ]);
+    });
+
+    it('lists signed cover links of the first books with a cover, in order, display copy first', async () => {
+      findBook('book-own-public').coverObjectKey = 'public-original';
+      findBook('book-own-public').coverDisplayObjectKey = 'public-display';
+      link('collection-1', 'book-own-public', 1);
+      link('collection-1', 'book-own-private', 0);
+      link('collection-1', 'book-other-public', 2);
+
+      const result = await service.listCollections('owner', {
+        source: 'owned',
+      });
+
+      expect(result.collections[0].coverUrls).toEqual([
+        'signed:cover',
+        'signed:public-display',
       ]);
     });
 
