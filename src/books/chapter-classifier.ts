@@ -187,9 +187,61 @@ const HEURISTIC_ROLE_BY_PATTERN: Array<{
   },
 ];
 
-export function classifyChapter(
-  chapter: ParsedEpubChapter,
-): ChapterClassification {
+// Matched against the first OPENING_CHARS of the text (title stripped), since a
+// section often names itself in its first words, e.g. "Footnotes" or "End of the
+// Project Gutenberg eBook". Patterns are anchored; mined from labeled books.
+const OPENING_CHARS = 200;
+const OPENING_ROLE_BY_PATTERN: Array<{
+  pattern: RegExp;
+  role: ChapterRole;
+  reason: string;
+}> = [
+  {
+    pattern:
+      /^[^\p{L}\p{N}]*(?:table of contents|contents|оглавление|содержание)(?![\p{L}\p{N}])/iu,
+    role: 'NAVIGATION',
+    reason: 'OPENING_TOC',
+  },
+  {
+    pattern:
+      /^[^\p{L}\p{N}]*(?:footnotes?|endnotes?|notes|index|references|bibliography|примечани\p{L}*|сноски?|указатель)(?![\p{L}\p{N}])/iu,
+    role: 'REFERENCE',
+    reason: 'OPENING_REFERENCE',
+  },
+  {
+    pattern:
+      /^[^\p{L}\p{N}]*(?:end of (?:the )?project gutenberg|the full project gutenberg|mediawiki:)/iu,
+    role: 'BACK_MATTER',
+    reason: 'OPENING_BACK_MATTER',
+  },
+  {
+    pattern: /this ebook is for the use of anyone/iu,
+    role: 'FRONT_MATTER',
+    reason: 'OPENING_GUTENBERG_HEADER',
+  },
+];
+
+function openingText(chapter: ParsedEpubChapter): string {
+  let text = chapter.text.trimStart();
+  const title = chapter.title.trim();
+
+  // The text often repeats the title (sometimes twice); strip it first.
+  while (title && text.toLowerCase().startsWith(title.toLowerCase())) {
+    text = text.slice(title.length).trimStart();
+  }
+
+  return text.slice(0, OPENING_CHARS);
+}
+
+// shortcut: fixed length cutoff, tune if real short chapters land in OTHER.
+const MIN_MAIN_WORDS = 200;
+// Anything this short is probably not main content, whatever its title says.
+const MAX_NON_MAIN_WORDS = 100;
+const MAIN_TITLE_PATTERN =
+  /^[^\p{L}\p{N}]*(?:(?:chapter|part|book|section|canto|act|scene|letter|глава|часть|книга|песнь|действие|явление|письмо)(?![\p{L}\p{N}])|m{0,3}(?:cm|cd|d?c{0,3})(?:xc|xl|l?x{0,3})(?:ix|iv|v?i{0,3})[^\p{L}\p{N}]*$|\d{1,3}(?!\d))/iu;
+
+// Everything is OTHER unless a detector finds supporting material or evidence of main content.
+function detectRole(chapter: ParsedEpubChapter): ChapterClassification {
   for (const semanticType of chapter.semanticTypes ?? []) {
     const semanticClassification = SEMANTIC_ROLE_BY_TYPE[semanticType];
 
@@ -212,6 +264,19 @@ export function classifyChapter(
     }
   }
 
+  const opening = openingText(chapter);
+  for (const heuristic of OPENING_ROLE_BY_PATTERN) {
+    if (heuristic.pattern.test(opening)) {
+      return {
+        role: heuristic.role,
+        includeInDefaultNarration: false,
+        source: 'HEURISTIC',
+        confidence: 'LOW',
+        reason: heuristic.reason,
+      };
+    }
+  }
+
   if (!chapter.isLinear) {
     return {
       role: 'OTHER',
@@ -222,11 +287,37 @@ export function classifyChapter(
     };
   }
 
+  if (
+    chapter.wordCount > MAX_NON_MAIN_WORDS &&
+    (MAIN_TITLE_PATTERN.test(chapter.title) ||
+      chapter.wordCount >= MIN_MAIN_WORDS)
+  ) {
+    return {
+      role: 'MAIN',
+      includeInDefaultNarration: true,
+      source: 'EPUB',
+      confidence: null,
+      reason: null,
+    };
+  }
+
   return {
-    role: 'MAIN',
-    includeInDefaultNarration: true,
-    source: 'EPUB',
-    confidence: null,
-    reason: null,
+    role: 'OTHER',
+    includeInDefaultNarration: false,
+    source: 'HEURISTIC',
+    confidence: 'LOW',
+    reason: 'NO_MAIN_EVIDENCE',
+  };
+}
+
+// Only MAIN is narrated by default; the per-entry flags above are ignored.
+export function classifyChapter(
+  chapter: ParsedEpubChapter,
+): ChapterClassification {
+  const classification = detectRole(chapter);
+
+  return {
+    ...classification,
+    includeInDefaultNarration: classification.role === 'MAIN',
   };
 }

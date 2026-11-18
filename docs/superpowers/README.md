@@ -15,6 +15,9 @@ are authoritative for current behavior.
 - [EPUB chapter images plan](plans/2026-11-09-epub-chapter-images.md) — store
   EPUB images, mark them in chapter text with `[[img_<uuid>]]`, show them in
   the reader, never narrate them. Covers backend and frontend.
+- [Context-aware chapter classification plan](plans/2026-11-18-context-aware-chapter-classification.md)
+  — uses book-level structure and a boundary classifier to group split EPUB
+  pieces before assigning chapter roles.
 
 ## Specs
 

@@ -16,6 +16,7 @@ title, no hashes; find its commit with `git log -S"<title>" -- docs/history.md`
 
 ## Recent changes
 
+- Main-evidence classifier: `classifyChapter` marks a section `OTHER` unless it is supporting material (EPUB type or title hint) or main (`bodymatter`, or over 100 words with a chapter-style title or at least 200 words). The first 200 characters of text (title stripped) also mark contents, notes/index, Gutenberg header/footer and Wikisource boilerplate as not main. Only `MAIN` is narrated by default.
 - Collection book word counts: `GET /collections/:collectionId` entries carry `wordCount` (live chapter words, 0 for a ghost), so the collection page can size each book's thickness.
 - Collection book covers: `GET /collections/:collectionId` entries carry a signed `coverUrl` (display copy first, null for a ghost or no cover), so the collection page draws covers without a request per book.
 - Collection list covers: `GET /collections` and `GET /collections/public` items carry `coverUrls` (signed links to the first 5 covers, in order) for the library's book stacks.
