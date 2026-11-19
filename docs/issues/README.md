@@ -19,6 +19,8 @@
   image-to-image variant that preserves the original private cover.
 - [Chapter-classification feedback dataset](chapter-classification-feedback.md)
   — immutable, consented manual corrections for a later small classifier.
+- [FastText chapter grouping](chapter-classification-grouping.md) — research
+  safe evidence for grouping split supporting sections before classification.
 
 Issues describe known follow-up work, not supported product behavior. Move an
 issue to its owning domain documentation once it is fully implemented.
