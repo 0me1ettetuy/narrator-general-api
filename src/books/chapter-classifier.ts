@@ -3,6 +3,7 @@ import type {
   ChapterClassificationSource,
   ChapterRole,
 } from './contracts/books.response.js';
+import type { FastTextChapterPrediction } from './fasttext-chapter-classifier.service.js';
 import type { ParsedEpubChapter } from './types/parsed-epub.type.js';
 
 export type ChapterClassification = {
@@ -240,6 +241,15 @@ const MAX_NON_MAIN_WORDS = 100;
 const MAIN_TITLE_PATTERN =
   /^[^\p{L}\p{N}]*(?:(?:chapter|part|book|section|canto|act|scene|letter|глава|часть|книга|песнь|действие|явление|письмо)(?![\p{L}\p{N}])|m{0,3}(?:cm|cd|d?c{0,3})(?:xc|xl|l?x{0,3})(?:ix|iv|v?i{0,3})[^\p{L}\p{N}]*$|\d{1,3}(?!\d))/iu;
 
+const FASTTEXT_ROLE_BY_LABEL: Record<string, ChapterRole> = {
+  backmatter: 'BACK_MATTER',
+  content: 'MAIN',
+  frontmatter: 'FRONT_MATTER',
+  navigation: 'NAVIGATION',
+  reference: 'REFERENCE',
+  supplement: 'BACK_MATTER',
+};
+
 // Everything is OTHER unless a detector finds supporting material or evidence of main content.
 function detectRole(chapter: ParsedEpubChapter): ChapterClassification {
   for (const semanticType of chapter.semanticTypes ?? []) {
@@ -313,8 +323,27 @@ function detectRole(chapter: ParsedEpubChapter): ChapterClassification {
 // Only MAIN is narrated by default; the per-entry flags above are ignored.
 export function classifyChapter(
   chapter: ParsedEpubChapter,
+  prediction: FastTextChapterPrediction | null = null,
 ): ChapterClassification {
   const classification = detectRole(chapter);
+
+  if (
+    (classification.reason === null ||
+      classification.reason === 'NO_MAIN_EVIDENCE') &&
+    prediction
+  ) {
+    const role = FASTTEXT_ROLE_BY_LABEL[prediction.label];
+
+    if (role) {
+      return {
+        role,
+        includeInDefaultNarration: role === 'MAIN',
+        source: 'FASTTEXT',
+        confidence: 'HIGH',
+        reason: `FASTTEXT_${prediction.label.toUpperCase()}`,
+      };
+    }
+  }
 
   return {
     ...classification,

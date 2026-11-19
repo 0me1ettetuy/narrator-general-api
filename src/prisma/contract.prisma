@@ -117,6 +117,7 @@ enum ChapterRole {
 
 enum ChapterClassificationSource {
   EPUB
+  FASTTEXT
   HEURISTIC
   USER
 }

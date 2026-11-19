@@ -3,6 +3,7 @@ import { makePng } from '../test-mocks/png.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { StorageService } from '../storage/storage.service.js';
 import type { EpubParserService } from './epub-parser.service.js';
+import type { FastTextChapterClassifierService } from './fasttext-chapter-classifier.service.js';
 import type { ParsedEpub } from './types/parsed-epub.type.js';
 
 jest.mock('../prisma/prisma.service.js', () => ({
@@ -49,6 +50,9 @@ describe('BookParsingService', () => {
   const epubParserService = {
     parse: jest.fn(),
   } as unknown as EpubParserService;
+  const fastTextChapterClassifier = {
+    predict: jest.fn(),
+  } as unknown as FastTextChapterClassifierService;
   const db: {
     transaction: jest.Mock;
     orm: {
@@ -113,6 +117,9 @@ describe('BookParsingService', () => {
     db.orm.public.BookImage.create.mockResolvedValue(undefined);
     chapterCreate.mockResolvedValue(undefined);
     db.orm.public.Chapter.create = chapterCreate;
+    jest
+      .mocked(fastTextChapterClassifier.predict)
+      .mockImplementation(async (chapters) => chapters.map(() => null));
     parsedEpub = {
       title: 'Parsed title',
       language: 'en-US',
@@ -142,6 +149,7 @@ describe('BookParsingService', () => {
       prisma,
       storageService,
       epubParserService,
+      fastTextChapterClassifier,
     );
 
     await expect(service.parse(parseJob.id)).resolves.toEqual({
@@ -169,6 +177,30 @@ describe('BookParsingService', () => {
     );
   });
 
+  it('persists a confident FastText prediction', async () => {
+    jest
+      .mocked(fastTextChapterClassifier.predict)
+      .mockResolvedValue([{ label: 'reference', confidence: 0.9 }]);
+    const service = new BookParsingService(
+      prisma,
+      storageService,
+      epubParserService,
+      fastTextChapterClassifier,
+    );
+
+    await service.parse(parseJob.id);
+
+    expect(chapterCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role: 'REFERENCE',
+        includeInDefaultNarration: false,
+        classificationSource: 'FASTTEXT',
+        classificationConfidence: 'HIGH',
+        classificationReason: 'FASTTEXT_REFERENCE',
+      }),
+    );
+  });
+
   it('stores a resized display copy beside the original cover', async () => {
     const original = await makePng(1600, 2400);
     parsedEpub.cover = { bytes: original, mimeType: 'image/png' };
@@ -176,6 +208,7 @@ describe('BookParsingService', () => {
       prisma,
       storageService,
       epubParserService,
+      fastTextChapterClassifier,
     );
 
     await service.parse(parseJob.id);
@@ -202,6 +235,7 @@ describe('BookParsingService', () => {
       prisma,
       storageService,
       epubParserService,
+      fastTextChapterClassifier,
     );
 
     await service.parse(parseJob.id);
@@ -217,6 +251,7 @@ describe('BookParsingService', () => {
       prisma,
       storageService,
       epubParserService,
+      fastTextChapterClassifier,
     );
 
     await expect(service.parse(parseJob.id)).rejects.toThrow(
@@ -234,6 +269,7 @@ describe('BookParsingService', () => {
       prisma,
       storageService,
       epubParserService,
+      fastTextChapterClassifier,
     );
 
     await expect(service.parse(parseJob.id)).rejects.toThrow(
@@ -275,6 +311,7 @@ describe('BookParsingService', () => {
         prisma,
         storageService,
         epubParserService,
+        fastTextChapterClassifier,
       );
 
       await service.parse(parseJob.id);
@@ -313,6 +350,7 @@ describe('BookParsingService', () => {
         prisma,
         storageService,
         epubParserService,
+        fastTextChapterClassifier,
       );
 
       await expect(service.parse(parseJob.id)).rejects.toThrow(
@@ -332,6 +370,7 @@ describe('BookParsingService', () => {
         prisma,
         storageService,
         epubParserService,
+        fastTextChapterClassifier,
       );
 
       await expect(service.parse(parseJob.id)).rejects.toThrow();

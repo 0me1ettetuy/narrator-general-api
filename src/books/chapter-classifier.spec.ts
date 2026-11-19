@@ -33,6 +33,30 @@ describe('classifyChapter', () => {
     });
   });
 
+  it('uses a confident FastText prediction only when rules have no stronger signal', () => {
+    expect(
+      classifyChapter(chapter, { label: 'reference', confidence: 0.9 }),
+    ).toEqual({
+      role: 'REFERENCE',
+      includeInDefaultNarration: false,
+      source: 'FASTTEXT',
+      confidence: 'HIGH',
+      reason: 'FASTTEXT_REFERENCE',
+    });
+    expect(
+      classifyChapter(
+        { ...chapter, title: 'Contents' },
+        { label: 'content', confidence: 0.9 },
+      ).role,
+    ).toBe('NAVIGATION');
+    expect(
+      classifyChapter(
+        { ...chapter, title: 'Untitled', wordCount: 2 },
+        { label: 'frontmatter', confidence: 0.9 },
+      ).role,
+    ).toBe('FRONT_MATTER');
+  });
+
   it('treats a section of 100 words or fewer as not main', () => {
     expect(
       classifyChapter({

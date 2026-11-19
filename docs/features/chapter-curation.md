@@ -22,8 +22,11 @@ MAIN | FRONT_MATTER | NAVIGATION | REFERENCE | BACK_MATTER | OTHER
   common contents/reference/front/back-matter names as low-confidence
   suggestions.
 - A non-linear EPUB spine entry becomes `OTHER` and is excluded by default.
-- All other chapters are `MAIN`, included by default. These flags feed the
-  **Select narrated chapters** action; they do not force deletion or merging.
+- When those rules have no stronger signal, the bundled local FastText model
+  may provide a high-confidence role suggestion. If it cannot run or its
+  confidence is below 0.70, the rule result stays in place. These flags feed
+  the **Select narrated chapters** action; they do not force deletion or
+  merging.
 
 ## 8.2 Manual outline editing
 
@@ -48,7 +51,8 @@ MAIN | FRONT_MATTER | NAVIGATION | REFERENCE | BACK_MATTER | OTHER
 
 ### What happens underneath
 
-- Imported chapter text, classification source/confidence/reason, origin,
+- Imported chapter text, classification source (`EPUB`, `HEURISTIC`,
+  `FASTTEXT`, or `USER`), confidence/reason, origin,
   removal timestamp, merge relationship, and edit timestamp are kept in
   Postgres. A parser decision and a user override remain distinguishable.
 - Text/title edits update word count. A user role/inclusion change records

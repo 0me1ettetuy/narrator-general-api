@@ -6,6 +6,7 @@ import { StorageService } from '../storage/storage.service.js';
 import { storeCoverDisplay } from './book-cover-display.js';
 import { classifyChapter } from './chapter-classifier.js';
 import { EpubParserService } from './epub-parser.service.js';
+import { FastTextChapterClassifierService } from './fasttext-chapter-classifier.service.js';
 import type {
   ParsedEpub,
   ParsedEpubCover,
@@ -45,6 +46,7 @@ export class BookParsingService {
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
     private readonly epubParserService: EpubParserService,
+    private readonly fastTextChapterClassifier: FastTextChapterClassifierService,
   ) {}
 
   async parse(jobId: string): Promise<ClaimedBookParsingJob | null> {
@@ -198,6 +200,10 @@ export class BookParsingService {
     images: PlannedBookImage[],
   ): Promise<void> {
     const now = temporalNow();
+    const predictions = await this.fastTextChapterClassifier.predict(
+      parsedEpub.chapters,
+      parsedEpub.language,
+    );
 
     await this.prisma.db.transaction(async (transaction) => {
       for (const author of parsedEpub.authors.entries()) {
@@ -222,8 +228,11 @@ export class BookParsingService {
         });
       }
 
-      for (const chapter of parsedEpub.chapters) {
-        const classification = classifyChapter(chapter);
+      for (const [index, chapter] of parsedEpub.chapters.entries()) {
+        const classification = classifyChapter(
+          chapter,
+          predictions[index] ?? null,
+        );
 
         await transaction.orm.public.Chapter.create({
           id: randomUUID(),

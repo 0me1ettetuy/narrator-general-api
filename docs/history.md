@@ -16,6 +16,9 @@ title, no hashes; find its commit with `git log -S"<title>" -- docs/history.md`
 
 ## Recent changes
 
+- Local FastText classification: EPUB parsing now batches sections through the
+  bundled CPU model when deterministic rules have no stronger signal, records
+  `FASTTEXT` provenance, and falls back safely to the rule result.
 - Quantized chapter classifier artifact: bundled the 36 MB FastText model at
   `models/chapter-type.ftz`; production images copy it to `/app/models`.
 - Main-evidence classifier: `classifyChapter` marks a section `OTHER` unless it is supporting material (EPUB type or title hint) or main (`bodymatter`, or over 100 words with a chapter-style title or at least 200 words). The first 200 characters of text (title stripped) also mark contents, notes/index, Gutenberg header/footer and Wikisource boilerplate as not main. Only `MAIN` is narrated by default.

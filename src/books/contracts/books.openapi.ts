@@ -110,7 +110,7 @@ export class ChapterSummaryResponseDto {
   })
   includeInDefaultNarration: boolean;
 
-  @ApiProperty({ enum: ['EPUB', 'HEURISTIC', 'USER'] })
+  @ApiProperty({ enum: ['EPUB', 'FASTTEXT', 'HEURISTIC', 'USER'] })
   classificationSource: string;
 
   @ApiProperty({ type: String, nullable: true, enum: ['HIGH', 'LOW'] })

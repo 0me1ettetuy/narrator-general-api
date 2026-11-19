@@ -17,7 +17,8 @@ export type ChapterRole =
   | 'BACK_MATTER'
   | 'OTHER';
 
-export type ChapterClassificationSource = 'EPUB' | 'HEURISTIC' | 'USER';
+export type ChapterClassificationSource =
+  'EPUB' | 'FASTTEXT' | 'HEURISTIC' | 'USER';
 
 export type ChapterClassificationConfidence = 'HIGH' | 'LOW';
 

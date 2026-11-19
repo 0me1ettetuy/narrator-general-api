@@ -9,6 +9,7 @@ import { BookParsingService } from './book-parsing.service.js';
 import { ChapterCurationService } from './chapter-curation.service.js';
 import { BooksService } from './books.service.js';
 import { EpubParserService } from './epub-parser.service.js';
+import { FastTextChapterClassifierService } from './fasttext-chapter-classifier.service.js';
 
 @Module({
   imports: [PrismaModule, StorageModule, JobsModule, TtsModelsModule],
@@ -17,6 +18,7 @@ import { EpubParserService } from './epub-parser.service.js';
     BooksService,
     BookDeletionService,
     EpubParserService,
+    FastTextChapterClassifierService,
     BookParsingService,
     ChapterCurationService,
   ],

@@ -17,10 +17,10 @@ FROM dependencies AS development
 
 WORKDIR /app
 
-# The worker invokes ffmpeg while source watchers run inside development
-# containers too.
+# The worker invokes ffmpeg and fastText while source watchers run inside
+# development containers too.
 RUN apt-get update \
-  && apt-get install --yes --no-install-recommends ca-certificates ffmpeg \
+  && apt-get install --yes --no-install-recommends ca-certificates fasttext ffmpeg \
   && rm -rf /var/lib/apt/lists/*
 
 COPY . .
@@ -31,9 +31,10 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# The worker invokes ffmpeg to merge temporary chapter MP3 parts.
+# The worker invokes ffmpeg to merge temporary chapter MP3 parts and fastText
+# to classify imported chapters.
 RUN apt-get update \
-  && apt-get install --yes --no-install-recommends ca-certificates ffmpeg \
+  && apt-get install --yes --no-install-recommends ca-certificates fasttext ffmpeg \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --from=dependencies /app/node_modules ./node_modules
