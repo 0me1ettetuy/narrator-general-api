@@ -41,6 +41,7 @@ COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build /app/src/prisma ./src/prisma
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/models ./models
 
 EXPOSE 3000
 

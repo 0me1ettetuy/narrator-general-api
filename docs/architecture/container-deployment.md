@@ -22,6 +22,9 @@ data is retained; it is not reset by `docker compose down`.
 
 The API is published on `API_PUBLISHED_PORT` (default `3000`).
 
+The application image includes the local FastText chapter model at
+`/app/models/chapter-type.ftz`.
+
 ## Updating
 
 ```bash
